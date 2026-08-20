@@ -1,0 +1,258 @@
+import type { Member, Preference, Trip } from "./types";
+
+export type GeneratedItem = {
+  start_time: string;
+  duration_min: number;
+  title: string;
+  description: string;
+  category: string;
+  cost_estimate: number;
+  place_query: string;
+  needs_vote?: boolean;
+};
+
+export type GeneratedDay = {
+  day_date: string;
+  title: string;
+  note: string;
+  items: GeneratedItem[];
+};
+
+export type GeneratedItinerary = {
+  rationale: string;
+  days: GeneratedDay[];
+};
+
+/**
+ * Provedor de IA configuravel.
+ *
+ *   LLM_PROVIDER=gemini     -> camada gratuita do Google (padrao, custo R$ 0)
+ *   LLM_PROVIDER=anthropic  -> Claude, quando houver orcamento
+ *
+ * O prompt e o formato de saida sao identicos nos dois. Trocar de provedor
+ * e so mudar uma variavel de ambiente, sem mexer no resto do codigo.
+ */
+const PROVIDER = (process.env.LLM_PROVIDER ?? "gemini").toLowerCase();
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5";
+
+export function currentModelName() {
+  return PROVIDER === "anthropic" ? ANTHROPIC_MODEL : GEMINI_MODEL;
+}
+
+function buildPrompt(
+  trip: Trip,
+  members: Member[],
+  prefs: Record<string, Preference>
+) {
+  const people = members
+    .map((m) => {
+      const p = prefs[m.id];
+      if (!p) return `- ${m.name}: ainda nao preencheu preferencias.`;
+      const partes = [
+        `interesses: ${p.interests.join(", ") || "nenhum marcado"}`,
+        `restricoes: ${p.restrictions.join(", ") || "nenhuma"}`,
+        `orcamento: ${p.daily_budget ?? "nao informado"}`,
+      ];
+      if (p.present_from || p.present_to) {
+        partes.push(
+          `presente de ${p.present_from ?? trip.start_date} ate ${p.present_to ?? trip.end_date}`
+        );
+      }
+      return `- ${m.name}: ${partes.join(" | ")}`;
+    })
+    .join("\n");
+
+  const solo = trip.is_solo || members.length <= 1;
+
+  const abertura = solo
+    ? `Voce monta roteiros de viagem sob medida. A pessoa abaixo vai viajar sozinha. Seu trabalho e montar um roteiro que caiba de verdade nos interesses, nas restricoes e no orcamento dela -- e explicar as escolhas.`
+    : `Voce monta roteiros de viagem para GRUPOS. O grupo abaixo vai viajar junto e as preferencias das pessoas CONFLITAM entre si. Seu trabalho e equilibrar isso de forma justa e explicar as escolhas.`;
+
+  const regrasGrupo = solo
+    ? ""
+    : `
+6. Quando o grupo estiver dividido sobre algo (ex: 3 querem museu, 3 nao), marque o item com "needs_vote": true e escreva no titulo as opcoes.`;
+
+  const fecho = solo
+    ? `Na "rationale", explique em 3 a 5 frases as principais decisoes: como voce encaixou os interesses dela, o que deixou de fora e por que, e como o roteiro respeita o orcamento e as restricoes.`
+    : `Na "rationale", explique em 3 a 5 frases as principais decisoes: quem voce acomodou em quais dias, quais conflitos existiam e como resolveu. Cite as pessoas pelo nome.`;
+
+  return `${abertura}
+
+VIAGEM
+Destino: ${trip.destination}
+Datas: ${trip.start_date} ate ${trip.end_date}
+${solo ? "Viajando sozinho(a)" : `Pessoas no grupo: ${trip.party_size}`}
+Orcamento por pessoa (sem passagem): ${trip.budget_band ?? "nao informado"}
+Estilo escolhido pelo organizador: ${trip.styles.join(", ") || "nao informado"}
+
+${solo ? "VIAJANTE" : "PESSOAS"}
+${people}
+
+REGRAS OBRIGATORIAS
+1. Respeite TODAS as restricoes alimentares e de mobilidade. Se ha restricao vegetariana, todo restaurante do roteiro precisa ter opcao vegetariana clara.
+2. Se alguem marcou "Nao acordo cedo", nenhum dia comeca antes das 10h.
+3. Se alguem chega depois do inicio ou sai antes do fim, ajuste os dias afetados e diga isso na explicacao.
+4. Nao supere 4 atividades por dia. Roteiro sufocado e o erro mais comum.
+5. Atividades do mesmo dia devem ficar geograficamente proximas (ate ~20 min de deslocamento entre elas).
+${regrasGrupo}
+7. "place_query" deve ser o nome real e pesquisavel do lugar mais a cidade, ex: "Time Out Market, Lisboa". Nunca invente lugares que voce nao tem certeza que existem.
+8. "cost_estimate" em reais, por pessoa.
+9. Escreva tudo em portugues do Brasil.
+
+${fecho}
+
+Responda SOMENTE com o JSON, sem texto antes ou depois.`;
+}
+
+const ITEM_PROPS = {
+  start_time: { type: "string", description: "HH:MM" },
+  duration_min: { type: "number" },
+  title: { type: "string" },
+  description: { type: "string" },
+  category: { type: "string" },
+  cost_estimate: { type: "number" },
+  place_query: { type: "string" },
+  needs_vote: { type: "boolean" },
+} as const;
+
+const ITEM_REQUIRED = [
+  "start_time",
+  "duration_min",
+  "title",
+  "description",
+  "category",
+  "cost_estimate",
+  "place_query",
+];
+
+const SCHEMA = {
+  type: "object",
+  properties: {
+    rationale: { type: "string" },
+    days: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          day_date: { type: "string", description: "YYYY-MM-DD" },
+          title: { type: "string" },
+          note: { type: "string" },
+          items: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: ITEM_PROPS,
+              required: ITEM_REQUIRED,
+            },
+          },
+        },
+        required: ["day_date", "title", "note", "items"],
+      },
+    },
+  },
+  required: ["rationale", "days"],
+} as const;
+
+export async function generateItinerary(
+  trip: Trip,
+  members: Member[],
+  prefs: Record<string, Preference>
+): Promise<GeneratedItinerary> {
+  const prompt = buildPrompt(trip, members, prefs);
+  return PROVIDER === "anthropic" ? viaAnthropic(prompt) : viaGemini(prompt);
+}
+
+// ---------------------------------------------------------------- Gemini
+// Camada gratuita. Chamada via REST para nao adicionar dependencia.
+async function viaGemini(prompt: string): Promise<GeneratedItinerary> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) {
+    throw new Error(
+      "Falta a variavel GEMINI_API_KEY. Pegue a chave gratuita em https://aistudio.google.com/apikey"
+    );
+  }
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": key },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 16000,
+          responseMimeType: "application/json",
+          responseSchema: SCHEMA,
+        },
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const detail = await res.text();
+    if (res.status === 429) {
+      throw new Error(
+        "Voce bateu o limite gratuito do Gemini (15 chamadas por minuto, 1.500 por dia). Espere um minuto e tente de novo."
+      );
+    }
+    throw new Error(`Gemini respondeu ${res.status}: ${detail.slice(0, 300)}`);
+  }
+
+  const json = await res.json();
+  const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("A IA nao retornou um roteiro no formato esperado.");
+  return parseItinerary(text);
+}
+
+// ------------------------------------------------------------- Anthropic
+// Pago. Usado quando LLM_PROVIDER=anthropic.
+async function viaAnthropic(prompt: string): Promise<GeneratedItinerary> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw new Error("Falta a variavel ANTHROPIC_API_KEY.");
+
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": key,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: ANTHROPIC_MODEL,
+      max_tokens: 8000,
+      tools: [
+        {
+          name: "entregar_roteiro",
+          description: "Entrega o roteiro completo da viagem em grupo.",
+          input_schema: SCHEMA,
+        },
+      ],
+      tool_choice: { type: "tool", name: "entregar_roteiro" },
+      messages: [{ role: "user", content: prompt }],
+    }),
+  });
+
+  if (!res.ok) {
+    const detail = await res.text();
+    throw new Error(`Anthropic respondeu ${res.status}: ${detail.slice(0, 300)}`);
+  }
+
+  const json = await res.json();
+  const block = json?.content?.find((b: { type: string }) => b.type === "tool_use");
+  if (!block) throw new Error("A IA nao retornou um roteiro no formato esperado.");
+  return block.input as GeneratedItinerary;
+}
+
+function parseItinerary(text: string): GeneratedItinerary {
+  try {
+    return JSON.parse(text) as GeneratedItinerary;
+  } catch {
+    // As vezes o modelo embrulha o JSON em markdown. Tenta resgatar.
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]) as GeneratedItinerary;
+    throw new Error("A IA respondeu num formato que nao consegui ler.");
+  }
+}
