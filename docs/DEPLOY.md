@@ -1,8 +1,17 @@
 # Deploy — Planvoro
 
-## Estado
+## Estado — confirme no painel antes de confiar
 
-O projeto Vercel **já existe e já está ligado ao GitHub**:
+A chamada de criação retornou sucesso e devolveu o Project ID abaixo, **mas a
+mesma conexão não consegue ler o projeto de volta** (`get_project` responde 404
+e a listagem volta vazia). Então o primeiro passo é abrir
+[vercel.com](https://vercel.com) e verificar se o projeto `planvoro` aparece:
+
+- **Se aparecer:** está tudo certo, siga para as variáveis de ambiente.
+- **Se não aparecer:** crie na mão em *Add New → Project → Import Git Repository*
+  e escolha `guirodri21/planvoro`. Leva um minuto e o resultado é o mesmo.
+
+Dados do projeto criado:
 
 | | |
 |---|---|
@@ -44,15 +53,21 @@ Depois de salvar, faça um **Redeploy** para o build pegar as variáveis novas.
 
 ## Por que o deploy não completava antes
 
-A conexão da Vercel usada pelo agente consegue **criar e ligar** projetos, mas
-recebe `403 forbidden` ao criar deployment e ao listar deployments:
+A conexão da Vercel usada pelo agente consegue **criar** projetos, mas esbarra em
+permissão em tudo o mais:
 
-```
-You don't have permission to create a Production Deployment for this project.
-```
+| Operação | Resultado |
+|---|---|
+| criar/ligar projeto | ✅ funciona |
+| criar deployment | ❌ `403 You don't have permission to create a Production Deployment` |
+| listar deployments | ❌ `403 forbidden` |
+| ler o projeto criado | ❌ `404 Not Found` |
+| listar projetos | ❌ volta vazio |
 
 Ou seja: não era limitação da Vercel nem falta de projeto — é escopo de
-permissão do token da conexão. Isso não bloqueia mais nada, porque a publicação
+permissão do token da conexão, e é também o que explica a "listagem que volta
+vazia" registrada no PRD. Para consertar na raiz, reconecte a Vercel em
+*claude.ai → Settings → Connectors* concedendo acesso ao time. Isso não bloqueia mais nada, porque a publicação
 agora acontece pelo git: quem dispara o build é o webhook do GitHub com as
 permissões da sua conta, não o token do agente.
 

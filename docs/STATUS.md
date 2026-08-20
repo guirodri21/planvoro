@@ -25,7 +25,7 @@ Rename Wanderpack → Planvoro: concluído, zero ocorrências no código.
 |---|---|---|
 | 1 | Renomear Wanderpack → Planvoro | ✅ feito |
 | 2 | Votação e comentários por item | ✅ feito |
-| 3 | Deploy na Vercel | 🟡 projeto criado e ligado ao GitHub; falta configurar as variáveis de ambiente — ver [DEPLOY.md](DEPLOY.md) |
+| 3 | Deploy na Vercel | 🟡 projeto criado, mas a conexão não consegue lê-lo de volta nem publicar (403/404). Confirme no painel e configure as variáveis — ver [DEPLOY.md](DEPLOY.md) |
 | 4 | PostHog com o funil de convite | 🟡 código pronto; falta criar o projeto no PostHog e colar a chave |
 | 5 | Domínios `planvoro.com.br` e `planvoro.app` | ⬜ pendente, precisa de cartão |
 
@@ -35,8 +35,9 @@ Rename Wanderpack → Planvoro: concluído, zero ocorrências no código.
   Agora está versionado, extraído do banco de produção e validado contra ele.
   Sem isso, não havia como recriar o banco a partir do repositório.
 - **Funil de convite instrumentado** (`lib/analytics.ts`, `app/analytics.tsx`).
-- **Projeto Vercel criado e ligado ao repositório**, com o diagnóstico do que
-  travava o deploy documentado em [DEPLOY.md](DEPLOY.md).
+- **Projeto Vercel criado e ligado ao repositório** — com a ressalva de que a
+  conexão não consegue confirmar isso de volta. O diagnóstico completo do que
+  trava o deploy está em [DEPLOY.md](DEPLOY.md).
 
 ## O funil, evento por evento
 
