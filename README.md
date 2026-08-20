@@ -17,7 +17,15 @@ npm run dev
 
 Abra http://localhost:3000
 
-A estratégia de produto, o corte do MVP e o backlog priorizado estão em **[docs/PRD.md](docs/PRD.md)**.
+O schema do banco está em **[supabase/schema.sql](supabase/schema.sql)** — cole no
+SQL Editor do Supabase para criar tudo do zero.
+
+## Documentação
+
+- **[docs/PRD.md](docs/PRD.md)** — estratégia, análise competitiva, corte do MVP, roadmap
+- **[docs/STATUS.md](docs/STATUS.md)** — o que está pronto hoje e o funil de métricas
+- **[docs/DEPLOY.md](docs/DEPLOY.md)** — publicar na Vercel e as variáveis de ambiente
+
 
 O passo a passo completo, incluindo onde pegar cada chave, está em **COMECE-AQUI.md**.
 Para rodar sem gastar nada, veja **PLANO-CUSTO-ZERO.md**.
