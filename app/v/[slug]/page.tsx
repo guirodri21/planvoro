@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { use } from "react";
 import {
   DAILY_BUDGETS,
@@ -15,6 +15,7 @@ import {
   type Trip,
   type Vote,
 } from "@/lib/types";
+import { identificar, track } from "@/lib/analytics";
 
 type Payload = {
   trip: Trip;
@@ -43,9 +44,27 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   }, [slug]);
 
   useEffect(() => {
-    setMemberId(localStorage.getItem(`pv_member_${slug}`));
+    const guardado = localStorage.getItem(`pv_member_${slug}`);
+    setMemberId(guardado);
+    if (guardado) identificar(guardado);
     load();
   }, [slug, load]);
+
+  // Topo do funil: alguem abriu o link do convite. Dispara uma vez so,
+  // e so para quem ainda nao e do grupo — e o denominador da metrica
+  // "% de convidados que entram".
+  const conviteRegistrado = useRef(false);
+  useEffect(() => {
+    if (!data || conviteRegistrado.current) return;
+    const jaEMembro = data.members.some((m) => m.id === memberId);
+    if (jaEMembro || data.trip.is_solo) return;
+    conviteRegistrado.current = true;
+    track("convite_aberto", {
+      slug,
+      destino: data.trip.destination,
+      membros: data.members.length,
+    });
+  }, [data, memberId, slug]);
 
   if (error) return <div className="card">{error}</div>;
   if (!data) return <div className="card muted">Carregando...</div>;
@@ -59,13 +78,26 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   async function generate() {
     setGenerating(true);
     setError("");
+    const inicio = Date.now();
     try {
       const res = await fetch(`/api/trips/${slug}/generate`, { method: "POST" });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
+      // O momento "aha" e a geracao com 3+ pessoas ja preenchidas:
+      // e quando o grupo le a explicacao e pensa "pensou na Ana mesmo".
+      track("roteiro_gerado", {
+        slug,
+        solo: trip.is_solo,
+        membros: members.length,
+        preferencias_preenchidas: preferences.length,
+        regeracao: Boolean(itinerary),
+        segundos: Math.round((Date.now() - inicio) / 1000),
+      });
       await load();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao gerar.");
+      const msg = e instanceof Error ? e.message : "Erro ao gerar.";
+      track("roteiro_falhou", { slug, motivo: msg });
+      setError(msg);
     }
     setGenerating(false);
   }
@@ -110,7 +142,10 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                 <div className="copybox">{inviteUrl}</div>
                 <button
                   className="btn ghost full"
-                  onClick={() => navigator.clipboard?.writeText(inviteUrl)}
+                  onClick={() => {
+                    navigator.clipboard?.writeText(inviteUrl);
+                    track("convite_copiado", { slug, membros: members.length });
+                  }}
                 >
                   Copiar link
                 </button>
@@ -193,6 +228,9 @@ function JoinCard({ slug, onJoined }: { slug: string; onJoined: (id: string) => 
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       localStorage.setItem(`pv_member_${slug}`, json.member.id);
+      // A conversao que decide o produto inteiro.
+      identificar(json.member.id, { papel: "convidado" });
+      track("convidado_entrou", { slug });
       onJoined(json.member.id);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro ao entrar.");
@@ -255,6 +293,14 @@ function PreferencesCard({
     });
     setLoading(false);
     setSaved(true);
+    // Segundo degrau do funil. Se muita gente entra e pouca preenche,
+    // o problema e o tamanho do formulario, nao o convite.
+    track("preferencias_salvas", {
+      slug,
+      interesses: interests.length,
+      restricoes: restrictions.length,
+      primeira_vez: !pref,
+    });
     onSaved();
   }
 
@@ -413,6 +459,13 @@ function ItemRow({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
+      track("voto_registrado", {
+        slug,
+        item_id: item.id,
+        value,
+        item_em_disputa: item.needs_vote,
+        trocou_voto: meuVoto !== null && meuVoto !== value,
+      });
       onChange();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao votar.");
@@ -431,6 +484,11 @@ function ItemRow({
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
+      track("comentario_enviado", {
+        slug,
+        item_id: item.id,
+        item_em_disputa: item.needs_vote,
+      });
       setTexto("");
       onChange();
     } catch (e) {

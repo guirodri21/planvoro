@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import "./globals.css";
+import Analytics from "./analytics";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro.app";
 
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="pt-BR">
       <body>
+        <Analytics />
         <nav className="topnav">
           <div className="wrap navinner">
             <a className="logo" href="/">

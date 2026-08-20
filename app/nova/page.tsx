@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BUDGET_BANDS, STYLES } from "@/lib/types";
+import { identificar, track } from "@/lib/analytics";
 
 type Modo = "solo" | "grupo" | null;
 
@@ -37,6 +38,14 @@ export default function NovaViagem() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       localStorage.setItem(`pv_member_${json.slug}`, json.member_id);
+      identificar(json.member_id, { papel: "organizador" });
+      track("viagem_criada", {
+        slug: json.slug,
+        modo,
+        destino: form.destination,
+        party_size: form.party_size,
+        estilos: styles.length,
+      });
       router.push(`/v/${json.slug}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Algo deu errado.");
