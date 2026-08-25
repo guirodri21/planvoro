@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
+import { getUserFromRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
-import { memberBelongsToTrip, itemBelongsToTrip } from "@/lib/guards";
+import { itemBelongsToTrip, memberForUserInTrip } from "@/lib/guards";
 
 /**
  * Voto de uma pessoa num item do roteiro.
@@ -15,25 +16,26 @@ export async function POST(
 ) {
   try {
     const { slug, itemId } = await ctx.params;
-    const { member_id, value } = await req.json();
+    const { value } = await req.json();
 
-    if (!member_id) {
-      return NextResponse.json({ error: "Sem membro identificado." }, { status: 400 });
-    }
     if (![1, 0, -1].includes(value)) {
       return NextResponse.json({ error: "Voto invalido." }, { status: 400 });
     }
 
     const db = supabaseAdmin();
+    const user = await getUserFromRequest(req, db);
+    if (!user) {
+      return NextResponse.json({ error: "Entre na sua conta para votar." }, { status: 401 });
+    }
 
     // Duas checagens obrigatorias: a pessoa e mesmo desta viagem,
     // e o item pertence mesmo a esta viagem. Sem isso, quem tiver o
     // id de um item de outra viagem consegue votar nela.
-    const trip = await memberBelongsToTrip(db, slug, member_id);
-    if (!trip) {
+    const membership = await memberForUserInTrip(db, slug, user.id);
+    if (!membership) {
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
     }
-    if (!(await itemBelongsToTrip(db, trip.id, itemId))) {
+    if (!(await itemBelongsToTrip(db, membership.tripId, itemId))) {
       return NextResponse.json({ error: "Item nao encontrado nesta viagem." }, { status: 404 });
     }
 
@@ -41,7 +43,7 @@ export async function POST(
       .from("votes")
       .select("id, value")
       .eq("item_id", itemId)
-      .eq("member_id", member_id)
+      .eq("member_id", membership.memberId)
       .maybeSingle();
 
     if (existing && existing.value === value) {
@@ -51,7 +53,10 @@ export async function POST(
 
     const { error } = await db
       .from("votes")
-      .upsert({ item_id: itemId, member_id, value }, { onConflict: "item_id,member_id" });
+      .upsert(
+        { item_id: itemId, member_id: membership.memberId, value },
+        { onConflict: "item_id,member_id" }
+      );
     if (error) throw error;
 
     return NextResponse.json({ ok: true, value });

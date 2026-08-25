@@ -4,9 +4,9 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "Planvoro — roteiro de viagem por IA, sozinho ou em grupo";
 
-// Gerada pelo proprio Next, sem dependencia externa.
-// E a imagem que aparece quando alguem manda o link no WhatsApp --
-// no nosso caso, o principal canal de distribuicao.
+// Gerada pelo próprio Next, sem dependência externa.
+// É a imagem que aparece quando alguém manda o link no WhatsApp,
+// no nosso caso, o principal canal de distribuição.
 export default function Image() {
   return new ImageResponse(
     (
@@ -52,7 +52,7 @@ export default function Image() {
         </div>
 
         <div style={{ fontSize: 27, color: "#8B9AAD", marginTop: 30 }}>
-          Cada lugar verificado antes de entrar no roteiro.
+          Roteiro, votação e gastos em um só workspace.
         </div>
       </div>
     ),

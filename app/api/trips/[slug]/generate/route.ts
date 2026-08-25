@@ -1,39 +1,77 @@
 import { NextResponse } from "next/server";
+import { getUserFromRequest } from "@/lib/auth";
+import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { currentModelName, generateItinerary } from "@/lib/generate";
 import { verifyPlace, type PlaceInfo } from "@/lib/places";
-import type { Preference } from "@/lib/types";
+import type { Idea, IdeaVote, Preference } from "@/lib/types";
 
 export const maxDuration = 60;
 
 // A verificacao no Nominatim e serializada em 1 req/s por exigencia da
 // politica de uso. Para nao estourar o tempo limite da funcao, damos um
 // orcamento de tempo: o que nao der pra conferir fica como nao verificado.
-const VERIFY_BUDGET_MS = 20_000;
+const VERIFY_BUDGET_MS = 8_000;
 const NOT_VERIFIED: PlaceInfo = { verified: false, lat: null, lng: null, data: null };
 
 export async function POST(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await ctx.params;
     const db = supabaseAdmin();
+    const user = await getUserFromRequest(_req, db);
+    if (!user) {
+      return NextResponse.json({ error: "Entre na sua conta para gerar o roteiro." }, { status: 401 });
+    }
+
+    const membership = await memberForUserInTrip(db, slug, user.id);
+    if (!membership) {
+      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+    }
 
     const { data: trip } = await db.from("trips").select("*").eq("slug", slug).maybeSingle();
     if (!trip) return NextResponse.json({ error: "Viagem nao encontrada." }, { status: 404 });
 
-    const { data: members } = await db.from("members").select("*").eq("trip_id", trip.id);
-    const { data: prefRows } = await db.from("preferences").select("*").eq("trip_id", trip.id);
+    const [membersResult, prefRowsResult, plannedIdeasResult] = await Promise.all([
+      db.from("members").select("*").eq("trip_id", trip.id),
+      db.from("preferences").select("*").eq("trip_id", trip.id),
+      db
+        .from("ideas")
+        .select("id, member_id, title, notes, category, estimated_cost, status")
+        .eq("trip_id", trip.id)
+        .eq("status", "planned")
+        .order("updated_at", { ascending: false }),
+    ]);
 
-    if (!prefRows || prefRows.length === 0) {
+    if (membersResult.error) throw membersResult.error;
+    if (prefRowsResult.error) throw prefRowsResult.error;
+    if (plannedIdeasResult.error) throw plannedIdeasResult.error;
+
+    const members = membersResult.data ?? [];
+    const prefRows = prefRowsResult.data ?? [];
+    const plannedIdeas = (plannedIdeasResult.data ?? []) as Idea[];
+
+    if (prefRows.length === 0) {
       return NextResponse.json(
         { error: "Ninguem preencheu as preferencias ainda. O roteiro em grupo depende disso." },
         { status: 400 }
       );
     }
 
+    let ideaVotes: IdeaVote[] = [];
+    const plannedIdeaIds = plannedIdeas.map((idea) => idea.id);
+    if (plannedIdeaIds.length) {
+      const { data, error } = await db
+        .from("idea_votes")
+        .select("idea_id, member_id, value")
+        .in("idea_id", plannedIdeaIds);
+      if (error) throw error;
+      ideaVotes = (data ?? []) as IdeaVote[];
+    }
+
     const prefs: Record<string, Preference> = {};
     for (const p of prefRows) prefs[p.member_id] = p as Preference;
 
-    const generated = await generateItinerary(trip, members ?? [], prefs);
+    const generated = await generateItinerary(trip, members, prefs, plannedIdeas, ideaVotes);
 
     // Nova versao em vez de sobrescrever: da pra comparar e voltar atras.
     const { data: last } = await db
@@ -73,11 +111,10 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
       if (dayError) throw dayError;
 
       const items = day.items ?? [];
-      const checked = await Promise.all(
-        items.map((item) =>
-          Date.now() < deadline ? verifyPlace(item.place_query) : Promise.resolve(NOT_VERIFIED)
-        )
-      );
+      const checked: PlaceInfo[] = [];
+      for (const item of items) {
+        checked.push(Date.now() < deadline ? await verifyPlace(item.place_query) : NOT_VERIFIED);
+      }
 
       const rows = items.map((item, i) => ({
         day_id: dayRow.id,

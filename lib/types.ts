@@ -70,18 +70,18 @@ export const INTERESTS = [
   "Mercados",
   "Arquitetura",
   "Compras",
-  "Musica ao vivo",
+  "Música ao vivo",
   "Esportes",
 ];
 
 export const RESTRICTIONS = [
   "Vegetariano",
   "Vegano",
-  "Sem gluten",
-  "Sem alcool",
+  "Sem glúten",
+  "Sem álcool",
   "Mobilidade reduzida",
-  "Nao acordo cedo",
-  "Viajando com crianca",
+  "Não acordo cedo",
+  "Viajando com criança",
 ];
 
 export const STYLES = [
@@ -96,14 +96,14 @@ export const STYLES = [
 ];
 
 export const BUDGET_BANDS = [
-  "Ate R$ 3.000",
+  "Até R$ 3.000",
   "R$ 3.000 - R$ 5.000",
   "R$ 5.000 - R$ 8.000",
   "Acima de R$ 8.000",
 ];
 
 export const DAILY_BUDGETS = [
-  "Ate R$ 250/dia",
+  "Até R$ 250/dia",
   "R$ 250 - R$ 450/dia",
   "R$ 450 - R$ 700/dia",
   "Acima de R$ 700/dia",
@@ -123,9 +123,141 @@ export type Comment = {
   created_at: string;
 };
 
-/** Rotulos das reacoes. O valor e o que vai pro banco. */
+export type Expense = {
+  id: string;
+  trip_id: string;
+  payer_member_id: string;
+  amount: number;
+  description: string;
+  split_member_ids: string[];
+  created_at: string;
+};
+
+export type TripVaultKind =
+  | "flight"
+  | "lodging"
+  | "activity"
+  | "transport"
+  | "insurance"
+  | "visa"
+  | "restaurant"
+  | "document"
+  | "other";
+
+export type TripVaultStatus = "saved" | "reserved" | "paid" | "attention" | "canceled";
+
+export type TripVaultItem = {
+  id: string;
+  trip_id: string;
+  member_id: string | null;
+  kind: TripVaultKind;
+  title: string;
+  provider: string | null;
+  confirmation_code: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  location: string | null;
+  amount: number | null;
+  currency: string;
+  status: TripVaultStatus;
+  url: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const TRIP_VAULT_KINDS: Array<{ value: TripVaultKind; label: string; hint: string }> = [
+  { value: "flight", label: "Passagem / voo", hint: "Localizador, horários, aeroporto" },
+  { value: "lodging", label: "Hospedagem", hint: "Hotel, Airbnb, check-in" },
+  { value: "activity", label: "Passeio / ingresso", hint: "Tour, atração, evento" },
+  { value: "transport", label: "Transporte", hint: "Carro, trem, transfer, ônibus" },
+  { value: "insurance", label: "Seguro", hint: "Apólice, cobertura, contato" },
+  { value: "visa", label: "Visto / documento", hint: "Regras, prazos, protocolos" },
+  { value: "restaurant", label: "Restaurante", hint: "Reserva, horário, endereço" },
+  { value: "document", label: "Documento / link", hint: "PDF, pasta, comprovante" },
+  { value: "other", label: "Outro", hint: "Qualquer item importante" },
+];
+
+export const TRIP_VAULT_STATUSES: Array<{ value: TripVaultStatus; label: string }> = [
+  { value: "saved", label: "Salvo" },
+  { value: "reserved", label: "Reservado" },
+  { value: "paid", label: "Pago" },
+  { value: "attention", label: "Precisa conferir" },
+  { value: "canceled", label: "Cancelado" },
+];
+
+export type TripChecklistCategory =
+  | "booking"
+  | "documents"
+  | "money"
+  | "packing"
+  | "group"
+  | "transport"
+  | "health"
+  | "planning"
+  | "other";
+
+export type TripChecklistStatus = "open" | "done" | "skipped";
+
+export type TripChecklistItem = {
+  id: string;
+  trip_id: string;
+  member_id: string | null;
+  category: TripChecklistCategory;
+  title: string;
+  notes: string | null;
+  due_date: string | null;
+  status: TripChecklistStatus;
+  source: "manual" | "suggested";
+  created_at: string;
+  updated_at: string;
+};
+
+export const TRIP_CHECKLIST_CATEGORIES: Array<{
+  value: TripChecklistCategory;
+  label: string;
+}> = [
+  { value: "booking", label: "Reservas" },
+  { value: "documents", label: "Documentos" },
+  { value: "money", label: "Dinheiro" },
+  { value: "packing", label: "Mala" },
+  { value: "group", label: "Grupo" },
+  { value: "transport", label: "Transporte" },
+  { value: "health", label: "Saude" },
+  { value: "planning", label: "Planejamento" },
+  { value: "other", label: "Outro" },
+];
+
+export const TRIP_CHECKLIST_STATUSES: Array<{ value: TripChecklistStatus; label: string }> = [
+  { value: "open", label: "Pendente" },
+  { value: "done", label: "Feito" },
+  { value: "skipped", label: "Ignorado" },
+];
+
+export type IdeaStatus = "open" | "planned" | "dismissed";
+
+export type Idea = {
+  id: string;
+  trip_id: string;
+  member_id: string;
+  title: string;
+  notes: string | null;
+  category: string | null;
+  estimated_cost: number | null;
+  status: IdeaStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+export type IdeaVote = {
+  idea_id: string;
+  member_id: string;
+  value: number;
+};
+
+/** Rótulos das reações. O valor é o que vai para o banco. */
 export const REACTIONS = [
   { value: 1, emoji: "\u{1F44D}", label: "curti" },
-  { value: 0, emoji: "\u{1F914}", label: "na duvida" },
-  { value: -1, emoji: "\u{1F44E}", label: "nao curti" },
+  { value: 0, emoji: "\u{1F914}", label: "na dúvida" },
+  { value: -1, emoji: "\u{1F44E}", label: "não curti" },
 ] as const;

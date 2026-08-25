@@ -26,6 +26,7 @@ const PROVIDER = (process.env.PLACES_PROVIDER ?? "nominatim").toLowerCase();
 const NOMINATIM_UA =
   process.env.NOMINATIM_USER_AGENT ?? "Planvoro/0.1 (contato: seu-email@exemplo.com)";
 const NOMINATIM_MIN_INTERVAL_MS = 1100;
+const PLACE_LOOKUP_TIMEOUT_MS = Number(process.env.PLACE_LOOKUP_TIMEOUT_MS ?? 3500);
 
 let lastNominatimCall = 0;
 let queue: Promise<unknown> = Promise.resolve();
@@ -82,6 +83,7 @@ async function lookupNominatim(query: string): Promise<PlaceInfo> {
 
       const res = await fetch(url, {
         headers: { "User-Agent": NOMINATIM_UA, "Accept-Language": "pt-BR" },
+        signal: AbortSignal.timeout(PLACE_LOOKUP_TIMEOUT_MS),
       });
       if (!res.ok) return UNVERIFIED;
 
@@ -109,6 +111,7 @@ async function lookupGoogle(query: string): Promise<PlaceInfo> {
   try {
     const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
       method: "POST",
+      signal: AbortSignal.timeout(PLACE_LOOKUP_TIMEOUT_MS),
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": key,

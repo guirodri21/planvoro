@@ -9,10 +9,11 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.58.0",
-    "next": "15.5.4",
-    "posthog-js": "^1.418.5",
+    "next": "^15.5.23",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "resend": "^6.21.0",
+    "stripe": "^22.5.0"
   },
   "devDependencies": {
     "@types/node": "^22",

@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { betaAccessDescription, betaAccessLabel } from "@/lib/beta";
 
 export default function Home() {
   return (
@@ -9,79 +10,98 @@ export default function Home() {
         <div className="hero-grid">
           <div>
             <div className="pill">
-              <span className="dot-live" /> Sozinho ou com o grupo inteiro
+              <span className="dot-live" /> Central de viagem para solo e grupo
             </div>
             <h1 className="h1">
-              Seu roteiro pronto.
+              Tudo da viagem
               <br />
-              Sem 200 mensagens no grupo.
+              em um só lugar.
             </h1>
             <p className="lead">
-              Você marca o que gosta e a IA monta o roteiro dia a dia — conferindo se cada lugar
-              existe mesmo. Se for em grupo, ela equilibra as preferências de todo mundo.
+              O Planvoro junta roteiro, reservas, documentos, tarefas, decisões do grupo e gastos
+              numa central única. Você não compra passagem ou hotel por aqui; você guarda, entende
+              e compartilha tudo sem virar refém de WhatsApp e prints.
             </p>
             <div className="hero-cta">
-              <a href="/nova" className="btn lg">
+              <a href="/entrar?mode=signup&next=%2Fnova" className="btn lg">
                 Criar viagem grátis
               </a>
-              <a href="#roteiro" className="btn lg ghost">
-                Ver um roteiro pronto
+              <a href="#produto" className="btn lg ghost">
+                Ver central da viagem
               </a>
             </div>
             <p className="tiny" style={{ marginTop: 16 }}>
-              Grátis para começar · Sem cartão · Quem você convidar não precisa criar conta
+              Grátis para começar · Sem cartão · Funciona no navegador do celular
             </p>
           </div>
 
-          <div className="mock">
+          <div className="mock command-mock">
             <div className="mock-bar">
               <i />
               <i />
               <i />
-              <span>planvoro.app/v/lisboa-outubro</span>
+              <span>planvoro.app/v/lisboa-portugal</span>
             </div>
-            <div className="mock-body">
-              <div className="day">
-                <div className="day-h">
-                  <b>Seg · 13 out — Baixa e Alfama</b>
-                  <span className="muted">~R$ 310</span>
+            <div className="mock-body command-body">
+              <div className="command-top">
+                <span className="badge b-ok">Lisboa · 13-18 out</span>
+                <h3>Central da viagem</h3>
+                <p className="small">
+                  8 viajantes, 5 dias, orçamento médio de R$ 3.200 por pessoa.
+                </p>
+              </div>
+
+              <div className="mock-tabs">
+                <span>Roteiro</span>
+                <span>Agenda</span>
+                <span>Cofre</span>
+                <span>Gastos</span>
+              </div>
+
+              <div className="mock-stat-grid">
+                <div>
+                  <b>14</b>
+                  <span>itens salvos</span>
                 </div>
-                <div className="item">
-                  <div className="time">10:30</div>
-                  <div className="item-b">
-                    <div className="item-t">
-                      Time Out Market <span className="badge b-ok">verificado</span>
-                    </div>
-                    <div className="item-d">Brunch. 4 opções vegetarianas.</div>
-                  </div>
-                  <div className="cost">R$ 90</div>
+                <div>
+                  <b>6</b>
+                  <span>tarefas abertas</span>
                 </div>
-                <div className="item">
-                  <div className="time">13:00</div>
-                  <div className="item-b">
-                    <div className="item-t">
-                      Elevador de Santa Justa <span className="badge b-ok">verificado</span>
-                    </div>
-                    <div className="item-d">8 min a pé. Fila menor antes das 14h.</div>
-                  </div>
-                  <div className="cost">R$ 35</div>
-                </div>
-                <div className="item">
-                  <div className="time">21:00</div>
-                  <div className="item-b">
-                    <div className="item-t">
-                      Jantar — 3 opções <span className="badge b-vote">votando</span>
-                    </div>
-                    <div className="item-d">O grupo está dividido. 6 de 8 já votaram.</div>
-                  </div>
-                  <div className="cost">~R$ 185</div>
+                <div>
+                  <b>R$ 420</b>
+                  <span>a acertar</span>
                 </div>
               </div>
-              <div className="note" style={{ marginTop: 4 }}>
-                <b>Por que ficou assim</b>
+
+              <div className="command-panel">
+                <div className="mini-row">
+                  <span>
+                    <b>Voo GIG-LIS</b>
+                    <small>PDF anexado · vence check-in em 2 dias</small>
+                  </span>
+                  <em>Cofre</em>
+                </div>
+                <div className="mini-row">
+                  <span>
+                    <b>Segunda · Baixa e Alfama</b>
+                    <small>3 atividades, 22 min andando no total</small>
+                  </span>
+                  <em>Agenda</em>
+                </div>
+                <div className="mini-row">
+                  <span>
+                    <b>Jantar de grupo</b>
+                    <small>6 de 8 já votaram nas opções</small>
+                  </span>
+                  <em>Decisão</em>
+                </div>
+              </div>
+
+              <div className="note" style={{ marginTop: 14 }}>
+                <b>Agente Planvoro</b>
                 <br />
-                Comecei tarde porque a Marina chega 9h30 e três pessoas pediram para não acordar
-                cedo. Todos os restaurantes têm opção vegetariana.
+                "Faltam confirmar hotel, seguro viagem e divisão do transfer. Quer que eu crie as
+                tarefas para o grupo?"
               </div>
             </div>
           </div>
@@ -102,7 +122,7 @@ export default function Home() {
             <span className="badge b-ok" style={{ marginLeft: 0 }}>
               mais rápido
             </span>
-            <h3 style={{ marginTop: 14 }}>🎒 Vou sozinho</h3>
+            <h3 style={{ marginTop: 14 }}>Vou sozinho</h3>
             <p className="small" style={{ marginTop: 8 }}>
               Marque seus interesses, restrições e orçamento. Em menos de um minuto o roteiro está
               pronto, com horários, custo por dia e deslocamento realista entre os lugares.
@@ -112,8 +132,8 @@ export default function Home() {
               <span className="small muted">2 minutos</span>
             </div>
             <div className="row">
-              <span>Lugares verificados</span>
-              <span className="small muted">automático</span>
+              <span>Lugares marcados para conferência</span>
+              <span className="small muted">premium</span>
             </div>
             <div className="row">
               <span>Link público para compartilhar</span>
@@ -125,23 +145,23 @@ export default function Home() {
             <span className="badge b-vote" style={{ marginLeft: 0 }}>
               o que ninguém faz
             </span>
-            <h3 style={{ marginTop: 14 }}>👥 Vou em grupo</h3>
+            <h3 style={{ marginTop: 14 }}>Vou em grupo</h3>
             <p className="small" style={{ marginTop: 8 }}>
               Mande o link no WhatsApp. Cada pessoa marca o que quer, e a IA remonta o roteiro
               equilibrando quem é vegetariano, quem odeia museu, quem chega depois e quem tem menos
               orçamento.
             </p>
             <div className="row" style={{ marginTop: 14 }}>
-              <span>Convite sem cadastro</span>
-              <span className="small muted">link direto</span>
+              <span>Entrada com conta em segundos</span>
+              <span className="small muted">e-mail e senha</span>
             </div>
             <div className="row">
               <span>Votação quando o grupo se divide</span>
               <span className="small muted">incluso</span>
             </div>
             <div className="row">
-              <span>Divisão de despesas por Pix</span>
-              <span className="small muted">incluso</span>
+              <span>Divisão de despesas com acerto por Pix</span>
+              <span className="small muted">roadmap</span>
             </div>
           </div>
         </div>
@@ -209,6 +229,84 @@ export default function Home() {
         </div>
       </section>
 
+      {/* PRODUTO REAL */}
+      <section id="produto">
+        <p className="eyebrow">Produto real</p>
+        <h2 className="h2">Uma central viva para planejar, guardar e viajar.</h2>
+        <p className="lead">
+          Cada viagem vira um workspace privado com tudo que normalmente fica espalhado entre
+          WhatsApp, e-mail, prints, PDFs, notas e planilhas.
+        </p>
+
+        <div className="grid3 product-grid" style={{ marginTop: 36 }}>
+          <div className="card product-card">
+            <span className="product-number">01</span>
+            <h3>Central da viagem</h3>
+            <p className="small">
+              Roteiro, grupo, cofre, agenda, checklist e gastos conectados no mesmo link.
+            </p>
+          </div>
+          <div className="card product-card">
+            <span className="product-number">02</span>
+            <h3>Agenda inteligente</h3>
+            <p className="small">
+              O dia a dia fica claro, com horários, deslocamentos, custos estimados e observações.
+            </p>
+          </div>
+          <div className="card product-card">
+            <span className="product-number">03</span>
+            <h3>Cofre de reservas</h3>
+            <p className="small">
+              Guarde voo, hotel, ingressos, seguro, documentos, links e status de confirmação.
+            </p>
+          </div>
+          <div className="card product-card">
+            <span className="product-number">04</span>
+            <h3>Checklist acionável</h3>
+            <p className="small">
+              Tarefas por prioridade, responsável e prazo para ninguém descobrir pendência na
+              véspera.
+            </p>
+          </div>
+          <div className="card product-card">
+            <span className="product-number">05</span>
+            <h3>Agente de viagem</h3>
+            <p className="small">
+              A IA lê o contexto da viagem e sugere próximos passos, alertas e tarefas prontas.
+            </p>
+          </div>
+          <div className="card product-card">
+            <span className="product-number">06</span>
+            <h3>Gastos e acertos</h3>
+            <p className="small">
+              Registre quem pagou o quê e veja um resumo simples de quem deve quanto para quem.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* TUDO JUNTO */}
+      <section className="feature-strip">
+        <div>
+          <p className="eyebrow">O que entra</p>
+          <h2 className="h2">A viagem deixa de ser uma pilha de abas abertas.</h2>
+        </div>
+        <div className="feature-strip-grid">
+          <div>
+            <b>Antes da viagem</b>
+            <span>IA cria o roteiro, o grupo decide prioridades e o checklist mostra pendências.</span>
+          </div>
+          <div>
+            <b>Durante</b>
+            <span>Agenda, reservas e documentos ficam acessíveis no celular, no mesmo lugar.</span>
+          </div>
+          <div>
+            <b>Depois</b>
+            <span>Gastos ficam fechados com saldo por pessoa e histórico do que foi planejado.</span>
+          </div>
+        </div>
+      </section>
+
       {/* ROTEIRO */}
       <section id="roteiro">
         <div className="grid2" style={{ alignItems: "center", gap: 48 }}>
@@ -216,14 +314,14 @@ export default function Home() {
             <p className="eyebrow">O roteiro</p>
             <h2 className="h2">A IA explica por que ficou assim</h2>
             <p className="lead">
-              Não é uma lista genérica de pontos turísticos. É um roteiro que sabe quem você é — e
-              que te conta o raciocínio.
+              Não é uma lista genérica de pontos turísticos. É um roteiro que considera o ritmo,
+              o orçamento e as preferências do grupo — e mostra o raciocínio.
             </p>
             <div style={{ marginTop: 24 }}>
               <div className="row">
                 <span>
                   <b>Respeita restrição alimentar</b>
-                  <div className="small muted">Todo restaurante serve quem vai à mesa</div>
+                  <div className="small muted">A IA prioriza opções compatíveis com o grupo</div>
                 </span>
               </div>
               <div className="row">
@@ -240,9 +338,9 @@ export default function Home() {
               </div>
               <div className="row">
                 <span>
-                  <b>Nada de lugar inventado</b>
+                  <b>Validação com transparência</b>
                   <div className="small muted">
-                    Conferido contra dados reais antes de entrar no roteiro
+                    Lugares conferidos são marcados; estimativas ficam claras
                   </div>
                 </span>
               </div>
@@ -255,24 +353,24 @@ export default function Home() {
                 <b>Time Out Market</b>
                 <div className="small muted">Cais do Sodré</div>
               </span>
-              <span className="badge b-ok">verificado</span>
+              <span className="badge b-ok">conferido</span>
             </div>
             <div className="row">
               <span>
                 <b>Mosteiro dos Jerónimos</b>
                 <div className="small muted">Belém</div>
               </span>
-              <span className="badge b-ok">verificado</span>
+              <span className="badge b-ok">conferido</span>
             </div>
             <div className="row" style={{ opacity: 0.45 }}>
               <span>
                 <b>Casa do Bacalhau</b>
-                <div className="small muted">não encontrado — removido do roteiro</div>
+                <div className="small muted">precisa de confirmação antes de reservar</div>
               </span>
             </div>
             <p className="tiny" style={{ marginTop: 14 }}>
-              Recomendar restaurante que já fechou é a reclamação número um dos concorrentes. Aqui
-              isso não passa.
+              Os preços, horários e disponibilidade podem mudar. O Planvoro sinaliza o que é
+              estimativa para você confirmar antes de fechar.
             </p>
           </div>
         </div>
@@ -281,68 +379,71 @@ export default function Home() {
       {/* PRECOS */}
       <section id="precos">
         <div style={{ textAlign: "center", maxWidth: 620, margin: "0 auto 40px" }}>
-          <p className="eyebrow">Preços</p>
+          <p className="eyebrow">{betaAccessLabel}</p>
           <h2 className="h2">
-            Você viaja 2 vezes por ano.
+            Teste tudo agora.
             <br />
-            Por que pagaria 12?
+            Sem pagar nada.
           </h2>
           <p className="lead" style={{ marginLeft: "auto", marginRight: "auto" }}>
-            Por isso o plano principal é por viagem. O organizador paga uma vez e libera pro grupo
-            inteiro.
+            {betaAccessDescription} Queremos validar com grupos reais antes de ligar cobrança.
           </p>
         </div>
 
         <div className="grid3" style={{ alignItems: "stretch" }}>
-          <div className="plan">
-            <h3>Grátis</h3>
+          <div className="plan hi">
+            <span className="plan-badge">BETA ATIVA</span>
+            <h3>Acesso beta</h3>
             <div className="price">R$ 0</div>
-            <p className="tiny">Pra sentir o gosto</p>
+            <p className="tiny">Por tempo limitado</p>
             <ul className="feat">
-              <li>1 viagem ativa</li>
-              <li>Até 3 pessoas</li>
-              <li>3 roteiros por mês</li>
-              <li>Link público</li>
-              <li className="off">Votação e comentários</li>
+              <li>Crie viagens solo ou em grupo</li>
+              <li>Roteiro inicial com IA</li>
+              <li>Agenda, cofre e checklist</li>
+              <li>Ideias, votos e comentários</li>
+              <li>Gastos, saldos e resumo de acerto</li>
+              <li>Convites por link para testar com gente real</li>
             </ul>
-            <a href="/nova" className="btn ghost" style={{ marginTop: 20 }}>
-              Começar grátis
+            <a href="/entrar?mode=signup&next=%2Fnova" className="btn" style={{ marginTop: 20 }}>
+              Entrar na beta
             </a>
           </div>
 
-          <div className="plan hi">
-            <span className="plan-badge">MAIS ESCOLHIDO</span>
+          <div className="plan plan-muted">
             <h3>Por viagem</h3>
             <div className="price">
-              R$ 79 <small>uma vez</small>
+              R$ 79 <small>depois</small>
             </div>
-            <p className="tiny">Libera pro grupo inteiro</p>
+            <p className="tiny">Preço planejado pós-beta</p>
             <ul className="feat">
-              <li>Grupo ilimitado</li>
-              <li>Roteiros ilimitados</li>
-              <li>Votação e comentários</li>
-              <li>Despesas com Pix</li>
+              <li>Participantes e convites para o grupo</li>
+              <li>Agenda, cofre e checklist completos</li>
+              <li>Ideias, votos e comentários</li>
+              <li>Agente com próximos passos</li>
+              <li>Gastos, saldos e resumo de acerto</li>
               <li>Vale até 30 dias após a volta</li>
             </ul>
-            <a href="/nova" className="btn" style={{ marginTop: 20 }}>
-              Criar viagem
+            <a href="/entrar?mode=signup&next=%2Fnova" className="btn ghost" style={{ marginTop: 20 }}>
+              Usar beta grátis
             </a>
           </div>
 
-          <div className="plan">
+          <div className="plan plan-muted">
             <h3>Pro anual</h3>
             <div className="price">
-              R$ 149 <small>/ ano</small>
+              R$ 149 <small>depois</small>
             </div>
-            <p className="tiny">Pra quem viaja bastante</p>
+            <p className="tiny">Preço planejado pós-beta</p>
             <ul className="feat">
               <li>Viagens ilimitadas</li>
               <li>Tudo do plano por viagem</li>
-              <li>Otimização de rota</li>
-              <li>Histórico completo</li>
+              <li>Histórico completo das viagens</li>
+              <li>Recursos novos primeiro</li>
+              <li>Suporte prioritário</li>
+              <li>Painel com todas as viagens</li>
             </ul>
-            <a href="/nova" className="btn ghost" style={{ marginTop: 20 }}>
-              Assinar Pro
+            <a href="/entrar?mode=signup&next=%2Fapp" className="btn ghost" style={{ marginTop: 20 }}>
+              Entrar na beta
             </a>
           </div>
         </div>
@@ -354,6 +455,13 @@ export default function Home() {
         <h2 className="h2">Perguntas, respostas</h2>
         <div style={{ marginTop: 28 }}>
           <details>
+            <summary>Preciso pagar para testar?</summary>
+            <p>
+              Não. A beta está grátis para validar o produto com viagens reais. Os preços aparecem
+              como referência para quando a cobrança for ligada depois.
+            </p>
+          </details>
+          <details>
             <summary>Preciso viajar em grupo pra usar?</summary>
             <p>
               Não. Dá pra usar sozinho e receber o roteiro na hora. O grupo é onde o Planvoro
@@ -364,15 +472,31 @@ export default function Home() {
           <details>
             <summary>Quem eu convidar precisa criar conta?</summary>
             <p>
-              Não. A pessoa entra pelo link só com o primeiro nome e já marca as preferências.
-              Fricção de convite é o que mata app de grupo — tiramos essa barreira de propósito.
+              Sim, mas o acesso fica mais confiável. A pessoa cria a conta, entra na viagem e passa
+              a ter histórico, votos, comentários e gastos ligados ao próprio perfil.
             </p>
           </details>
           <details>
             <summary>A IA não vai inventar lugar que não existe?</summary>
             <p>
-              Todo lugar sugerido é conferido contra uma base de dados real antes de entrar no
-              roteiro. O que não é encontrado simplesmente não aparece.
+              O produto está preparado para marcar lugares conferidos e separar o que ainda precisa
+              de confirmação. Mesmo assim, horários, preços e disponibilidade devem ser revisados
+              antes de reservar.
+            </p>
+          </details>
+          <details>
+            <summary>Tem Pix?</summary>
+            <p>
+              Hoje o Planvoro calcula quem deve quanto para quem e organiza o resumo do acerto.
+              Pix integrado ainda não está ativo; por enquanto ele ajuda o grupo a fechar as contas
+              sem reconstruir tudo de memória.
+            </p>
+          </details>
+          <details>
+            <summary>Funciona no celular?</summary>
+            <p>
+              Sim. O Planvoro é web-first: funciona no navegador do celular, tablet ou computador,
+              sem instalar aplicativo nativo.
             </p>
           </details>
           <details>
@@ -387,15 +511,15 @@ export default function Home() {
             <summary>Dá pra usar durante a viagem?</summary>
             <p>
               Sim — e é onde ele fica mais útil. Roteiro do dia, despesas registradas na hora e o
-              acerto final por Pix quando todo mundo volta.
+              resumo final de quem deve quanto quando todo mundo volta.
             </p>
           </details>
           <details>
             <summary>Posso reservar voo e hotel por aqui?</summary>
             <p>
-              Ainda não. Hoje mostramos onde reservar e você fecha direto com o fornecedor.
-              Preferimos fazer o planejamento muito bem feito antes de virar mais uma agência de
-              viagem.
+              Não. O foco do Planvoro é armazenar e organizar tudo que você já comprou ou decidiu:
+              passagem, hotel, seguro, links, PDFs, horários, custos e pendências. A compra continua
+              direto com o fornecedor.
             </p>
           </details>
         </div>
@@ -411,9 +535,10 @@ export default function Home() {
             height={60}
             style={{ margin: "0 auto 20px", display: "block" }}
           />
-          <h2 className="h2">Comece agora, sozinho.</h2>
+          <h2 className="h2">Abra sua central de viagem.</h2>
           <p className="lead" style={{ margin: "16px auto 0", textAlign: "center" }}>
-            Leva dois minutos. Se der vontade de chamar alguém, o link está a um clique.
+            Leva dois minutos para criar o primeiro roteiro. Depois você adiciona reservas,
+            checklist, gastos e chama o grupo quando quiser.
           </p>
           <div
             style={{
@@ -424,7 +549,7 @@ export default function Home() {
               flexWrap: "wrap",
             }}
           >
-            <a href="/nova" className="btn lg">
+            <a href="/entrar?mode=signup&next=%2Fnova" className="btn lg">
               Criar viagem grátis
             </a>
           </div>

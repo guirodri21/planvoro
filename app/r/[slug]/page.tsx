@@ -9,14 +9,14 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params;
   const data = await getPublicTrip(slug);
-  if (!data) return { title: "Roteiro nao encontrado — Planvoro" };
+  if (!data) return { title: "Roteiro não encontrado — Planvoro" };
 
   const { trip } = data;
   const dias = tripDays(trip);
   const title = `Roteiro de ${dias} dias em ${trip.destination}`;
   const description = trip.is_solo
-    ? `Roteiro dia a dia em ${trip.destination}, com horarios, custo estimado e lugares verificados. Monte o seu de graca.`
-    : `Roteiro de grupo em ${trip.destination} para ${trip.party_size} pessoas, equilibrando as preferencias de todo mundo. Monte o seu de graca.`;
+    ? `Roteiro dia a dia em ${trip.destination}, com horários e custo estimado. Monte o seu de graça.`
+    : `Roteiro de grupo em ${trip.destination} para ${trip.party_size} pessoas, equilibrando as preferências de todo mundo. Monte o seu de graça.`;
 
   return {
     title: `${title} — Planvoro`,
@@ -47,7 +47,7 @@ export default async function RoteiroPublico({
   return (
     <>
       <div className="card">
-        <p className="eyebrow">Roteiro publico</p>
+        <p className="eyebrow">Roteiro público</p>
         <h1 style={{ marginBottom: 6 }}>
           {dias} dias em {trip.destination}
         </h1>
@@ -61,7 +61,7 @@ export default async function RoteiroPublico({
       {!itinerary ? (
         <div className="card">
           <p className="sub" style={{ margin: 0 }}>
-            Esse roteiro ainda nao foi gerado.
+            Esse roteiro ainda não foi gerado.
           </p>
         </div>
       ) : (
@@ -91,12 +91,12 @@ export default async function RoteiroPublico({
                     <div className="item-b">
                       <div className="item-t">
                         {item.title}
-                        {item.verified && <span className="badge b-ok">verificado</span>}
+                        {item.verified && <span className="badge b-ok">conferido</span>}
                       </div>
                       <div className="item-d">{item.description}</div>
                     </div>
                     <div className="cost">
-                      {item.cost_estimate ? `R$ ${item.cost_estimate.toFixed(0)}` : "gratis"}
+                      {item.cost_estimate ? `R$ ${item.cost_estimate.toFixed(0)}` : "grátis"}
                     </div>
                   </div>
                 ))}
@@ -109,8 +109,8 @@ export default async function RoteiroPublico({
       <div className="card cta-box">
         <h2 style={{ margin: "0 0 6px" }}>Monte o seu roteiro</h2>
         <p className="sub">
-          Sozinho ou com o grupo inteiro. A IA equilibra as preferencias de todo mundo e confere
-          se cada lugar existe mesmo. Gratis pra comecar.
+          Sozinho ou com o grupo inteiro. A IA equilibra as preferências de todo mundo e deixa
+          claro o que ainda precisa ser confirmado antes de reservar. Grátis para começar.
         </p>
         <a className="btn" href="/nova">
           Criar minha viagem

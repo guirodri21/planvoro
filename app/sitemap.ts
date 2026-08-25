@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { supabaseAdmin } from "@/lib/supabase";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro.app";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";
 
 export const revalidate = 3600;
 
@@ -29,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     return [...paginasFixas, ...roteiros];
   } catch {
-    // Sem chaves configuradas o build nao pode quebrar por causa do sitemap.
+    // Sem chaves configuradas, o build não pode quebrar por causa do sitemap.
     return paginasFixas;
   }
 }

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro.app";
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: ["/", "/r/"],
-        // A area de trabalho da viagem e privada do grupo: nao indexar.
+        // A área de trabalho da viagem é privada do grupo: não indexar.
         disallow: ["/v/", "/api/"],
       },
     ],

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const COLORS = ["#4ade80", "#22d3ee", "#f472b6", "#fbbf24", "#a78bfa", "#fb7185", "#38bdf8", "#34d399"];
@@ -17,6 +18,12 @@ function slugify(destination: string) {
 
 export async function POST(req: Request) {
   try {
+    const db = supabaseAdmin();
+    const user = await getUserFromRequest(req, db);
+    if (!user) {
+      return NextResponse.json({ error: "Entre na sua conta para criar uma viagem." }, { status: 401 });
+    }
+
     const body = await req.json();
     const {
       destination,
@@ -29,7 +36,9 @@ export async function POST(req: Request) {
       is_solo,
     } = body;
 
-    if (!destination || !start_date || !end_date || !organizer_name) {
+    const organizerName = String(organizer_name ?? "").trim() || displayNameFromUser(user);
+
+    if (!destination || !start_date || !end_date || !organizerName) {
       return NextResponse.json(
         { error: "Preencha destino, datas e seu nome." },
         { status: 400 }
@@ -39,7 +48,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "A volta nao pode ser antes da ida." }, { status: 400 });
     }
 
-    const db = supabaseAdmin();
     const { data: trip, error } = await db
       .from("trips")
       .insert({
@@ -60,11 +68,12 @@ export async function POST(req: Request) {
       .from("members")
       .insert({
         trip_id: trip.id,
-        name: organizer_name,
+        user_id: user.id,
+        name: organizerName,
         is_organizer: true,
         color: COLORS[0],
       })
-      .select()
+      .select("id")
       .single();
     if (memberError) throw memberError;
 
