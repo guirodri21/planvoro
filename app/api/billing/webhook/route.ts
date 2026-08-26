@@ -9,15 +9,19 @@ function stripeId(value: string | { id?: string } | null | undefined) {
   return typeof value === "string" ? value : value?.id ?? null;
 }
 
+/** O passe vale ate 90 dias depois do fim da viagem: acerto de contas,
+ *  comprovante e recibo continuam sendo consultados depois da volta. */
+const TRIP_PASS_GRACE_DAYS = 90;
+
 function tripAccessExpiresAt(endDate?: string | null) {
   const now = new Date();
   const fallback = new Date(now);
-  fallback.setDate(fallback.getDate() + 30);
+  fallback.setDate(fallback.getDate() + TRIP_PASS_GRACE_DAYS);
 
   if (!endDate) return fallback.toISOString();
 
   const expires = new Date(`${endDate}T23:59:59.000Z`);
-  expires.setDate(expires.getDate() + 30);
+  expires.setDate(expires.getDate() + TRIP_PASS_GRACE_DAYS);
   return (expires > fallback ? expires : fallback).toISOString();
 }
 

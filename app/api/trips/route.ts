@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
-import { tripsAllowedFor } from "@/lib/ai-limits";
+import { checkTripCreation } from "@/lib/ai-limits";
 import { slugify } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -40,21 +40,9 @@ export async function POST(req: Request) {
 
     // Teto da beta: conta viagens em que a pessoa e organizadora, nao as
     // que ela so participa a convite.
-    const { count: ownedTrips, error: countError } = await db
-      .from("members")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("is_organizer", true);
-    if (countError) throw countError;
-
-    const tripsAllowed = await tripsAllowedFor(db, user.id);
-    if ((ownedTrips ?? 0) >= tripsAllowed) {
-      return NextResponse.json(
-        {
-          error: `Seu plano permite ate ${tripsAllowed} viagens criadas. Arquive uma viagem antiga ou fale com a gente.`,
-        },
-        { status: 429 }
-      );
+    const tripLimitMessage = await checkTripCreation(db, user.id);
+    if (tripLimitMessage) {
+      return NextResponse.json({ error: tripLimitMessage }, { status: 429 });
     }
 
     const { data: trip, error } = await db

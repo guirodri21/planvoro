@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
-import { tripsAllowedFor } from "@/lib/ai-limits";
+import { checkTripCreation } from "@/lib/ai-limits";
 import { memberForUserInTrip } from "@/lib/guards";
 import { logError, logInfo, startTimer } from "@/lib/logger";
 import { slugify } from "@/lib/slug";
@@ -51,19 +51,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       return NextResponse.json({ error: "Essa viagem nao e publica." }, { status: 403 });
     }
 
-    const { count: ownedTrips, error: countError } = await db
-      .from("members")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("is_organizer", true);
-    if (countError) throw countError;
-
-    const tripsAllowed = await tripsAllowedFor(db, user.id);
-    if ((ownedTrips ?? 0) >= tripsAllowed) {
-      return NextResponse.json(
-        { error: `Seu plano permite ate ${tripsAllowed} viagens criadas.` },
-        { status: 429 }
-      );
+    const tripLimitMessage = await checkTripCreation(db, user.id);
+    if (tripLimitMessage) {
+      return NextResponse.json({ error: tripLimitMessage }, { status: 429 });
     }
 
     const body = await req.json().catch(() => ({}));

@@ -393,35 +393,35 @@ export default function Home() {
         <div className="grid3" style={{ alignItems: "stretch" }}>
           <div className="plan hi">
             <span className="plan-badge">BETA ATIVA</span>
-            <h3>Acesso beta</h3>
+            <h3>Grátis</h3>
             <div className="price">R$ 0</div>
-            <p className="tiny">Por tempo limitado</p>
+            <p className="tiny">Uma viagem ativa por vez</p>
             <ul className="feat">
-              <li>Crie viagens solo ou em grupo</li>
-              <li>Roteiro inicial com IA</li>
-              <li>Agenda, cofre e checklist</li>
-              <li>Ideias, votos e comentários</li>
-              <li>Gastos, saldos e resumo de acerto</li>
-              <li>Convites por link para testar com gente real</li>
+              <li>Roteiro por IA com verificação de lugar</li>
+              <li>Grupo ilimitado, sem cobrar convidado</li>
+              <li>Convite por link e por WhatsApp</li>
+              <li>Ideias, votação e comentários</li>
+              <li>Página pública do roteiro</li>
+              <li>Convidado nunca paga nada</li>
             </ul>
             <a href="/entrar?mode=signup&next=%2Fnova" className="btn" style={{ marginTop: 20 }}>
-              Entrar na beta
+              Começar de graça
             </a>
           </div>
 
-          <div className="plan plan-muted">
-            <h3>Por viagem</h3>
+          <div className="plan">
+            <h3>Passe de viagem</h3>
             <div className="price">
-              R$ 79 <small>depois</small>
+              R$ 29 <small>uma vez</small>
             </div>
-            <p className="tiny">Preço planejado pós-beta</p>
+            <p className="tiny">Uma viagem inteira, o grupo todo</p>
             <ul className="feat">
-              <li>Participantes e convites para o grupo</li>
-              <li>Agenda, cofre e checklist completos</li>
-              <li>Ideias, votos e comentários</li>
+              <li>Cofre de reservas com anexos</li>
+              <li>Gastos com divisão e acerto</li>
+              <li>Checklist e modo viagem</li>
               <li>Agente com próximos passos</li>
-              <li>Gastos, saldos e resumo de acerto</li>
-              <li>Vale até 30 dias após a volta</li>
+              <li>Só o organizador paga</li>
+              <li>Vale até 90 dias depois da volta</li>
             </ul>
             <a href="/entrar?mode=signup&next=%2Fnova" className="btn ghost" style={{ marginTop: 20 }}>
               Usar beta grátis
@@ -431,16 +431,16 @@ export default function Home() {
           <div className="plan plan-muted">
             <h3>Pro anual</h3>
             <div className="price">
-              R$ 149 <small>depois</small>
+              R$ 79 <small>por ano</small>
             </div>
-            <p className="tiny">Preço planejado pós-beta</p>
+            <p className="tiny">A partir da terceira viagem, sai mais barato</p>
             <ul className="feat">
-              <li>Viagens ilimitadas</li>
-              <li>Tudo do plano por viagem</li>
-              <li>Histórico completo das viagens</li>
+              <li>Tudo do Passe, em viagens ilimitadas</li>
+              <li>Importar reserva de PDF e print</li>
+              <li>Alertas com previsão de orçamento</li>
+              <li>Histórico das viagens antigas</li>
               <li>Recursos novos primeiro</li>
-              <li>Suporte prioritário</li>
-              <li>Painel com todas as viagens</li>
+              <li>Sem mensalidade</li>
             </ul>
             <a href="/entrar?mode=signup&next=%2Fapp" className="btn ghost" style={{ marginTop: 20 }}>
               Entrar na beta
@@ -457,8 +457,31 @@ export default function Home() {
           <details>
             <summary>Preciso pagar para testar?</summary>
             <p>
-              Não. A beta está grátis para validar o produto com viagens reais. Os preços aparecem
-              como referência para quando a cobrança for ligada depois.
+              Não. A beta está grátis para validar o produto com viagens reais. Os preços acima são
+              o que valerá quando a cobrança for ligada.
+            </p>
+          </details>
+          <details>
+            <summary>Quem eu convidar vai precisar pagar?</summary>
+            <p>
+              Nunca. Entrar na viagem, preencher preferências, votar, comentar e ver o roteiro são
+              grátis para sempre, para qualquer pessoa. Só o organizador paga, e só quando quiser
+              liberar os recursos do Passe.
+            </p>
+          </details>
+          <details>
+            <summary>Por que não tem mensalidade?</summary>
+            <p>
+              Porque quem viaja duas ou três vezes por ano usa o Planvoro uns dois meses por ano.
+              Cobrar todo mês por isso seria vender dez meses de nada. Você paga por viagem, ou uma
+              vez ao ano se viaja bastante.
+            </p>
+          </details>
+          <details>
+            <summary>Quando vale mais a pena o Pro?</summary>
+            <p>
+              A partir da terceira viagem. Três passes custam R$ 87 e o Pro anual custa R$ 79 —
+              é a mesma conta que você faria sozinho.
             </p>
           </details>
           <details>

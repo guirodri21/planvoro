@@ -13,16 +13,17 @@ export const BILLING_COPY: Record<
   }
 > = {
   trip_pass: {
-    label: "Planvoro por viagem",
-    description: "Libera grupo ilimitado, roteiros ilimitados, votos, comentários e gastos para uma viagem.",
-    amount: 7900,
+    label: "Passe de viagem",
+    description:
+      "Libera uma viagem inteira para o grupo todo. So o organizador paga. Vale ate 90 dias depois da volta.",
+    amount: 2900,
     priceEnv: "STRIPE_PRICE_TRIP_PASS",
     alternatePriceEnv: "STRIPE_TRIP_PASS_PRICE_ID",
   },
   pro_annual: {
     label: "Planvoro Pro anual",
-    description: "Viagens ilimitadas por um ano para quem viaja bastante.",
-    amount: 14900,
+    description: "Viagens ilimitadas por um ano, com importacao de reservas e historico completo.",
+    amount: 7900,
     priceEnv: "STRIPE_PRICE_PRO_ANNUAL",
     alternatePriceEnv: "STRIPE_PRO_ANNUAL_PRICE_ID",
   },

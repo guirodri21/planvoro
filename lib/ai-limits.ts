@@ -64,9 +64,19 @@ const PAID_LIMITS: Record<AiUsageKind, LimitRule> = {
 
 export const AI_LIMITS = FREE_LIMITS;
 
-/** Teto de viagens criadas por pessoa. */
-export const TRIPS_PER_USER = 12;
-export const TRIPS_PER_PRO_USER = 100;
+/**
+ * Quantas viagens ATIVAS sem passe uma pessoa pode organizar ao mesmo
+ * tempo. Viagem ativa e a que ainda nao terminou.
+ *
+ * Viagem com passe pago nao ocupa vaga: quem pagou nao pode ficar preso
+ * a uma viagem so. E o que faz a escada aparecer sozinha — na segunda
+ * viagem simultanea a pessoa escolhe entre pagar o passe ou assinar.
+ */
+export const FREE_ACTIVE_TRIPS = 1;
+
+/** Teto do Pro. Alto o bastante para nao incomodar, baixo o bastante
+ *  para um script nao criar viagem infinita. */
+export const PRO_ACTIVE_TRIPS = 100;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -112,9 +122,50 @@ export async function resolveBillingTier(
   return "free";
 }
 
-export async function tripsAllowedFor(db: SupabaseClient, userId: string) {
+/**
+ * Confere se a pessoa pode comecar mais uma viagem.
+ *
+ * Retorna `null` quando pode, ou a mensagem a mostrar quando nao pode.
+ */
+export async function checkTripCreation(
+  db: SupabaseClient,
+  userId: string
+): Promise<string | null> {
   const tier = await resolveBillingTier(db, userId);
-  return tier === "pro" ? TRIPS_PER_PRO_USER : TRIPS_PER_USER;
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: rows, error } = await db
+    .from("members")
+    .select("trip_id, trips!inner(end_date)")
+    .eq("user_id", userId)
+    .eq("is_organizer", true)
+    .gte("trips.end_date", today);
+  if (error) throw error;
+
+  const activeTripIds = (rows ?? []).map((row) => row.trip_id as string);
+
+  if (tier === "pro") {
+    return activeTripIds.length >= PRO_ACTIVE_TRIPS
+      ? `Voce ja tem ${PRO_ACTIVE_TRIPS} viagens ativas. Fale com a gente se precisar de mais.`
+      : null;
+  }
+
+  if (!activeTripIds.length) return null;
+
+  // Viagem paga nao conta: a vaga gratis fica livre de novo.
+  const { data: paid, error: paidError } = await db
+    .from("trip_entitlements")
+    .select("trip_id")
+    .in("trip_id", activeTripIds)
+    .eq("status", "paid");
+  if (paidError) throw paidError;
+
+  const paidIds = new Set((paid ?? []).map((row) => row.trip_id as string));
+  const unpaidActive = activeTripIds.filter((id) => !paidIds.has(id)).length;
+
+  if (unpaidActive < FREE_ACTIVE_TRIPS) return null;
+
+  return "O plano gratis cobre uma viagem ativa por vez. Libere a viagem atual com o Passe, assine o Pro, ou espere ela terminar.";
 }
 
 async function countEvents(
