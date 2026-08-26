@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useCallback, useEffect, useState, type CSSProperties } from "react";
+import { use, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -25,11 +25,17 @@ import {
   type TripChecklistCategory,
   type TripChecklistItem,
   type TripChecklistStatus,
+  type TripVaultAttachment,
   type TripVaultItem,
   type TripVaultKind,
   type TripVaultStatus,
   type Vote,
 } from "@/lib/types";
+import {
+  VAULT_ATTACHMENT_MAX_BYTES,
+  VAULT_ATTACHMENT_MIME_TYPES,
+  formatFileSize,
+} from "@/lib/vault-attachments";
 import { userDisplayName } from "@/lib/user-name";
 
 type Payload = {
@@ -41,6 +47,7 @@ type Payload = {
   comments: Comment[];
   expenses: Expense[];
   vault_items: TripVaultItem[];
+  vault_attachments: TripVaultAttachment[];
   checklist_items: TripChecklistItem[];
   ideas: Idea[];
   idea_votes: IdeaVote[];
@@ -397,6 +404,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     comments,
     expenses,
     vault_items,
+    vault_attachments,
     checklist_items,
     ideas,
     idea_votes,
@@ -651,6 +659,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               slug={slug}
               trip={trip}
               items={vault_items}
+              attachments={vault_attachments}
               members={members}
               me={me}
               onChange={load}
@@ -1828,6 +1837,7 @@ function TravelVaultView({
   slug,
   trip,
   items,
+  attachments,
   members,
   me,
   onChange,
@@ -1836,6 +1846,7 @@ function TravelVaultView({
   slug: string;
   trip: Trip;
   items: TripVaultItem[];
+  attachments: TripVaultAttachment[];
   members: Member[];
   me: Member;
   onChange: () => Promise<void> | void;
@@ -2077,6 +2088,13 @@ function TravelVaultView({
     } finally {
       setWorkingId("");
     }
+  }
+
+  const attachmentsByItem = new Map<string, TripVaultAttachment[]>();
+  for (const attachment of attachments) {
+    const list = attachmentsByItem.get(attachment.item_id);
+    if (list) list.push(attachment);
+    else attachmentsByItem.set(attachment.item_id, [attachment]);
   }
 
   const memberName = (memberId: string | null) =>
@@ -2448,6 +2466,15 @@ function TravelVaultView({
                 )}
               </div>
 
+              <VaultAttachmentsBlock
+                accessToken={accessToken}
+                slug={slug}
+                itemId={item.id}
+                attachments={attachmentsByItem.get(item.id) ?? []}
+                canManage={canManage(item)}
+                onChange={onChange}
+              />
+
               <div className="vault-card-actions">
                 <span className="tiny">Salvo por {memberName(item.member_id)}</span>
                 <div>
@@ -2476,6 +2503,175 @@ function TravelVaultView({
           ))
         )}
       </div>
+    </div>
+  );
+}
+
+function VaultAttachmentsBlock({
+  accessToken,
+  slug,
+  itemId,
+  attachments,
+  canManage,
+  onChange,
+}: {
+  accessToken: string | null;
+  slug: string;
+  itemId: string;
+  attachments: TripVaultAttachment[];
+  canManage: boolean;
+  onChange: () => Promise<void> | void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [workingId, setWorkingId] = useState("");
+  const [error, setError] = useState("");
+
+  async function uploadFile(file: File) {
+    if (!accessToken || uploading) return;
+
+    if (file.size > VAULT_ATTACHMENT_MAX_BYTES) {
+      setError(`Arquivo maior que ${formatFileSize(VAULT_ATTACHMENT_MAX_BYTES)}.`);
+      return;
+    }
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const body = new FormData();
+      body.append("file", file);
+
+      const res = await fetch(`/api/trips/${slug}/vault/${itemId}/attachments`, {
+        method: "POST",
+        headers: authHeaders(accessToken),
+        body,
+      });
+      const json = await readApiJson<{ attachment?: TripVaultAttachment; error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel anexar o arquivo.");
+
+      await onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao anexar arquivo.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  /**
+   * O bucket e privado: pedimos ao servidor uma signed URL curta na hora do
+   * clique, em vez de guardar link permanente no HTML.
+   */
+  async function openAttachment(attachment: TripVaultAttachment) {
+    if (!accessToken || workingId) return;
+
+    setWorkingId(attachment.id);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/trips/${slug}/vault/${itemId}/attachments/${attachment.id}`, {
+        headers: authHeaders(accessToken),
+      });
+      const json = await readApiJson<{ url?: string; error?: string }>(res);
+      if (!res.ok || !json.url) throw new Error(json.error ?? "Nao foi possivel abrir o anexo.");
+
+      window.open(json.url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao abrir anexo.");
+    } finally {
+      setWorkingId("");
+    }
+  }
+
+  async function removeAttachment(attachment: TripVaultAttachment) {
+    if (!accessToken || workingId) return;
+
+    setWorkingId(attachment.id);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/trips/${slug}/vault/${itemId}/attachments/${attachment.id}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      });
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel remover o anexo.");
+
+      await onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao remover anexo.");
+    } finally {
+      setWorkingId("");
+    }
+  }
+
+  return (
+    <div className="vault-attachments">
+      <div className="vault-attachments-head">
+        <span className="stat-label">Anexos</span>
+        {canManage && (
+          <>
+            <input
+              ref={inputRef}
+              className="hidden-file"
+              type="file"
+              accept={VAULT_ATTACHMENT_MIME_TYPES.join(",")}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void uploadFile(file);
+              }}
+            />
+            <button
+              className="btn ghost sm"
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={uploading || !accessToken}
+            >
+              {uploading ? "Enviando..." : "Anexar arquivo"}
+            </button>
+          </>
+        )}
+      </div>
+
+      {attachments.length === 0 ? (
+        <p className="tiny">
+          PDF, print ou comprovante ficam guardados aqui, visiveis so para quem participa da viagem.
+        </p>
+      ) : (
+        <ul className="vault-attachment-list">
+          {attachments.map((attachment) => (
+            <li key={attachment.id}>
+              <div>
+                <strong>{attachment.file_name}</strong>
+                <small>{formatFileSize(attachment.size_bytes)}</small>
+              </div>
+              <div>
+                <button
+                  className="btn ghost sm"
+                  type="button"
+                  onClick={() => openAttachment(attachment)}
+                  disabled={workingId === attachment.id || !accessToken}
+                >
+                  Abrir
+                </button>
+                {canManage && (
+                  <button
+                    className="btn ghost sm"
+                    type="button"
+                    onClick={() => removeAttachment(attachment)}
+                    disabled={workingId === attachment.id || !accessToken}
+                  >
+                    Remover
+                  </button>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {error && <div className="err">{error}</div>}
     </div>
   );
 }

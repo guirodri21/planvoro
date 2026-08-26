@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { VAULT_BUCKET } from "@/lib/vault-attachments";
 import { TRIP_VAULT_KINDS, TRIP_VAULT_STATUSES, type TripVaultKind, type TripVaultStatus } from "@/lib/types";
 
 const MAX_TITLE = 140;
@@ -183,6 +184,19 @@ export async function DELETE(
         { error: "So o organizador ou quem salvou este item pode remover." },
         { status: 403 }
       );
+    }
+
+    // A linha de anexo cai por cascade, mas o objeto no Storage nao:
+    // sem isso o bucket acumula arquivo orfao que ninguem mais consegue ver.
+    const { data: attachments, error: attachmentsError } = await db
+      .from("trip_vault_attachments")
+      .select("storage_path")
+      .eq("item_id", itemId)
+      .eq("trip_id", membership.tripId);
+    if (attachmentsError) throw attachmentsError;
+
+    if (attachments?.length) {
+      await db.storage.from(VAULT_BUCKET).remove(attachments.map((row) => row.storage_path));
     }
 
     const { error } = await db

@@ -166,6 +166,17 @@ export type TripVaultItem = {
   updated_at: string;
 };
 
+export type TripVaultAttachment = {
+  id: string;
+  trip_id: string;
+  item_id: string;
+  member_id: string | null;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  created_at: string;
+};
+
 export const TRIP_VAULT_KINDS: Array<{ value: TripVaultKind; label: string; hint: string }> = [
   { value: "flight", label: "Passagem / voo", hint: "Localizador, horários, aeroporto" },
   { value: "lodging", label: "Hospedagem", hint: "Hotel, Airbnb, check-in" },

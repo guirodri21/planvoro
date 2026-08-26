@@ -78,3 +78,18 @@ export async function memberIdsBelongToTrip(
 
   return (data?.length ?? 0) === uniqueIds.length;
 }
+
+export async function vaultItemForTrip(
+  db: SupabaseClient,
+  tripId: string,
+  itemId: string
+): Promise<{ id: string; member_id: string | null } | null> {
+  const { data } = await db
+    .from("trip_vault_items")
+    .select("id, member_id")
+    .eq("id", itemId)
+    .eq("trip_id", tripId)
+    .maybeSingle();
+
+  return data ?? null;
+}

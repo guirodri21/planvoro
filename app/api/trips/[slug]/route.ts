@@ -13,7 +13,17 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
     const user = await getUserFromRequest(req, db);
 
-    const [members, preferences, itineraries, expenses, ideas, vaultItems, checklistItems, viewerMember] = await Promise.all([
+    const [
+      members,
+      preferences,
+      itineraries,
+      expenses,
+      ideas,
+      vaultItems,
+      vaultAttachments,
+      checklistItems,
+      viewerMember,
+    ] = await Promise.all([
       db
         .from("members")
         .select("id, trip_id, name, is_organizer, color")
@@ -48,6 +58,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
         .order("starts_at", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false }),
       db
+        .from("trip_vault_attachments")
+        .select("id, trip_id, item_id, member_id, file_name, mime_type, size_bytes, created_at")
+        .eq("trip_id", trip.id)
+        .order("created_at", { ascending: true }),
+      db
         .from("trip_checklist_items")
         .select("id, trip_id, member_id, category, title, notes, due_date, status, source, created_at, updated_at")
         .eq("trip_id", trip.id)
@@ -70,6 +85,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     if (expenses.error) throw expenses.error;
     if (ideas.error) throw ideas.error;
     if (vaultItems.error) throw vaultItems.error;
+    if (vaultAttachments.error) throw vaultAttachments.error;
     if (checklistItems.error) throw checklistItems.error;
     if (viewerMember.error) throw viewerMember.error;
 
@@ -134,6 +150,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
       expenses: expenses.data ?? [],
       ideas: ideas.data ?? [],
       vault_items: vaultItems.data ?? [],
+      vault_attachments: vaultAttachments.data ?? [],
       checklist_items: checklistItems.data ?? [],
       idea_votes: ideaVotes,
       viewer_member_id: viewerMember.data?.id ?? null,
