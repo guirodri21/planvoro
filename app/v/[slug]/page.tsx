@@ -38,6 +38,7 @@ import {
   formatFileSize,
 } from "@/lib/vault-attachments";
 import { track } from "@/lib/analytics";
+import { buildPixPayload, detectPixKey, pixKeyLabel } from "@/lib/pix";
 import { whatsappShareUrl } from "@/lib/share";
 import { userDisplayName } from "@/lib/user-name";
 
@@ -699,6 +700,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               members={members}
               me={me}
               slug={slug}
+              tripName={trip.destination}
               onSaved={load}
             />
           )}
@@ -4268,12 +4270,157 @@ function ItemRow({
   );
 }
 
+/**
+ * Uma transferencia do acerto, com o Pix pronto.
+ *
+ * Sem chave cadastrada nao ha botao: mostrar "copiar Pix" e entregar um
+ * codigo quebrado seria pior do que dizer que falta a chave.
+ */
+function PixSettlementRow({
+  settlement,
+  tripName,
+}: {
+  settlement: ExpenseSettlement;
+  tripName: string;
+}) {
+  const [copied, setCopied] = useState(false);
+  const pixKey = settlement.to.pix_key ?? "";
+
+  async function copyPix() {
+    const payload = buildPixPayload({
+      key: pixKey,
+      amount: settlement.amount,
+      receiverName: settlement.to.name,
+      reference: tripName,
+    });
+    if (!payload) return;
+
+    try {
+      await navigator.clipboard.writeText(payload);
+      setCopied(true);
+      track("pix_copiado", { valor: settlement.amount });
+      window.setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(false);
+    }
+  }
+
+  return (
+    <div className="pix-row">
+      <span>
+        Voce paga {formatMoney(settlement.amount)} para {settlement.to.name}
+      </span>
+      {pixKey ? (
+        <button className="btn ghost sm" type="button" onClick={copyPix}>
+          {copied ? "Codigo copiado" : "Copiar Pix"}
+        </button>
+      ) : (
+        <span className="tiny">{settlement.to.name} ainda nao cadastrou a chave Pix.</span>
+      )}
+    </div>
+  );
+}
+
+/** Chave Pix da propria pessoa. Cada um cuida da sua. */
+function MyPixKey({
+  accessToken,
+  slug,
+  me,
+  onSaved,
+}: {
+  accessToken: string | null;
+  slug: string;
+  me: Member;
+  onSaved: () => Promise<void> | void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(me.pix_key ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const detected = detectPixKey(me.pix_key ?? "");
+
+  async function save() {
+    if (!accessToken || saving) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/trips/${slug}/pix`, {
+        method: "PUT",
+        headers: authJsonHeaders(accessToken),
+        body: JSON.stringify({ pix_key: value.trim() }),
+      });
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel salvar a chave.");
+
+      setOpen(false);
+      await onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao salvar a chave Pix.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="pix-key-box">
+      {!open ? (
+        <div className="pix-key-state">
+          <span className="tiny">
+            {me.pix_key
+              ? `Sua chave Pix: ${pixKeyLabel(detected.type)} cadastrada`
+              : "Cadastre sua chave Pix para o grupo te pagar em um toque."}
+          </span>
+          <button className="btn ghost sm" type="button" onClick={() => setOpen(true)}>
+            {me.pix_key ? "Trocar" : "Cadastrar chave"}
+          </button>
+        </div>
+      ) : (
+        <div className="pix-key-form">
+          <label>Sua chave Pix</label>
+          <input
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            placeholder="CPF, e-mail, telefone ou chave aleatoria"
+            autoComplete="off"
+          />
+          <span className="tiny">
+            Fica visivel para quem participa desta viagem. O Planvoro nao move dinheiro: o codigo
+            abre o app do seu banco, que confirma tudo antes.
+          </span>
+          {error && <div className="err">{error}</div>}
+          <div className="pix-key-actions">
+            <button
+              className="btn ghost sm"
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setValue(me.pix_key ?? "");
+                setError("");
+              }}
+              disabled={saving}
+            >
+              Cancelar
+            </button>
+            <button className="btn sm" type="button" onClick={save} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ExpensesView({
   accessToken,
   expenses,
   members,
   me,
   slug,
+  tripName,
   onSaved,
 }: {
   accessToken: string | null;
@@ -4281,6 +4428,7 @@ function ExpensesView({
   members: Member[];
   me: Member;
   slug: string;
+  tripName: string;
   onSaved: () => Promise<void> | void;
 }) {
   const [description, setDescription] = useState("");
@@ -4425,9 +4573,11 @@ function ExpensesView({
           {(mySettlementsToPay.length > 0 || mySettlementsToReceive.length > 0) && (
             <div className="expense-my-actions">
               {mySettlementsToPay.map((settlement) => (
-                <span key={`pay-${settlement.to.id}`}>
-                  Voce paga {formatMoney(settlement.amount)} para {settlement.to.name}
-                </span>
+                <PixSettlementRow
+                  key={`pay-${settlement.to.id}`}
+                  settlement={settlement}
+                  tripName={tripName}
+                />
               ))}
               {mySettlementsToReceive.map((settlement) => (
                 <span key={`receive-${settlement.from.id}`}>
@@ -4436,6 +4586,8 @@ function ExpensesView({
               ))}
             </div>
           )}
+
+          <MyPixKey accessToken={accessToken} slug={slug} me={me} onSaved={onSaved} />
         </div>
       </div>
 

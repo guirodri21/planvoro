@@ -4936,3 +4936,49 @@ details p {
 .locked-notice h3 {
   margin: 0;
 }
+
+/* Acerto por Pix */
+.pix-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pix-key-box {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.pix-key-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pix-key-form {
+  display: grid;
+  gap: 8px;
+}
+
+.pix-key-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 560px) {
+  .pix-row,
+  .pix-key-state {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pix-key-actions .btn {
+    flex: 1;
+  }
+}

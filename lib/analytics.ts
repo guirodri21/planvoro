@@ -83,6 +83,7 @@ export type Evento =
   // saida viral
   | "roteiro_compartilhado"
   | "viagem_duplicada"
+  | "pix_copiado"
   // limites e falhas que o usuario sente
   | "limite_atingido"
   // dinheiro

@@ -27,7 +27,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     ] = await Promise.all([
       db
         .from("members")
-        .select("id, trip_id, name, is_organizer, color")
+        .select("id, trip_id, name, is_organizer, color, pix_key")
         .eq("trip_id", trip.id)
         .order("created_at"),
       db

@@ -17,6 +17,8 @@ export type Member = {
   name: string;
   is_organizer: boolean;
   color: string;
+  /** Chave Pix para receber o acerto. Exibida ao grupo, nunca validada. */
+  pix_key?: string | null;
 };
 
 export type Preference = {
