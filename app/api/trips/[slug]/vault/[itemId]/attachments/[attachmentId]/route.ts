@@ -45,19 +45,27 @@ async function loadAttachment(req: Request, ctx: Ctx) {
   return { db, membership, item, attachment };
 }
 
-/** Devolve uma signed URL curta. O bucket e privado: o link expira em 2 minutos. */
+/**
+ * Devolve uma signed URL curta. O bucket e privado: o link expira em 2 minutos.
+ *
+ * Por padrao o link abre na propria aba (PDF e imagem tem preview nativo).
+ * Com `?download=1` o Storage devolve Content-Disposition: attachment.
+ */
 export async function GET(req: Request, ctx: Ctx) {
   try {
     const loaded = await loadAttachment(req, ctx);
     if ("error" in loaded) return loaded.error;
 
     const { db, attachment } = loaded;
+    const wantsDownload = new URL(req.url).searchParams.get("download") === "1";
 
     const { data, error } = await db.storage
       .from(VAULT_BUCKET)
-      .createSignedUrl(attachment.storage_path, SIGNED_URL_TTL_SECONDS, {
-        download: attachment.file_name,
-      });
+      .createSignedUrl(
+        attachment.storage_path,
+        SIGNED_URL_TTL_SECONDS,
+        wantsDownload ? { download: attachment.file_name } : undefined
+      );
     if (error) throw error;
     if (!data?.signedUrl) {
       return NextResponse.json({ error: "Nao foi possivel abrir este anexo." }, { status: 404 });

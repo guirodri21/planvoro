@@ -2689,16 +2689,18 @@ function VaultAttachmentsBlock({
    * O bucket e privado: pedimos ao servidor uma signed URL curta na hora do
    * clique, em vez de guardar link permanente no HTML.
    */
-  async function openAttachment(attachment: TripVaultAttachment) {
+  async function openAttachment(attachment: TripVaultAttachment, download = false) {
     if (!accessToken || workingId) return;
 
     setWorkingId(attachment.id);
     setError("");
 
     try {
-      const res = await fetch(`/api/trips/${slug}/vault/${itemId}/attachments/${attachment.id}`, {
-        headers: authHeaders(accessToken),
-      });
+      const query = download ? "?download=1" : "";
+      const res = await fetch(
+        `/api/trips/${slug}/vault/${itemId}/attachments/${attachment.id}${query}`,
+        { headers: authHeaders(accessToken) }
+      );
       const json = await readApiJson<{ url?: string; error?: string }>(res);
       if (!res.ok || !json.url) throw new Error(json.error ?? "Nao foi possivel abrir o anexo.");
 
@@ -2780,6 +2782,14 @@ function VaultAttachmentsBlock({
                   disabled={workingId === attachment.id || !accessToken}
                 >
                   Abrir
+                </button>
+                <button
+                  className="btn ghost sm"
+                  type="button"
+                  onClick={() => openAttachment(attachment, true)}
+                  disabled={workingId === attachment.id || !accessToken}
+                >
+                  Baixar
                 </button>
                 {canManage && (
                   <button
