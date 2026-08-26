@@ -5208,3 +5208,44 @@ details p {
     flex: 1;
   }
 }
+
+/* ---- Barra de navegação: caber sem quebrar ---- */
+
+/* Link de menu quebrando em duas linhas engorda a barra inteira. */
+.navlinks a,
+.nav-actions .btn,
+.nav-user {
+  white-space: nowrap;
+}
+
+.nav-user {
+  max-width: 140px;
+}
+
+/* Entre 960 e 1180 os links ainda aparecem, mas o espaço aperta. */
+@media (max-width: 1180px) {
+  .navlinks {
+    gap: 18px;
+    font-size: 14px;
+  }
+
+  .nv {
+    gap: 12px;
+    padding-left: 16px;
+  }
+
+  .nav-actions {
+    gap: 8px;
+  }
+
+  .nav-user {
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 1040px) {
+  /* A saudação é a primeira a sair: é a que menos faz falta. */
+  .nav-user {
+    display: none;
+  }
+}

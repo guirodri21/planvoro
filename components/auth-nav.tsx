@@ -35,17 +35,20 @@ export function AuthNav() {
     );
   }
 
+  // So o primeiro nome: o sobrenome nao acrescenta nada aqui e empurrava a
+  // barra ate os links quebrarem em duas linhas.
+  const firstName = userDisplayName(user).trim().split(/\s+/)[0];
+
   return (
     <div className="nav-actions">
-      <span className="nav-user">Oi, {userDisplayName(user)}</span>
-      <a href="/app" className="btn ghost sm">
-        Minhas viagens
-      </a>
+      <span className="nav-user" title={userDisplayName(user)}>
+        Oi, {firstName}
+      </span>
       <a href="/nova" className="btn sm">
         Criar viagem
       </a>
       <button type="button" className="btn ghost sm" onClick={handleSignOut}>
-        Sair da conta
+        Sair
       </button>
     </div>
   );

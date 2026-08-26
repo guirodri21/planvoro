@@ -3,6 +3,7 @@ import Image from "next/image";
 import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
 import Analytics from "@/app/analytics";
 import { AuthNav } from "@/components/auth-nav";
+import { NavLinks } from "@/components/nav-links";
 import { AuthProvider } from "@/components/auth-provider";
 import { OfflineBanner } from "@/components/offline-banner";
 import { ServiceWorkerRegistrar } from "@/components/service-worker";
@@ -118,14 +119,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Image src="/logo.png" alt="" width={28} height={28} priority />
                   planvoro
                 </a>
-                <div className="navlinks">
-                  <a href="/#como">Como funciona</a>
-                  <a href="/#roteiro">Roteiro</a>
-                  <a href="/#precos">Preços</a>
-                  <a href="/app">Minhas viagens</a>
-                  <a href="/historico">Histórico</a>
-                  <a href="/#faq">Dúvidas</a>
-                </div>
+                <NavLinks />
                 <AuthNav />
               </div>
             </div>
