@@ -1,21 +1,10 @@
 import { NextResponse } from "next/server";
 import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
 import { TRIPS_PER_USER } from "@/lib/ai-limits";
+import { slugify } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const COLORS = ["#4ade80", "#22d3ee", "#f472b6", "#fbbf24", "#a78bfa", "#fb7185", "#38bdf8", "#34d399"];
-
-function slugify(destination: string) {
-  const base = destination
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 28);
-  const suffix = Math.random().toString(36).slice(2, 7);
-  return `${base || "viagem"}-${suffix}`;
-}
 
 export async function POST(req: Request) {
   try {

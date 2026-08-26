@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { DuplicateTrip } from "@/components/duplicate-trip";
 import { RoteiroShare } from "@/components/roteiro-share";
 import { formatBR, getPublicTrip, tripDays } from "@/lib/public";
 import { buildItinerarySummary } from "@/lib/share";
@@ -120,14 +121,17 @@ export default async function RoteiroPublico({
       )}
 
       <div className="card cta-box no-print">
-        <h2 style={{ margin: "0 0 6px" }}>Monte o seu roteiro</h2>
+        <h2 style={{ margin: "0 0 6px" }}>Gostou deste roteiro?</h2>
         <p className="sub">
-          Sozinho ou com o grupo inteiro. A IA equilibra as preferências de todo mundo e deixa
-          claro o que ainda precisa ser confirmado antes de reservar. Grátis para começar.
+          Leve para a sua conta e edite à vontade: troque dias, ajuste horários, convide o grupo e
+          gere de novo com as preferências de todo mundo. Grátis para começar.
         </p>
-        <a className="btn" href="/nova">
-          Criar minha viagem
-        </a>
+
+        {itinerary && <DuplicateTrip slug={slug} />}
+
+        <p className="tiny" style={{ marginTop: 14 }}>
+          Ou <a href="/nova">comece uma viagem do zero</a>.
+        </p>
       </div>
     </>
   );

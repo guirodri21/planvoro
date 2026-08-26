@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
+import { DuplicateTrip } from "@/components/duplicate-trip";
 import { useAuth } from "@/components/auth-provider";
 import {
   DAILY_BUDGETS,
@@ -4735,6 +4736,15 @@ function AfterItinerary({
           >
             PDF
           </a>
+        </div>
+
+        <div className="duplicate-inline">
+          <h4>Repetir esta viagem</h4>
+          <p className="sub">
+            Copia destino, datas e roteiro para uma viagem nova e sua. Cofre, gastos e checklist
+            ficam onde estao.
+          </p>
+          <DuplicateTrip slug={slug} label="Duplicar viagem" />
         </div>
       </div>
     </div>

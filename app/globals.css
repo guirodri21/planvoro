@@ -4898,3 +4898,29 @@ details p {
     margin: 16mm 14mm;
   }
 }
+
+.duplicate-trip {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+@media (max-width: 480px) {
+  .duplicate-trip,
+  .duplicate-trip .btn {
+    width: 100%;
+  }
+}
+
+.duplicate-inline {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+  display: grid;
+  gap: 6px;
+}
+
+.duplicate-inline h4 {
+  margin: 0;
+  font-size: 15px;
+}

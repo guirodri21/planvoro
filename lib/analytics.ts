@@ -82,6 +82,7 @@ export type Evento =
   | "agente_pergunta_feita"
   // saida viral
   | "roteiro_compartilhado"
+  | "viagem_duplicada"
   // limites e falhas que o usuario sente
   | "limite_atingido"
   // dinheiro
