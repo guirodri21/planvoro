@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { reserveAiUsage } from "@/lib/ai-limits";
+import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
 import { currentModelName, datasEntre, generateItinerary } from "@/lib/generate";
 import { verifyPlace, type PlaceInfo } from "@/lib/places";
@@ -24,6 +25,9 @@ type ExistingItinerary = {
 };
 
 export async function POST(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const elapsed = startTimer();
+  const logCtx: { userId?: string; tripId?: string } = {};
+
   try {
     const { slug } = await ctx.params;
     const db = supabaseAdmin();
@@ -37,12 +41,16 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
     }
 
+    logCtx.userId = user.id;
+    logCtx.tripId = membership.tripId;
+
     const limitMessage = await reserveAiUsage(db, {
       kind: "itinerary_generation",
       userId: user.id,
       tripId: membership.tripId,
     });
     if (limitMessage) {
+      logWarn({ event: "itinerary_generation_limited", route: "trips/[slug]/generate", ...logCtx });
       return NextResponse.json({ error: limitMessage }, { status: 429 });
     }
 
@@ -207,6 +215,16 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
 
     const diasGerados = allDates.filter((date) => existingDates.has(date)).length;
 
+    logInfo({
+      event: "itinerary_generated",
+      route: "trips/[slug]/generate",
+      ...logCtx,
+      durationMs: elapsed(),
+      diasGerados,
+      diasTotais: allDates.length,
+      concluido: diasGerados >= allDates.length,
+    });
+
     return NextResponse.json({
       ok: true,
       version: itinerary.version,
@@ -218,6 +236,13 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao gerar o roteiro.";
+    logError({
+      event: "itinerary_generation_failed",
+      route: "trips/[slug]/generate",
+      ...logCtx,
+      durationMs: elapsed(),
+      error: e,
+    });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

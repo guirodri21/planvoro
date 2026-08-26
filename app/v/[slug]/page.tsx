@@ -36,6 +36,7 @@ import {
   VAULT_ATTACHMENT_MIME_TYPES,
   formatFileSize,
 } from "@/lib/vault-attachments";
+import { track } from "@/lib/analytics";
 import { userDisplayName } from "@/lib/user-name";
 
 type Payload = {
@@ -441,7 +442,10 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
           headers: authJsonHeaders(accessToken),
         });
         const json = await readApiJson<GenerateResponse>(res);
-        if (!res.ok) throw new Error(json.error ?? "Nao foi possivel gerar o roteiro.");
+        if (!res.ok) {
+          if (res.status === 429) track("limite_atingido", { acao: "roteiro" });
+          throw new Error(json.error ?? "Nao foi possivel gerar o roteiro.");
+        }
 
         if (json.dias_totais) {
           setProgress({
@@ -462,7 +466,9 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
       }
 
       setProgress(null);
+      track("roteiro_gerado", { destino: trip.destination });
     } catch (e) {
+      track("roteiro_falhou");
       setError(e instanceof Error ? e.message : "Erro ao gerar.");
     }
 
@@ -2040,8 +2046,12 @@ function TravelVaultView({
         body: JSON.stringify({ text }),
       });
       const json = await readApiJson<{ draft?: VaultImportDraft; error?: string }>(res);
-      if (!res.ok || !json.draft) throw new Error(json.error ?? "Nao foi possivel importar esse texto.");
+      if (!res.ok || !json.draft) {
+        if (res.status === 429) track("limite_atingido", { acao: "importacao_cofre" });
+        throw new Error(json.error ?? "Nao foi possivel importar esse texto.");
+      }
 
+      track("cofre_importacao_usada", { confianca: json.draft.confidence });
       applyImportDraft(json.draft);
     } catch (e) {
       setImportError(e instanceof Error ? e.message : "Erro ao importar reserva.");
@@ -2067,6 +2077,8 @@ function TravelVaultView({
 
       // O item ja esta salvo. Se um anexo falhar daqui pra frente, o item
       // continua valendo: avisamos o que nao subiu em vez de desfazer tudo.
+      track("cofre_item_salvo", { tipo: form.kind, edicao: Boolean(editingId) });
+
       const createdId = editingId ? "" : json.item?.id;
       if (createdId && pendingFiles.length && accessToken) {
         setUploadingPending(true);
@@ -2640,6 +2652,9 @@ async function uploadVaultAttachment(
   const json = await readApiJson<{ attachment?: TripVaultAttachment; error?: string }>(res);
   if (!res.ok) throw new Error(json.error ?? "Nao foi possivel anexar o arquivo.");
 
+  // So tipo e tamanho: nome de arquivo pode carregar dado pessoal.
+  track("cofre_anexo_enviado", { mime: file.type, bytes: file.size });
+
   return json.attachment;
 }
 
@@ -2874,8 +2889,12 @@ function TravelAgentView({
         body: JSON.stringify({ question: cleanQuestion }),
       });
       const json = await readApiJson<AgentReply & { error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel falar com o agente.");
+      if (!res.ok) {
+        if (res.status === 429) track("limite_atingido", { acao: "agente" });
+        throw new Error(json.error ?? "Nao foi possivel falar com o agente.");
+      }
 
+      track("agente_pergunta_feita");
       setReply(json);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao falar com o agente.");

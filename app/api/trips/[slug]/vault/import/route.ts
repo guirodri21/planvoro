@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { reserveAiUsage } from "@/lib/ai-limits";
+import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
 import { importVaultDraftFromText } from "@/lib/vault-import";
 import type { Trip } from "@/lib/types";
@@ -12,6 +13,9 @@ const MIN_IMPORT_TEXT = 40;
 const MAX_IMPORT_TEXT = 12_000;
 
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const elapsed = startTimer();
+  const logCtx: { userId?: string; tripId?: string } = {};
+
   try {
     const { slug } = await ctx.params;
     const body = await req.json().catch(() => ({}));
@@ -41,12 +45,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
     }
 
+    logCtx.userId = user.id;
+    logCtx.tripId = membership.tripId;
+
     const limitMessage = await reserveAiUsage(db, {
       kind: "vault_import",
       userId: user.id,
       tripId: membership.tripId,
     });
     if (limitMessage) {
+      logWarn({ event: "vault_import_limited", route: "trips/[slug]/vault/import", ...logCtx });
       return NextResponse.json({ error: limitMessage }, { status: 429 });
     }
 
@@ -60,9 +68,26 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const draft = await importVaultDraftFromText(trip as Trip, text);
 
+    logInfo({
+      event: "vault_import_drafted",
+      route: "trips/[slug]/vault/import",
+      ...logCtx,
+      durationMs: elapsed(),
+      textLength: text.length,
+      kind: draft?.kind,
+      confidence: draft?.confidence,
+    });
+
     return NextResponse.json({ ok: true, draft });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao importar reserva.";
+    logError({
+      event: "vault_import_failed",
+      route: "trips/[slug]/vault/import",
+      ...logCtx,
+      durationMs: elapsed(),
+      error: e,
+    });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

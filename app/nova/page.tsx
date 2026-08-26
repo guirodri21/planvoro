@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import { BUDGET_BANDS, DAILY_BUDGETS, INTERESTS, RESTRICTIONS, STYLES } from "@/lib/types";
+import { track } from "@/lib/analytics";
 import { userDisplayName } from "@/lib/user-name";
 
 type TripKind = "solo" | "couple" | "friends" | "family" | "work";
@@ -259,7 +260,12 @@ export default function NovaViagem() {
         }),
       });
       const created = await createRes.json();
-      if (!createRes.ok) throw new Error(created.error ?? "Não foi possível criar a viagem.");
+      if (!createRes.ok) {
+        if (createRes.status === 429) track("limite_atingido", { acao: "criar_viagem" });
+        throw new Error(created.error ?? "Não foi possível criar a viagem.");
+      }
+
+      track("viagem_criada", { tipo: form.trip_kind, solo: isSolo });
 
       const slug = String(created.slug);
 

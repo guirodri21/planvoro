@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError, logInfo, startTimer } from "@/lib/logger";
 import type Stripe from "stripe";
 import { timestampFromSeconds } from "@/lib/billing";
 import { stripeClient, stripeWebhookSecret } from "@/lib/stripe";
@@ -106,6 +107,9 @@ async function handleSubscription(subscription: Stripe.Subscription) {
 }
 
 export async function POST(req: Request) {
+  const elapsed = startTimer();
+  let eventType = "unknown";
+
   try {
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
@@ -118,6 +122,8 @@ export async function POST(req: Request) {
       signature,
       stripeWebhookSecret()
     );
+
+    eventType = event.type;
 
     switch (event.type) {
       case "checkout.session.completed":
@@ -135,9 +141,23 @@ export async function POST(req: Request) {
         break;
     }
 
+    logInfo({
+      event: "stripe_webhook_handled",
+      route: "billing/webhook",
+      stripeEvent: eventType,
+      durationMs: elapsed(),
+    });
+
     return NextResponse.json({ received: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro no webhook do Stripe.";
+    logError({
+      event: "stripe_webhook_failed",
+      route: "billing/webhook",
+      stripeEvent: eventType,
+      durationMs: elapsed(),
+      error: e,
+    });
     const status = msg.includes("STRIPE_") ? 503 : 400;
     return NextResponse.json({ error: msg }, { status });
   }

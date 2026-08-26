@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { reserveAiUsage } from "@/lib/ai-limits";
+import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
 import { answerTravelAgentQuestion } from "@/lib/travel-agent";
 import type { Itinerary } from "@/lib/types";
@@ -9,6 +10,9 @@ import type { Itinerary } from "@/lib/types";
 export const maxDuration = 35;
 
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const elapsed = startTimer();
+  const logCtx: { userId?: string; tripId?: string } = {};
+
   try {
     const { slug } = await ctx.params;
     const body = await req.json().catch(() => ({}));
@@ -29,12 +33,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
     }
 
+    logCtx.userId = user.id;
+    logCtx.tripId = membership.tripId;
+
     const limitMessage = await reserveAiUsage(db, {
       kind: "agent_question",
       userId: user.id,
       tripId: membership.tripId,
     });
     if (limitMessage) {
+      logWarn({ event: "agent_limited", route: "trips/[slug]/agent", ...logCtx });
       return NextResponse.json({ error: limitMessage }, { status: 429 });
     }
 
@@ -120,9 +128,24 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       question
     );
 
+    logInfo({
+      event: "agent_answered",
+      route: "trips/[slug]/agent",
+      ...logCtx,
+      durationMs: elapsed(),
+      questionLength: question.length,
+    });
+
     return NextResponse.json({ ok: true, ...answer });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao falar com o agente.";
+    logError({
+      event: "agent_failed",
+      route: "trips/[slug]/agent",
+      ...logCtx,
+      durationMs: elapsed(),
+      error: e,
+    });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

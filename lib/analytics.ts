@@ -47,13 +47,13 @@ export function pageview(rota: string) {
 }
 
 /**
- * Amarra os eventos a pessoa. No MVP nao ha login: a identidade e o
- * member_id que o convite gerou. E o suficiente para fechar o funil
- * e nao carrega dado pessoal alem do primeiro nome.
+ * Amarra os eventos a pessoa. Hoje existe Supabase Auth, entao o ideal e
+ * passar o id do usuario; o member_id continua aceito para o caso de
+ * telas que so conhecem a participacao na viagem.
  */
-export function identificar(memberId: string, props?: Props) {
+export function identificar(id: string, props?: Props) {
   if (!KEY || typeof window === "undefined") return;
-  posthog.identify(memberId, props);
+  posthog.identify(id, props);
 }
 
 /**
@@ -74,4 +74,13 @@ export type Evento =
   | "roteiro_falhou"
   // decisao em grupo
   | "voto_registrado"
-  | "comentario_enviado";
+  | "comentario_enviado"
+  // central da viagem
+  | "cofre_item_salvo"
+  | "cofre_anexo_enviado"
+  | "cofre_importacao_usada"
+  | "agente_pergunta_feita"
+  // limites e falhas que o usuario sente
+  | "limite_atingido"
+  // dinheiro
+  | "checkout_iniciado";

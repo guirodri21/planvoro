@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logError, logInfo, startTimer } from "@/lib/logger";
 import { getUserFromRequest } from "@/lib/auth";
 import { sendTripInviteEmails } from "@/lib/email";
 import { memberForUserInTrip } from "@/lib/guards";
@@ -22,6 +23,8 @@ function normalizeEmails(value: unknown) {
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const elapsed = startTimer();
+
   try {
     const { slug } = await ctx.params;
     const db = supabaseAdmin();
@@ -79,9 +82,24 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       trip,
     });
 
+    // So a contagem: endereco de e-mail e dado pessoal, nao vai para o log.
+    logInfo({
+      event: "trip_invites_sent",
+      route: "trips/[slug]/invite-email",
+      tripId: membership.tripId,
+      recipientCount: recipientEmails.length,
+      durationMs: elapsed(),
+    });
+
     return NextResponse.json(result);
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao enviar os convites.";
+    logError({
+      event: "trip_invites_failed",
+      route: "trips/[slug]/invite-email",
+      durationMs: elapsed(),
+      error: e,
+    });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
