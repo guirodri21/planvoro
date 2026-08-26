@@ -95,6 +95,26 @@ type GenerateResponse = {
   dias_totais?: number;
 };
 
+type VaultImportDraft = {
+  kind: TripVaultKind;
+  status: TripVaultStatus;
+  title: string;
+  provider: string | null;
+  confirmation_code: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  location: string | null;
+  amount: number | null;
+  currency: string;
+  url: string | null;
+  notes: string | null;
+  confidence: number;
+  missing_fields: string[];
+  summary: string;
+};
+
+type VaultImportResult = Pick<VaultImportDraft, "confidence" | "missing_fields" | "summary">;
+
 const IDEA_CATEGORIES = [
   "Restaurante",
   "Passeio",
@@ -1841,6 +1861,10 @@ function TravelVaultView({
   const [saving, setSaving] = useState(false);
   const [workingId, setWorkingId] = useState("");
   const [error, setError] = useState("");
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
+  const [importResult, setImportResult] = useState<VaultImportResult | null>(null);
 
   const totalKnown = items.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
   const attentionCount = items.filter((item) => item.status === "attention").length;
@@ -1899,11 +1923,15 @@ function TravelVaultView({
   function resetForm() {
     setForm({ ...emptyForm });
     setEditingId("");
+    setImportError("");
+    setImportResult(null);
   }
 
   function startEditing(item: TripVaultItem) {
     setEditingId(item.id);
     setError("");
+    setImportError("");
+    setImportResult(null);
     setForm({
       kind: item.kind,
       status: item.status,
@@ -1926,6 +1954,60 @@ function TravelVaultView({
       starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : null,
       ends_at: form.ends_at ? new Date(form.ends_at).toISOString() : null,
     };
+  }
+
+  function applyImportDraft(draft: VaultImportDraft) {
+    setEditingId("");
+    setError("");
+    setForm({
+      kind: draft.kind,
+      status: draft.status,
+      title: draft.title,
+      provider: draft.provider ?? "",
+      confirmation_code: draft.confirmation_code ?? "",
+      starts_at: toDateTimeLocalValue(draft.starts_at),
+      ends_at: toDateTimeLocalValue(draft.ends_at),
+      location: draft.location ?? "",
+      amount: draft.amount == null ? "" : String(draft.amount),
+      currency: draft.currency,
+      url: draft.url ?? "",
+      notes: draft.notes ?? "",
+    });
+    setImportResult({
+      confidence: draft.confidence,
+      missing_fields: draft.missing_fields,
+      summary: draft.summary,
+    });
+  }
+
+  async function importReservation() {
+    if (!accessToken || importing) return;
+
+    const text = importText.trim();
+    if (text.length < 40) {
+      setImportError("Cole um email, recibo ou confirmacao com mais detalhes.");
+      return;
+    }
+
+    setImporting(true);
+    setImportError("");
+    setError("");
+
+    try {
+      const res = await fetch(`/api/trips/${slug}/vault/import`, {
+        method: "POST",
+        headers: authJsonHeaders(accessToken),
+        body: JSON.stringify({ text }),
+      });
+      const json = await readApiJson<{ draft?: VaultImportDraft; error?: string }>(res);
+      if (!res.ok || !json.draft) throw new Error(json.error ?? "Nao foi possivel importar esse texto.");
+
+      applyImportDraft(json.draft);
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : "Erro ao importar reserva.");
+    } finally {
+      setImporting(false);
+    }
   }
 
   async function saveItem() {
@@ -2036,6 +2118,63 @@ function TravelVaultView({
             <strong>{formatMoney(totalKnown)}</strong>
           </div>
         </div>
+
+        {!editingId && (
+          <div className="vault-import-box">
+            <div className="vault-import-head">
+              <div>
+                <span className="badge b-warn">importacao inteligente</span>
+                <h3>Colar confirmacao</h3>
+              </div>
+              <span className="tiny">Nada e salvo automaticamente.</span>
+            </div>
+            <p className="sub">
+              Cole um email, recibo ou texto de reserva. O Planvoro extrai um rascunho para voce
+              revisar antes de guardar no Cofre.
+            </p>
+            <textarea
+              rows={5}
+              value={importText}
+              onChange={(event) => setImportText(event.target.value)}
+              placeholder="Ex: confirmacao de voo, reserva do hotel, seguro viagem, ingresso, transfer..."
+            />
+            <div className="vault-import-actions">
+              <button
+                className="btn ghost"
+                type="button"
+                onClick={importReservation}
+                disabled={importing || !accessToken || importText.trim().length < 40}
+              >
+                {importing ? "Extraindo..." : "Extrair para o formulario"}
+              </button>
+              <button
+                className="btn ghost"
+                type="button"
+                onClick={() => {
+                  setImportText("");
+                  setImportError("");
+                  setImportResult(null);
+                }}
+                disabled={importing || !importText.trim()}
+              >
+                Limpar texto
+              </button>
+            </div>
+            {importError && <div className="err">{importError}</div>}
+            {importResult && (
+              <div className="vault-import-result">
+                <strong>Rascunho preenchido. Confira antes de salvar.</strong>
+                <span>{importResult.summary}</span>
+                <small>
+                  Confianca estimada: {Math.round(importResult.confidence * 100)}%
+                  {importResult.missing_fields.length
+                    ? ` · Falta conferir: ${importResult.missing_fields.join(", ")}`
+                    : " · Sem campos criticos pendentes"}
+                </small>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="grid2 tight">
           <div>
