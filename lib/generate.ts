@@ -43,7 +43,7 @@ const GEMINI_MODEL = (process.env.GEMINI_MODEL ?? "gemini-3.6-flash").replace(/^
 const GEMINI_TIMEOUT_MS = Number(process.env.GEMINI_TIMEOUT_MS ?? 42_000);
 const GEMINI_MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_OUTPUT_TOKENS ?? 7000);
 const GEMINI_THINKING_LEVEL = (process.env.GEMINI_THINKING_LEVEL ?? "LOW").toUpperCase();
-const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-sonnet-4-5";
+const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5";
 const MAX_IDEAS_IN_PROMPT = 20;
 
 export function currentModelName() {

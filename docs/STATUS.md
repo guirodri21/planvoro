@@ -60,7 +60,59 @@ motivo, para achar erro de prompt), `voto_registrado`, `comentario_enviado`.
 Sem `NEXT_PUBLIC_POSTHOG_KEY` tudo isso vira no-op silencioso — o app funciona
 igual, só não mede. Sem autocapture e sem gravação de sessão, por LGPD.
 
+## Adendo — 26 de agosto de 2026
+
+### A conexão com a Vercel funciona; o 403/404 era CLI deslogada
+
+O item 3 do backlog acima está **resolvido**. O projeto `planvoro-app` sempre
+existiu, ligado ao repositório, com deploy automático. Produção está no ar com
+6 viagens reais no banco:
+
+    https://planvoro-app.vercel.app/api/keepalive -> {"ok":true,"trips":6}
+
+### Corrigido: o Nominatim recebia um e-mail de contato falso
+
+`NOMINATIM_USER_AGENT` não estava configurada na Vercel, então `lib/places.ts`
+caía no fallback do `.env.example` e mandava `contato: seu-email@exemplo.com`
+para o OpenStreetMap a cada verificação de lugar. A política do OSM exige
+contato válido, e a punição é bloqueio por IP — o que desligaria justamente a
+verificação antialucinação. Variável criada nos três ambientes e produção
+redeployada.
+
+### `supabase/schema.sql` estava incompleto
+
+Faltavam 6 tabelas (`ideas`, `idea_votes`, `trip_entitlements`,
+`user_subscriptions`, `trip_vault_items`, `trip_checklist_items`) e a coluna
+`members.user_id`. Quem rodasse o arquivo num projeto novo levantava um banco
+quebrado. Consolidado e validado rodando de verdade contra um PostgreSQL 16
+limpo: roda do zero, é idempotente, e as migrations ainda aplicam por cima.
+
+### O PRD está desatualizado a favor do projeto
+
+`PLANVORO-PRD.md` (20/08) lista como ausentes vários blocos que já existem.
+Cruzando o backlog da seção 22 com o código:
+
+| # | Item | Estado real |
+|---|---|---|
+| 1 | Auth sem matar o convite | ✅ `components/auth-*`, `members.user_id` |
+| 2 | Domínio de ideias | ✅ `ideas`, `idea_votes`, rotas de voto e status |
+| 3 | Gastos e split | ✅ tabela `expenses` + aba de gastos |
+| 4 | Workspace com abas | ✅ roteiro, ideias, gastos, cofre, checklist, viagem |
+| 5 | Medir ativação | 🟡 código pronto; falta a chave do PostHog |
+| 6 | **Mapa + timeline** | ⬜ **não construído** |
+| 7 | Modo viagem | ✅ aba "viagem" |
+| 8 | Checklist | ✅ `trip_checklist_items` |
+| 9 | Documentos | ✅ cofre (`trip_vault_items`) |
+| 10 | Editor conversacional | ✅ `lib/travel-agent.ts` |
+| 11 | Importação inteligente | ✅ `lib/vault-import.ts` (estava em "Depois") |
+
+Ou seja: tudo do "Agora" está feito, e o "Em seguida" só tem o **mapa** em
+aberto. Pela ordem do próprio PRD, mapa + timeline é o próximo bloco. Os dados
+já estão lá — `itinerary_items` tem `lat` e `lng` preenchidos pela verificação
+de lugares — mas nenhuma tela os desenha.
+
 ## Próximo passo
 
-Configurar as variáveis na Vercel e no PostHog, publicar, e rodar o beta com os
-5 grupos reais. O código não é mais o gargalo.
+Colar a chave do PostHog (`NEXT_PUBLIC_POSTHOG_KEY`) na Vercel para o funil
+começar a medir, e rodar o beta com os 5 grupos reais. Depois disso, mapa +
+timeline. O código não é mais o gargalo.
