@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getUserFromRequest } from "@/lib/auth";
-import { betaAccessEnabled } from "@/lib/beta";
+import { betaBlocksCheckoutFor } from "@/lib/beta";
 import { billingOrigin, checkoutMode, lineItemForPlan, type BillingPlan } from "@/lib/billing";
 import { memberForUserInTrip } from "@/lib/guards";
 import { stripeClient } from "@/lib/stripe";
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Entre na sua conta para assinar." }, { status: 401 });
     }
 
-    if (betaAccessEnabled) {
+    if (betaBlocksCheckoutFor(user.email)) {
       return NextResponse.json(
         {
           error:

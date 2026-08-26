@@ -44,6 +44,7 @@ type DashboardResponse = {
   trips: DashboardTrip[];
   account_billing: {
     is_pro_active: boolean;
+    can_checkout: boolean;
     subscription: {
       status: string;
       stripe_customer_id: string | null;
@@ -275,7 +276,7 @@ export default function AppPage() {
           </p>
         </div>
         <div className="billing-actions">
-          {betaAccessEnabled ? (
+          {betaAccessEnabled && !accountBilling?.can_checkout ? (
             <>
               <span className="badge b-ok">Acesso beta ativo</span>
               <a className="btn" href="/nova">
@@ -544,7 +545,10 @@ function TripSection({
             : 0;
           const proCoversTrip = betaAccessEnabled || Boolean(accountBilling?.is_pro_active);
           const tripPaid = betaAccessEnabled || Boolean(trip.billing?.is_paid || proCoversTrip);
-          const canBuyTripPass = !betaAccessEnabled && trip.viewer_member?.is_organizer && !tripPaid;
+          const canBuyTripPass =
+            Boolean(accountBilling?.can_checkout) &&
+            trip.viewer_member?.is_organizer &&
+            !Boolean(trip.billing?.is_paid || accountBilling?.is_pro_active);
           const tripBillingAction = `trip_pass:${trip.slug}`;
 
           return (

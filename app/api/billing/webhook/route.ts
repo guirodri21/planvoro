@@ -21,6 +21,23 @@ function tripAccessExpiresAt(endDate?: string | null) {
   return (expires > fallback ? expires : fallback).toISOString();
 }
 
+/**
+ * O preco nao vem no corpo do evento: `line_items` so existe se pedido de
+ * volta a Stripe. Antes isto lia `metadata.stripe_price_id`, que ninguem
+ * escrevia, e gravava nulo sempre.
+ */
+async function priceIdForSession(sessionId: string) {
+  try {
+    const stripe = stripeClient();
+    const items = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
+    return items.data[0]?.price?.id ?? null;
+  } catch {
+    // Preco e dado de relatorio: nao vale derrubar a confirmacao do
+    // pagamento por causa dele.
+    return null;
+  }
+}
+
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   const db = supabaseAdmin();
   const plan = session.metadata?.plan;
@@ -39,7 +56,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         status: "paid",
         stripe_customer_id: customerId,
         stripe_payment_intent_id: stripeId(session.payment_intent),
-        stripe_price_id: session.metadata?.stripe_price_id ?? null,
+        stripe_price_id: await priceIdForSession(session.id),
         amount_total: session.amount_total,
         currency: session.currency,
         paid_at: new Date().toISOString(),

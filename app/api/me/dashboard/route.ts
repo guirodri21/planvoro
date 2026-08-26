@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
+import { betaBlocksCheckoutFor } from "@/lib/beta";
 import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -99,6 +100,9 @@ export async function GET(req: Request) {
         subscription?.status ?? null,
         subscription?.current_period_end ?? null
       ),
+      // A lista de testadores so existe no servidor, entao o painel nao tem
+      // como decidir sozinho se mostra o botao de pagar.
+      can_checkout: !betaBlocksCheckoutFor(user.email),
     };
 
     if (!tripIds.length) {
