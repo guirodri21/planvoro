@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
+import { TRIPS_PER_USER } from "@/lib/ai-limits";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const COLORS = ["#4ade80", "#22d3ee", "#f472b6", "#fbbf24", "#a78bfa", "#fb7185", "#38bdf8", "#34d399"];
@@ -46,6 +47,24 @@ export async function POST(req: Request) {
     }
     if (new Date(end_date) < new Date(start_date)) {
       return NextResponse.json({ error: "A volta nao pode ser antes da ida." }, { status: 400 });
+    }
+
+    // Teto da beta: conta viagens em que a pessoa e organizadora, nao as
+    // que ela so participa a convite.
+    const { count: ownedTrips, error: countError } = await db
+      .from("members")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("is_organizer", true);
+    if (countError) throw countError;
+
+    if ((ownedTrips ?? 0) >= TRIPS_PER_USER) {
+      return NextResponse.json(
+        {
+          error: `A beta permite ate ${TRIPS_PER_USER} viagens criadas por pessoa. Arquive uma viagem antiga ou fale com a gente.`,
+        },
+        { status: 429 }
+      );
     }
 
     const { data: trip, error } = await db

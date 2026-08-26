@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
+import { reserveAiUsage } from "@/lib/ai-limits";
 import { supabaseAdmin } from "@/lib/supabase";
 import { answerTravelAgentQuestion } from "@/lib/travel-agent";
 import type { Itinerary } from "@/lib/types";
@@ -26,6 +27,15 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+    }
+
+    const limitMessage = await reserveAiUsage(db, {
+      kind: "agent_question",
+      userId: user.id,
+      tripId: membership.tripId,
+    });
+    if (limitMessage) {
+      return NextResponse.json({ error: limitMessage }, { status: 429 });
     }
 
     const { data: trip, error: tripError } = await db
