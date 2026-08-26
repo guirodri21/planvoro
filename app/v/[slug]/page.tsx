@@ -1,6 +1,13 @@
 "use client";
 
-import { use, useCallback, useEffect, useState, type CSSProperties } from "react";
+import {
+  use,
+  useCallback,
+  useEffect,
+  useState,
+  type CSSProperties,
+} from "react";
+import { RouteMap } from "@/components/route-map";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -15,6 +22,7 @@ import {
   type Comment,
   type Expense,
   type Idea,
+  type Day,
   type IdeaStatus,
   type IdeaVote,
   type Itinerary,
@@ -3698,6 +3706,7 @@ function ItineraryView({
           {itinerary.rationale}
         </div>
       )}
+      <RouteMap days={itinerary.itinerary_days} />
       {itinerary.itinerary_days.map((day) => {
         const total = day.itinerary_items.reduce((sum, item) => sum + (item.cost_estimate ?? 0), 0);
         return (

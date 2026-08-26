@@ -4528,3 +4528,101 @@ details p {
     flex: 1;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Mapa do roteiro                                                      */
+/* Fica no topo da aba Roteiro. Os itens vem com lat/lng gravados pela  */
+/* verificacao de lugares; aqui so desenhamos.                          */
+/* ------------------------------------------------------------------ */
+.route-map {
+  margin-bottom: 22px;
+}
+
+.route-map-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.route-map-dot {
+  width: 8px;
+  height: 8px;
+  margin-right: 7px;
+  border-radius: 999px;
+  background: var(--pin, var(--brand));
+}
+
+.route-map-canvas {
+  height: 380px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--sand);
+  overflow: hidden;
+  /* O Leaflet cria panes com z-index alto; sem contexto proprio eles passam
+     por cima dos popovers e do menu do workspace. */
+  isolation: isolate;
+  z-index: 0;
+}
+
+@media (max-width: 640px) {
+  .route-map-canvas {
+    height: 280px;
+  }
+}
+
+.route-map-foot {
+  margin-top: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.route-map-empty {
+  margin-bottom: 22px;
+}
+
+/* Pino numerado. Substitui o icone padrao do Leaflet, que depende de PNGs
+   com caminho quebrado pelo bundler. */
+.route-map-pin-wrap {
+  background: none;
+  border: 0;
+}
+
+.route-map-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: var(--pin, var(--brand));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 12px -4px rgba(16, 24, 22, 0.55);
+}
+
+.route-map-popup {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.route-map-popup strong {
+  color: var(--text);
+}
+
+.route-map-popup span {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.route-map-popup em {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-style: normal;
+}
