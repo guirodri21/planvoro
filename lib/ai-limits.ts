@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { betaAccessEnabled } from "@/lib/beta";
 import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
 
 /**
@@ -131,6 +132,11 @@ export async function checkTripCreation(
   db: SupabaseClient,
   userId: string
 ): Promise<string | null> {
+  // Durante a beta gratis o teto de viagens nao se aplica: a promessa da
+  // beta e testar com viagens reais, e uma viagem por vez inviabiliza
+  // justamente quem esta ajudando a validar o produto.
+  if (betaAccessEnabled) return null;
+
   const tier = await resolveBillingTier(db, userId);
   const today = new Date().toISOString().slice(0, 10);
 
