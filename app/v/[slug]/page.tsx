@@ -294,6 +294,26 @@ function authJsonHeaders(accessToken: string | null) {
   };
 }
 
+function whatsappShareUrl(message: string) {
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+}
+
+function buildTripInviteMessage(trip: Trip, inviteUrl: string, senderName?: string) {
+  const intro = senderName
+    ? `${senderName} esta organizando a viagem para ${trip.destination} no Planvoro.`
+    : `Estou organizando a viagem para ${trip.destination} no Planvoro.`;
+
+  return `${intro}
+
+Entra por esse link para preencher suas preferencias, votar nas ideias, ver o roteiro e acompanhar reservas/gastos:
+${inviteUrl}`;
+}
+
+function buildPublicRouteMessage(trip: Trip, publicUrl: string) {
+  return `Roteiro da viagem para ${trip.destination} no Planvoro:
+${publicUrl}`;
+}
+
 async function readApiJson<T extends { error?: string }>(res: Response): Promise<T> {
   const text = await res.text();
   if (!text) return {} as T;
@@ -2799,6 +2819,7 @@ function PlanningCard({
   const [sendingInvites, setSendingInvites] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [inviteResult, setInviteResult] = useState<{ sent: number; failed: number } | null>(null);
+  const whatsappInviteUrl = whatsappShareUrl(buildTripInviteMessage(trip, inviteUrl, me.name));
 
   async function sendInvites() {
     if (!accessToken) return;
@@ -2837,12 +2858,21 @@ function PlanningCard({
         <>
           <h3>Convide o grupo</h3>
           <div className="copybox">{inviteUrl}</div>
-          <button
-            className="btn ghost full"
-            onClick={() => navigator.clipboard?.writeText(inviteUrl)}
-          >
-            Copiar link
-          </button>
+          <div className="invite-actions">
+            <a className="btn whatsapp full" href={whatsappInviteUrl} target="_blank" rel="noreferrer">
+              Chamar no WhatsApp
+            </a>
+            <button
+              className="btn ghost full"
+              type="button"
+              onClick={() => navigator.clipboard?.writeText(inviteUrl)}
+            >
+              Copiar link
+            </button>
+          </div>
+          <p className="tiny" style={{ margin: "8px 0 0" }}>
+            O WhatsApp abre com uma mensagem pronta e o link da viagem.
+          </p>
           <label>Chamar por e-mail</label>
           <textarea
             rows={4}
@@ -4164,6 +4194,8 @@ function AfterItinerary({
   const [copied, setCopied] = useState(false);
   const publicUrl =
     typeof window !== "undefined" ? `${window.location.origin}/r/${slug}` : `/r/${slug}`;
+  const whatsappInviteUrl = whatsappShareUrl(buildTripInviteMessage(trip, inviteUrl));
+  const whatsappPublicUrl = whatsappShareUrl(buildPublicRouteMessage(trip, publicUrl));
 
   function copy(url: string) {
     navigator.clipboard?.writeText(url);
@@ -4182,9 +4214,14 @@ function AfterItinerary({
             depois.
           </p>
           <div className="copybox">{inviteUrl}</div>
-          <button className="btn full" onClick={() => copy(inviteUrl)}>
-            {copied ? "Copiado ✓" : "Copiar link do convite"}
-          </button>
+          <div className="invite-actions">
+            <a className="btn whatsapp full" href={whatsappInviteUrl} target="_blank" rel="noreferrer">
+              Chamar no WhatsApp
+            </a>
+            <button className="btn ghost full" type="button" onClick={() => copy(inviteUrl)}>
+              {copied ? "Copiado ✓" : "Copiar link"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -4193,6 +4230,9 @@ function AfterItinerary({
         <p className="sub">Link publico, sem login. Qualquer pessoa consegue abrir e ver o roteiro pronto.</p>
         <div className="copybox">{publicUrl}</div>
         <div style={{ display: "flex", gap: 10 }}>
+          <a className="btn whatsapp full" href={whatsappPublicUrl} target="_blank" rel="noreferrer">
+            WhatsApp
+          </a>
           <button className="btn ghost full" onClick={() => copy(publicUrl)}>
             Copiar
           </button>
