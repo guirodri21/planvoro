@@ -55,6 +55,7 @@ type Payload = {
   ideas: Idea[];
   idea_votes: IdeaVote[];
   viewer_member_id: string | null;
+  trip_access: { unlocked: boolean; reason: "beta" | "trip_pass" | "pro" | "locked" };
 };
 
 type WorkspaceTab =
@@ -408,8 +409,10 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     ideas,
     idea_votes,
     viewer_member_id,
+    trip_access,
   } =
     data;
+  const locked = !trip_access?.unlocked;
   const me = members.find((member) => member.id === viewer_member_id) ?? null;
   const myPref = preferences.find((pref) => pref.member_id === viewer_member_id) ?? null;
   const plannedIdeaCount = ideas.filter((idea) => idea.status === "planned").length;
@@ -526,6 +529,8 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             vaultCount={vault_items.length}
             expenseCount={expenses.length}
           />
+
+          {locked && <TripLockedNotice slug={slug} isOrganizer={Boolean(me?.is_organizer)} />}
 
           {tab === "grupo" && (
             <div className="group-stack">
@@ -2821,6 +2826,35 @@ function VaultAttachmentsBlock({
       )}
 
       {error && <div className="err">{error}</div>}
+    </div>
+  );
+}
+
+/**
+ * Aviso de viagem trancada.
+ *
+ * A acao muda com quem esta olhando: o organizador pode liberar, o
+ * convidado nao pode e nao deve levar um botao de pagar na cara. Pedir
+ * dinheiro a quem foi convidado quebraria a promessa do produto.
+ */
+function TripLockedNotice({ slug, isOrganizer }: { slug: string; isOrganizer: boolean }) {
+  return (
+    <div className="card locked-notice">
+      <span className="badge b-warn">recursos do Passe</span>
+      <h3>Cofre, gastos e checklist estao trancados</h3>
+      <p className="sub">
+        Roteiro, grupo, ideias e votacao continuam liberados. O que ja foi salvo continua visivel e
+        pode ser removido — nada fica preso aqui dentro.
+      </p>
+      {isOrganizer ? (
+        <a className="btn" href={`/app?liberar=${slug}`}>
+          Liberar esta viagem
+        </a>
+      ) : (
+        <p className="tiny">
+          Quem organiza a viagem pode liberar para o grupo todo. Voce nao precisa pagar nada.
+        </p>
+      )}
     </div>
   );
 }

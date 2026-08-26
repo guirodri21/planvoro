@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { resolveTripAccess } from "@/lib/trip-access";
 
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   try {
@@ -154,6 +155,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
       checklist_items: checklistItems.data ?? [],
       idea_votes: ideaVotes,
       viewer_member_id: viewerMember.data?.id ?? null,
+      trip_access: await resolveTripAccess(db, trip.id),
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao carregar a viagem.";

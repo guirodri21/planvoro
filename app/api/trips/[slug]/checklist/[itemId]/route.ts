@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { lockedMessage, resolveTripAccess } from "@/lib/trip-access";
 import { TRIP_CHECKLIST_STATUSES, type TripChecklistStatus } from "@/lib/types";
 
 const STATUSES = new Set<TripChecklistStatus>(
@@ -30,6 +31,11 @@ export async function PATCH(
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+    }
+
+    const access = await resolveTripAccess(db, membership.tripId);
+    if (!access.unlocked) {
+      return NextResponse.json({ error: lockedMessage("O checklist") }, { status: 402 });
     }
 
     const { data, error } = await db
@@ -65,6 +71,7 @@ export async function DELETE(
     if (!membership) {
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
     }
+
 
     const { error } = await db
       .from("trip_checklist_items")

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { lockedMessage, resolveTripAccess } from "@/lib/trip-access";
 import { VAULT_BUCKET } from "@/lib/vault-attachments";
 import { TRIP_VAULT_KINDS, TRIP_VAULT_STATUSES, type TripVaultKind, type TripVaultStatus } from "@/lib/types";
 
@@ -120,6 +121,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
     }
 
+    const access = await resolveTripAccess(db, membership.tripId);
+    if (!access.unlocked) {
+      return NextResponse.json({ error: lockedMessage("O Cofre") }, { status: 402 });
+    }
+
     const { data: item, error: itemError } = await db
       .from("trip_vault_items")
       .select("id, member_id")
@@ -169,6 +175,7 @@ export async function DELETE(
     if (!membership) {
       return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
     }
+
 
     const { data: item, error: itemError } = await db
       .from("trip_vault_items")

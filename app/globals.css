@@ -4924,3 +4924,15 @@ details p {
   margin: 0;
   font-size: 15px;
 }
+
+.locked-notice {
+  border-color: rgba(245, 158, 11, 0.4);
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  margin-bottom: 18px;
+}
+
+.locked-notice h3 {
+  margin: 0;
+}
