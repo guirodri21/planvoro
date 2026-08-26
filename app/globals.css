@@ -5132,3 +5132,79 @@ details p {
   color: #7c2d12;
   background: #fde68a;
 }
+
+/* Mapa */
+.map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.trip-map {
+  height: 460px;
+  width: 100%;
+  border-radius: 16px;
+  margin: 14px 0 10px;
+  z-index: 0;
+}
+
+.map-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.map-head h2 {
+  margin: 2px 0 0;
+}
+
+.map-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.map-order {
+  margin: 10px 0 14px;
+  padding-left: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.map-order li strong {
+  font-size: 14px;
+}
+
+.map-order li span {
+  display: block;
+  opacity: 0.65;
+}
+
+/* O Leaflet usa z-index alto nos controles e passa por cima do menu. */
+.leaflet-pane,
+.leaflet-control {
+  z-index: 1 !important;
+}
+
+@media (max-width: 900px) {
+  .map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .trip-map {
+    height: 320px;
+  }
+}
+
+@media (max-width: 560px) {
+  .map-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .map-nav .btn {
+    flex: 1;
+  }
+}

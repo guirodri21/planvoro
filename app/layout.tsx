@@ -6,6 +6,7 @@ import { AuthNav } from "@/components/auth-nav";
 import { AuthProvider } from "@/components/auth-provider";
 import { OfflineBanner } from "@/components/offline-banner";
 import { ServiceWorkerRegistrar } from "@/components/service-worker";
+import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";

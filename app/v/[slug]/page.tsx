@@ -3,6 +3,8 @@
 import { use, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { DuplicateTrip } from "@/components/duplicate-trip";
+import { TripMap } from "@/components/trip-map";
+import { formatKm, suggestRoute, type GeoPoint } from "@/lib/route-order";
 import { useAuth } from "@/components/auth-provider";
 import {
   DAILY_BUDGETS,
@@ -66,6 +68,7 @@ type WorkspaceTab =
   | "ideias"
   | "roteiro"
   | "agenda"
+  | "mapa"
   | "viagem"
   | "cofre"
   | "agente"
@@ -415,6 +418,11 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   } =
     data;
   const locked = !trip_access?.unlocked;
+  const mappedPointCount =
+    itinerary?.itinerary_days.reduce(
+      (sum, day) => sum + day.itinerary_items.filter((item) => item.lat && item.lng).length,
+      0
+    ) ?? 0;
   const me = members.find((member) => member.id === viewer_member_id) ?? null;
   const myPref = preferences.find((pref) => pref.member_id === viewer_member_id) ?? null;
   const plannedIdeaCount = ideas.filter((idea) => idea.status === "planned").length;
@@ -530,6 +538,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             travelPulseCount={travelPulseCount}
             vaultCount={vault_items.length}
             expenseCount={expenses.length}
+            mappedCount={mappedPointCount}
           />
 
           {locked && <TripLockedNotice slug={slug} isOrganizer={Boolean(me?.is_organizer)} />}
@@ -664,6 +673,8 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             />
           )}
 
+          {tab === "mapa" && <TripMapView itinerary={itinerary} />}
+
           {tab === "cofre" && (
             <TravelVaultView
               accessToken={accessToken}
@@ -726,6 +737,7 @@ function WorkspaceTabs({
   travelPulseCount,
   vaultCount,
   expenseCount,
+  mappedCount,
 }: {
   tab: WorkspaceTab;
   onChange: (tab: WorkspaceTab) => void;
@@ -739,6 +751,7 @@ function WorkspaceTabs({
   travelPulseCount: number;
   vaultCount: number;
   expenseCount: number;
+  mappedCount: number;
 }) {
   const tabs: Array<{ id: WorkspaceTab; label: string; meta: string }> = [
     { id: "grupo", label: groupLabel, meta: `${preferencesCount}/${memberCount} prontas` },
@@ -750,6 +763,7 @@ function WorkspaceTabs({
     { id: "ideias", label: "Ideias", meta: ideaCount ? `${ideaCount} no quadro` : "em aberto" },
     { id: "roteiro", label: "Roteiro", meta: itineraryDays ? `${itineraryDays} dias` : "a gerar" },
     { id: "agenda", label: "Agenda", meta: timelineCount ? `${timelineCount} marcos` : "a montar" },
+    { id: "mapa", label: "Mapa", meta: mappedCount ? `${mappedCount} no mapa` : "sem lugares" },
     {
       id: "viagem",
       label: "Modo viagem",
@@ -1845,6 +1859,135 @@ function TripChecklistView({
 }
 
 const MAX_PENDING_ATTACHMENTS = 12;
+
+/**
+ * Aba Mapa: um dia por vez, com os lugares que a verificacao geolocalizou.
+ *
+ * Item sem coordenada nao aparece, e isso e dito na tela. Plotar um
+ * chute no meio do mapa seria pior do que nao plotar: a pessoa iria ate
+ * o lugar errado.
+ */
+function TripMapView({ itinerary }: { itinerary: Itinerary | null }) {
+  const days = itinerary?.itinerary_days ?? [];
+  const [dayIndex, setDayIndex] = useState(0);
+
+  const daysWithPoints = days.map((day) => ({
+    day,
+    points: day.itinerary_items
+      .filter((item) => typeof item.lat === "number" && typeof item.lng === "number")
+      .map<GeoPoint>((item, index) => ({
+        id: item.id,
+        title: item.title,
+        lat: item.lat as number,
+        lng: item.lng as number,
+        startTime: item.start_time,
+        position: item.position ?? index,
+      })),
+  }));
+
+  const mappable = daysWithPoints.filter((entry) => entry.points.length > 0);
+
+  if (!itinerary) {
+    return (
+      <div className="card">
+        <h2>Mapa</h2>
+        <p className="sub">Gere o roteiro primeiro. O mapa usa os lugares que a IA verificou.</p>
+      </div>
+    );
+  }
+
+  if (!mappable.length) {
+    return (
+      <div className="card">
+        <h2>Mapa</h2>
+        <p className="sub">
+          Nenhum item do roteiro tem coordenada confirmada ainda. Só entram no mapa os lugares que
+          a verificação conseguiu localizar — plotar um palpite levaria você ao endereço errado.
+        </p>
+      </div>
+    );
+  }
+
+  const safeIndex = Math.min(dayIndex, mappable.length - 1);
+  const active = mappable[safeIndex];
+  const route = suggestRoute(active.points);
+
+  return (
+    <div className="map-layout">
+      <div className="card map-card">
+        <div className="map-head">
+          <div>
+            <span className="stat-label">Dia {safeIndex + 1} de {mappable.length}</span>
+            <h2>{active.day.title || formatVaultDate(`${active.day.day_date}T12:00:00`)}</h2>
+          </div>
+          <div className="map-nav">
+            <button
+              className="btn ghost sm"
+              type="button"
+              onClick={() => setDayIndex((i) => Math.max(0, i - 1))}
+              disabled={safeIndex === 0}
+            >
+              Anterior
+            </button>
+            <button
+              className="btn ghost sm"
+              type="button"
+              onClick={() => setDayIndex((i) => Math.min(mappable.length - 1, i + 1))}
+              disabled={safeIndex >= mappable.length - 1}
+            >
+              Proximo
+            </button>
+          </div>
+        </div>
+
+        <TripMap points={route.current} />
+
+        <p className="tiny">
+          {active.points.length} lugar{active.points.length === 1 ? "" : "es"} no mapa ·{" "}
+          {formatKm(route.currentKm)} de deslocamento em linha reta
+        </p>
+      </div>
+
+      <div className="card">
+        <span className="badge b-ok">ordem do dia</span>
+        <h3>Como está hoje</h3>
+        <ol className="map-order">
+          {route.current.map((point) => (
+            <li key={point.id}>
+              <strong>{point.title}</strong>
+              {point.startTime && <span className="tiny">{point.startTime}</span>}
+            </li>
+          ))}
+        </ol>
+
+        {route.worthIt ? (
+          <div className="note">
+            <b>Dá para andar {formatKm(route.savedKm)} a menos</b>
+            <br />
+            Visitando nesta ordem: {route.suggested.map((point) => point.title).join(" → ")}.
+            {route.fixedCount > 0 && (
+              <>
+                {" "}
+                Confira antes: {route.fixedCount} item{route.fixedCount === 1 ? "" : "s"} tem
+                horário marcado e talvez não possa mudar de lugar.
+              </>
+            )}
+          </div>
+        ) : (
+          <p className="tiny">
+            A ordem atual já está boa: reorganizar economizaria pouco para o trabalho de remarcar
+            tudo.
+          </p>
+        )}
+
+        <p className="tiny">
+          Distâncias em linha reta, não por rua. Servem para perceber travessia desnecessária da
+          cidade, não para calcular tempo de trajeto.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function TravelVaultView({
   accessToken,
