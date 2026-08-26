@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
+import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveTripAccess } from "@/lib/trip-access";
 
@@ -159,6 +160,65 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao carregar a viagem.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+/**
+ * Ajustes da viagem feitos pelo organizador depois da criacao.
+ *
+ * Hoje so o orcamento por pessoa. Fica separado do POST de criacao
+ * porque a maioria das viagens ja existia antes deste campo, e obrigar a
+ * refazer a viagem para definir um teto seria absurdo.
+ */
+export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  try {
+    const { slug } = await ctx.params;
+    const body = await req.json().catch(() => ({}));
+
+    const db = supabaseAdmin();
+    const user = await getUserFromRequest(req, db);
+    if (!user) {
+      return NextResponse.json({ error: "Entre na sua conta." }, { status: 401 });
+    }
+
+    const membership = await memberForUserInTrip(db, slug, user.id);
+    if (!membership) {
+      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+    }
+    if (!membership.isOrganizer) {
+      return NextResponse.json(
+        { error: "So quem organiza pode mudar o orcamento." },
+        { status: 403 }
+      );
+    }
+
+    if (!Object.prototype.hasOwnProperty.call(body, "budget_per_person")) {
+      return NextResponse.json({ error: "Nada para atualizar." }, { status: 400 });
+    }
+
+    const raw = String(body.budget_per_person ?? "").trim().replace(",", ".");
+    let budget: number | null = null;
+
+    if (raw) {
+      const amount = Number(raw);
+      if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
+        return NextResponse.json({ error: "Valor de orcamento invalido." }, { status: 400 });
+      }
+      budget = Number(amount.toFixed(2));
+    }
+
+    const { data, error } = await db
+      .from("trips")
+      .update({ budget_per_person: budget })
+      .eq("id", membership.tripId)
+      .select("id, budget_per_person")
+      .single();
+    if (error) throw error;
+
+    return NextResponse.json({ trip: data });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Erro ao atualizar a viagem.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

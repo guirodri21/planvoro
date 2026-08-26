@@ -38,6 +38,7 @@ import {
   formatFileSize,
 } from "@/lib/vault-attachments";
 import { track } from "@/lib/analytics";
+import { budgetTone, summarizeBudget } from "@/lib/budget";
 import { buildPixPayload, detectPixKey, pixKeyLabel } from "@/lib/pix";
 import { whatsappShareUrl } from "@/lib/share";
 import { userDisplayName } from "@/lib/user-name";
@@ -700,7 +701,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               members={members}
               me={me}
               slug={slug}
-              tripName={trip.destination}
+              trip={trip}
               onSaved={load}
             />
           )}
@@ -4271,6 +4272,130 @@ function ItemRow({
 }
 
 /**
+ * Alerta de orcamento.
+ *
+ * O teto e por pessoa e multiplicado pelo tamanho do grupo, porque e
+ * assim que as pessoas pensam: ninguem combina "vamos gastar 6 mil",
+ * combina "mil e duzentos cada um".
+ */
+function BudgetAlert({
+  accessToken,
+  slug,
+  trip,
+  members,
+  expenses,
+  isOrganizer,
+  onSaved,
+}: {
+  accessToken: string | null;
+  slug: string;
+  trip: Trip;
+  members: Member[];
+  expenses: Expense[];
+  isOrganizer: boolean;
+  onSaved: () => Promise<void> | void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(
+    trip.budget_per_person == null ? "" : String(trip.budget_per_person)
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const headcount = trip.is_solo ? 1 : Math.max(members.length, trip.party_size);
+  const totalSpent = expenses.reduce((sum, expense) => sum + Number(expense.amount ?? 0), 0);
+  const budget = summarizeBudget({
+    budgetPerPerson: trip.budget_per_person,
+    headcount,
+    totalSpent,
+  });
+
+  async function save() {
+    if (!accessToken || saving) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/trips/${slug}`, {
+        method: "PATCH",
+        headers: authJsonHeaders(accessToken),
+        body: JSON.stringify({ budget_per_person: value.trim() }),
+      });
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel salvar o orcamento.");
+
+      setOpen(false);
+      await onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao salvar o orcamento.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className={`budget-alert ${budgetTone(budget.status)}`}>
+      <div className="budget-alert-head">
+        <div>
+          <span className="stat-label">Orçamento</span>
+          <strong>{budget.headline}</strong>
+        </div>
+        {isOrganizer && (
+          <button className="btn ghost sm" type="button" onClick={() => setOpen((v) => !v)}>
+            {trip.budget_per_person == null ? "Definir" : "Ajustar"}
+          </button>
+        )}
+      </div>
+
+      <p className="tiny">{budget.detail}</p>
+
+      {budget.status !== "sem_orcamento" && (
+        <div className="budget-bar" aria-hidden="true">
+          <span style={{ width: `${Math.min(budget.ratio * 100, 100)}%` }} />
+        </div>
+      )}
+
+      {open && (
+        <div className="budget-form">
+          <label>Quanto cada pessoa pretende gastar</label>
+          <input
+            type="number"
+            min="0"
+            step="10"
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            placeholder="1200"
+          />
+          <span className="tiny">
+            Some tudo que sai do bolso: passagem, hospedagem, comida e passeios. Deixe em branco
+            para desligar o alerta.
+          </span>
+          {error && <div className="err">{error}</div>}
+          <div className="budget-form-actions">
+            <button
+              className="btn ghost sm"
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                setValue(trip.budget_per_person == null ? "" : String(trip.budget_per_person));
+                setError("");
+              }}
+              disabled={saving}
+            >
+              Cancelar
+            </button>
+            <button className="btn sm" type="button" onClick={save} disabled={saving}>
+              {saving ? "Salvando..." : "Salvar"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * Uma transferencia do acerto, com o Pix pronto.
  *
  * Sem chave cadastrada nao ha botao: mostrar "copiar Pix" e entregar um
@@ -4420,7 +4545,7 @@ function ExpensesView({
   members,
   me,
   slug,
-  tripName,
+  trip,
   onSaved,
 }: {
   accessToken: string | null;
@@ -4428,9 +4553,10 @@ function ExpensesView({
   members: Member[];
   me: Member;
   slug: string;
-  tripName: string;
+  trip: Trip;
   onSaved: () => Promise<void> | void;
 }) {
+  const tripName = trip.destination;
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [payerId, setPayerId] = useState(me.id);
@@ -4555,6 +4681,16 @@ function ExpensesView({
             </div>
           </div>
         </div>
+
+        <BudgetAlert
+          accessToken={accessToken}
+          slug={slug}
+          trip={trip}
+          members={members}
+          expenses={expenses}
+          isOrganizer={me.is_organizer}
+          onSaved={onSaved}
+        />
 
         <div className="expense-command-side">
           <span className="stat-label">Estado do acerto</span>

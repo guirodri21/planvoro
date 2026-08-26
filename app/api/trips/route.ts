@@ -4,6 +4,18 @@ import { checkTripCreation } from "@/lib/ai-limits";
 import { slugify } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase";
 
+/** Teto por pessoa. Valor invalido vira nulo, nao zero: um orcamento de
+ *  R$ 0 dispararia alerta de estouro no primeiro cafe. */
+function cleanBudget(value: unknown) {
+  const text = String(value ?? "").trim().replace(",", ".");
+  if (!text) return null;
+
+  const amount = Number(text);
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) return null;
+
+  return Number(amount.toFixed(2));
+}
+
 const COLORS = ["#4ade80", "#22d3ee", "#f472b6", "#fbbf24", "#a78bfa", "#fb7185", "#38bdf8", "#34d399"];
 
 export async function POST(req: Request) {
@@ -21,6 +33,7 @@ export async function POST(req: Request) {
       end_date,
       party_size,
       budget_band,
+      budget_per_person,
       styles,
       organizer_name,
       is_solo,
@@ -55,6 +68,7 @@ export async function POST(req: Request) {
         party_size: is_solo ? 1 : Number(party_size) || 4,
         is_solo: Boolean(is_solo),
         budget_band: budget_band ?? null,
+        budget_per_person: cleanBudget(budget_per_person),
         styles: Array.isArray(styles) ? styles : [],
       })
       .select()

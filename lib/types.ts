@@ -6,6 +6,8 @@ export type Trip = {
   end_date: string;
   party_size: number;
   budget_band: string | null;
+  /** Teto por pessoa, em BRL. Base dos alertas de orcamento. */
+  budget_per_person?: number | null;
   styles: string[];
   is_solo: boolean;
   is_public: boolean;

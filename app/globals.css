@@ -5053,3 +5053,69 @@ details p {
     width: 100%;
   }
 }
+
+/* Alerta de orçamento */
+.budget-alert {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  display: grid;
+  gap: 8px;
+}
+
+.budget-alert.warn {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
+.budget-alert.ok {
+  border-color: rgba(14, 156, 107, 0.35);
+}
+
+.budget-alert-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.budget-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(16, 24, 22, 0.1);
+  overflow: hidden;
+}
+
+.budget-bar > span {
+  display: block;
+  height: 100%;
+  background: currentColor;
+  opacity: 0.7;
+}
+
+.budget-alert.warn .budget-bar > span {
+  background: #f59e0b;
+}
+
+.budget-form {
+  display: grid;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.budget-form-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 560px) {
+  .budget-alert-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .budget-form-actions .btn {
+    flex: 1;
+  }
+}
