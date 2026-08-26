@@ -1890,6 +1890,7 @@ function TravelVaultView({
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
   const [importResult, setImportResult] = useState<VaultImportResult | null>(null);
+  const importFileRef = useRef<HTMLInputElement | null>(null);
   // Arquivos escolhidos antes de o item existir. Sobem logo depois do insert.
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [uploadingPending, setUploadingPending] = useState(false);
@@ -2030,6 +2031,45 @@ function TravelVaultView({
       missing_fields: draft.missing_fields,
       summary: draft.summary,
     });
+  }
+
+  /**
+   * Le um PDF ou print da confirmacao.
+   *
+   * O arquivo vai so para leitura: nada e salvo no Cofre ate a pessoa
+   * revisar o rascunho e clicar em guardar, igual ao texto colado.
+   */
+  async function importFromFile(file: File) {
+    if (!accessToken || importing) return;
+
+    setImporting(true);
+    setImportError("");
+    setError("");
+
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      if (importText.trim()) body.append("text", importText.trim());
+
+      const res = await fetch(`/api/trips/${slug}/vault/import`, {
+        method: "POST",
+        headers: authHeaders(accessToken),
+        body,
+      });
+      const json = await readApiJson<{ draft?: VaultImportDraft; error?: string }>(res);
+      if (!res.ok || !json.draft) {
+        if (res.status === 429) track("limite_atingido", { acao: "importacao_cofre" });
+        throw new Error(json.error ?? "Nao foi possivel ler esse arquivo.");
+      }
+
+      track("cofre_importacao_usada", { confianca: json.draft.confidence, origem: "arquivo" });
+      applyImportDraft(json.draft);
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : "Erro ao ler o arquivo.");
+    } finally {
+      setImporting(false);
+      if (importFileRef.current) importFileRef.current.value = "";
+    }
   }
 
   async function importReservation() {
@@ -2221,8 +2261,8 @@ function TravelVaultView({
               <span className="tiny">Nada e salvo automaticamente.</span>
             </div>
             <p className="sub">
-              Cole um email, recibo ou texto de reserva. O Planvoro extrai um rascunho para voce
-              revisar antes de guardar no Cofre.
+              Cole um email ou recibo, ou envie o PDF da confirmacao e o print da tela. O
+              Planvoro extrai um rascunho para voce revisar antes de guardar no Cofre.
             </p>
             <textarea
               rows={5}
@@ -2237,7 +2277,25 @@ function TravelVaultView({
                 onClick={importReservation}
                 disabled={importing || !accessToken || importText.trim().length < 40}
               >
-                {importing ? "Extraindo..." : "Extrair para o formulario"}
+                {importing ? "Extraindo..." : "Extrair do texto"}
+              </button>
+              <input
+                ref={importFileRef}
+                className="hidden-file"
+                type="file"
+                accept={VAULT_ATTACHMENT_MIME_TYPES.join(",")}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void importFromFile(file);
+                }}
+              />
+              <button
+                className="btn ghost"
+                type="button"
+                onClick={() => importFileRef.current?.click()}
+                disabled={importing || !accessToken}
+              >
+                Ler PDF ou print
               </button>
               <button
                 className="btn ghost"
