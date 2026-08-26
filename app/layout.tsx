@@ -120,6 +120,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <a href="/#roteiro">Roteiro</a>
                   <a href="/#precos">Preços</a>
                   <a href="/app">Minhas viagens</a>
+                  <a href="/historico">Histórico</a>
                   <a href="/#faq">Dúvidas</a>
                 </div>
                 <AuthNav />
@@ -151,6 +152,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <div className="fcol">
                     <h4>Recursos</h4>
                     <a href="/app">Minhas viagens</a>
+                    <a href="/historico">Histórico de viagens</a>
                     <a href="/#faq">Perguntas frequentes</a>
                     <a href="/nova">Criar viagem</a>
                   </div>
