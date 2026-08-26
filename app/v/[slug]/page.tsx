@@ -1832,6 +1832,8 @@ function TripChecklistView({
   );
 }
 
+const MAX_PENDING_ATTACHMENTS = 12;
+
 function TravelVaultView({
   accessToken,
   slug,
@@ -1876,6 +1878,10 @@ function TravelVaultView({
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
   const [importResult, setImportResult] = useState<VaultImportResult | null>(null);
+  // Arquivos escolhidos antes de o item existir. Sobem logo depois do insert.
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [uploadingPending, setUploadingPending] = useState(false);
+  const newItemFileRef = useRef<HTMLInputElement | null>(null);
 
   const totalKnown = items.reduce((sum, item) => sum + Number(item.amount ?? 0), 0);
   const attentionCount = items.filter((item) => item.status === "attention").length;
@@ -1936,11 +1942,34 @@ function TravelVaultView({
     setEditingId("");
     setImportError("");
     setImportResult(null);
+    setPendingFiles([]);
+    if (newItemFileRef.current) newItemFileRef.current.value = "";
+  }
+
+  function addPendingFiles(files: File[]) {
+    setError("");
+
+    const accepted: File[] = [];
+    for (const file of files) {
+      if (file.size > VAULT_ATTACHMENT_MAX_BYTES) {
+        setError(`"${file.name}" passa de ${formatFileSize(VAULT_ATTACHMENT_MAX_BYTES)}.`);
+        continue;
+      }
+      accepted.push(file);
+    }
+
+    setPendingFiles((current) => [...current, ...accepted].slice(0, MAX_PENDING_ATTACHMENTS));
+    if (newItemFileRef.current) newItemFileRef.current.value = "";
+  }
+
+  function removePendingFile(index: number) {
+    setPendingFiles((current) => current.filter((_, position) => position !== index));
   }
 
   function startEditing(item: TripVaultItem) {
     setEditingId(item.id);
     setError("");
+    setPendingFiles([]);
     setImportError("");
     setImportResult(null);
     setForm({
@@ -2035,6 +2064,33 @@ function TravelVaultView({
       });
       const json = await readApiJson<{ item?: TripVaultItem; error?: string }>(res);
       if (!res.ok) throw new Error(json.error ?? "Nao foi possivel atualizar o Cofre.");
+
+      // O item ja esta salvo. Se um anexo falhar daqui pra frente, o item
+      // continua valendo: avisamos o que nao subiu em vez de desfazer tudo.
+      const createdId = editingId ? "" : json.item?.id;
+      if (createdId && pendingFiles.length && accessToken) {
+        setUploadingPending(true);
+
+        const failed: string[] = [];
+        for (const file of pendingFiles) {
+          try {
+            await uploadVaultAttachment(slug, createdId, file, accessToken);
+          } catch {
+            failed.push(file.name);
+          }
+        }
+
+        setUploadingPending(false);
+
+        if (failed.length) {
+          setPendingFiles([]);
+          await onChange();
+          setError(
+            `Item salvo, mas nao consegui anexar: ${failed.join(", ")}. Tente anexar pelo card do item.`
+          );
+          return;
+        }
+      }
 
       resetForm();
       await onChange();
@@ -2312,10 +2368,66 @@ function TravelVaultView({
           placeholder="Check-in, franquia de bagagem, regras de cancelamento, documentos..."
         />
 
+        {!editingId && (
+          <div className="vault-pending-box">
+            <div className="vault-attachments-head">
+              <div>
+                <label>Anexos</label>
+                <span className="tiny">PDF, print ou comprovante. Sobem junto ao guardar.</span>
+              </div>
+              <input
+                ref={newItemFileRef}
+                className="hidden-file"
+                type="file"
+                multiple
+                accept={VAULT_ATTACHMENT_MIME_TYPES.join(",")}
+                onChange={(event) => addPendingFiles(Array.from(event.target.files ?? []))}
+              />
+              <button
+                className="btn ghost sm"
+                type="button"
+                onClick={() => newItemFileRef.current?.click()}
+                disabled={saving || pendingFiles.length >= MAX_PENDING_ATTACHMENTS}
+              >
+                Escolher arquivos
+              </button>
+            </div>
+
+            {pendingFiles.length > 0 && (
+              <ul className="vault-attachment-list">
+                {pendingFiles.map((file, index) => (
+                  <li key={`${file.name}-${index}`}>
+                    <div>
+                      <strong>{file.name}</strong>
+                      <small>{formatFileSize(file.size)}</small>
+                    </div>
+                    <div>
+                      <button
+                        className="btn ghost sm"
+                        type="button"
+                        onClick={() => removePendingFile(index)}
+                        disabled={saving}
+                      >
+                        Tirar
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {error && <div className="err">{error}</div>}
 
         <button className="btn full" onClick={saveItem} disabled={saving || !form.title.trim() || !accessToken}>
-          {saving ? "Salvando..." : editingId ? "Salvar alteracoes" : "Guardar no Cofre"}
+          {uploadingPending
+            ? "Enviando anexos..."
+            : saving
+              ? "Salvando..."
+              : editingId
+                ? "Salvar alteracoes"
+                : "Guardar no Cofre"}
         </button>
       </div>
 
@@ -2507,6 +2619,30 @@ function TravelVaultView({
   );
 }
 
+/**
+ * Upload de um anexo. Usado tanto pelo card de um item ja salvo quanto pelo
+ * formulario de criacao, que segura os arquivos ate o item existir no banco.
+ */
+async function uploadVaultAttachment(
+  slug: string,
+  itemId: string,
+  file: File,
+  accessToken: string
+) {
+  const body = new FormData();
+  body.append("file", file);
+
+  const res = await fetch(`/api/trips/${slug}/vault/${itemId}/attachments`, {
+    method: "POST",
+    headers: authHeaders(accessToken),
+    body,
+  });
+  const json = await readApiJson<{ attachment?: TripVaultAttachment; error?: string }>(res);
+  if (!res.ok) throw new Error(json.error ?? "Nao foi possivel anexar o arquivo.");
+
+  return json.attachment;
+}
+
 function VaultAttachmentsBlock({
   accessToken,
   slug,
@@ -2539,17 +2675,7 @@ function VaultAttachmentsBlock({
     setError("");
 
     try {
-      const body = new FormData();
-      body.append("file", file);
-
-      const res = await fetch(`/api/trips/${slug}/vault/${itemId}/attachments`, {
-        method: "POST",
-        headers: authHeaders(accessToken),
-        body,
-      });
-      const json = await readApiJson<{ attachment?: TripVaultAttachment; error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel anexar o arquivo.");
-
+      await uploadVaultAttachment(slug, itemId, file, accessToken);
       await onChange();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao anexar arquivo.");
