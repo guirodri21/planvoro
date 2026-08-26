@@ -37,6 +37,7 @@ import {
   formatFileSize,
 } from "@/lib/vault-attachments";
 import { track } from "@/lib/analytics";
+import { whatsappShareUrl } from "@/lib/share";
 import { userDisplayName } from "@/lib/user-name";
 
 type Payload = {
@@ -320,10 +321,6 @@ function authJsonHeaders(accessToken: string | null) {
     "Content-Type": "application/json",
     ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
   };
-}
-
-function whatsappShareUrl(message: string) {
-  return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
 }
 
 function buildTripInviteMessage(trip: Trip, inviteUrl: string, senderName?: string) {
@@ -4728,6 +4725,15 @@ function AfterItinerary({
           </button>
           <a className="btn ghost full" href={`/r/${slug}`} target="_blank" rel="noreferrer">
             Abrir
+          </a>
+          <a
+            className="btn ghost full"
+            href={`/r/${slug}?print=1`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={() => track("roteiro_compartilhado", { canal: "pdf" })}
+          >
+            PDF
           </a>
         </div>
       </div>

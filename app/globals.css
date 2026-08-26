@@ -4801,3 +4801,100 @@ details p {
     }
   }
 }
+
+/* Barra de compartilhamento do roteiro */
+.roteiro-share {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+@media (max-width: 480px) {
+  .roteiro-share .btn {
+    flex: 1;
+    min-width: 140px;
+  }
+}
+
+.print-only {
+  display: none;
+}
+
+/* ============================================================
+   Impressao / Salvar em PDF
+   O "PDF do roteiro" e a pagina impressa pelo proprio navegador.
+   Sem biblioteca: o dialogo de impressao ja oferece salvar em PDF
+   no desktop e no celular, e assim o arquivo nunca sai de sincronia
+   com a pagina.
+   ============================================================ */
+@media print {
+  .no-print,
+  .site-nav,
+  nav,
+  .site-footer,
+  .cta-box {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  /* Fundo colorido gasta tinta e some em impressora comum. */
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  .wrap,
+  .main {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .card {
+    border: none;
+    box-shadow: none;
+    background: none;
+    padding: 0;
+    margin: 0 0 12pt;
+  }
+
+  /* Um dia nao pode comecar no fim da folha e terminar na seguinte. */
+  .day {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 10pt;
+  }
+
+  .item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h1 {
+    font-size: 18pt;
+  }
+
+  .day-h b {
+    font-size: 12pt;
+  }
+
+  .badge {
+    border: 1px solid #999;
+    background: none;
+    color: #000;
+  }
+
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  @page {
+    margin: 16mm 14mm;
+  }
+}

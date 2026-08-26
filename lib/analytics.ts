@@ -80,6 +80,8 @@ export type Evento =
   | "cofre_anexo_enviado"
   | "cofre_importacao_usada"
   | "agente_pergunta_feita"
+  // saida viral
+  | "roteiro_compartilhado"
   // limites e falhas que o usuario sente
   | "limite_atingido"
   // dinheiro

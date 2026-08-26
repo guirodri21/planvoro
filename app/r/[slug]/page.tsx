@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { RoteiroShare } from "@/components/roteiro-share";
 import { formatBR, getPublicTrip, tripDays } from "@/lib/public";
+import { buildItinerarySummary } from "@/lib/share";
+
+const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";
 
 export const revalidate = 3600;
 
@@ -37,6 +41,8 @@ export default async function RoteiroPublico({
 
   const { trip, itinerary } = data;
   const dias = tripDays(trip);
+  const shareUrl = `${BASE}/r/${slug}`;
+  const summary = buildItinerarySummary(trip, itinerary, shareUrl);
 
   const total =
     itinerary?.itinerary_days.reduce(
@@ -55,6 +61,13 @@ export default async function RoteiroPublico({
           {formatBR(trip.start_date)} a {formatBR(trip.end_date)}
           {trip.is_solo ? " · viagem individual" : ` · ${trip.party_size} pessoas`}
           {total > 0 && ` · ~R$ ${total.toFixed(0)} por pessoa`}
+        </p>
+
+        <RoteiroShare summary={summary} url={shareUrl} />
+
+        <p className="tiny print-only">
+          Roteiro gerado por IA no Planvoro. Confira precos, horarios e regras oficiais na fonte
+          antes de reservar. {shareUrl}
         </p>
       </div>
 
@@ -106,7 +119,7 @@ export default async function RoteiroPublico({
         </div>
       )}
 
-      <div className="card cta-box">
+      <div className="card cta-box no-print">
         <h2 style={{ margin: "0 0 6px" }}>Monte o seu roteiro</h2>
         <p className="sub">
           Sozinho ou com o grupo inteiro. A IA equilibra as preferências de todo mundo e deixa
