@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
 import Analytics from "@/app/analytics";
@@ -25,6 +25,23 @@ const mono = IBM_Plex_Mono({
   display: "swap",
   weight: ["400", "500", "600"],
 });
+
+/**
+ * `viewport-fit: cover` deixa o fundo ir ate a borda em telas com entalhe;
+ * o recuo seguro e devolvido no CSS via env(safe-area-inset-*).
+ *
+ * Sem `maximumScale`: travar o zoom quebra a acessibilidade de quem
+ * precisa aumentar o texto.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f3ed" },
+    { media: "(prefers-color-scheme: dark)", color: "#101816" },
+  ],
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),
