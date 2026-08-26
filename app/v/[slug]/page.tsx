@@ -47,7 +47,34 @@ type Payload = {
   viewer_member_id: string | null;
 };
 
-type WorkspaceTab = "grupo" | "checklist" | "ideias" | "roteiro" | "agenda" | "cofre" | "agente" | "gastos";
+type WorkspaceTab =
+  | "grupo"
+  | "checklist"
+  | "ideias"
+  | "roteiro"
+  | "agenda"
+  | "viagem"
+  | "cofre"
+  | "agente"
+  | "gastos";
+
+type TravelTimelineEntry = {
+  id: string;
+  dayKey: string;
+  sortTime: number;
+  endTime: number;
+  timeLabel: string;
+  source: "roteiro" | "cofre";
+  title: string;
+  description: string | null;
+  label: string;
+  place: string | null;
+  statusLabel: string;
+  amount: number | null;
+  currency?: string;
+  url: string | null;
+  attention: boolean;
+};
 
 type AgentReply = {
   answer: string;
@@ -160,6 +187,10 @@ function localDateKey(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value.slice(0, 10);
 
+  return dateKeyFromDate(date);
+}
+
+function dateKeyFromDate(date: Date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -175,6 +206,68 @@ function formatAgendaTime(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value.slice(0, 5);
   return agendaTimeFormatter.format(date);
+}
+
+function buildTravelTimeline(
+  trip: Trip,
+  itinerary: Itinerary | null,
+  vaultItems: TripVaultItem[]
+): TravelTimelineEntry[] {
+  const routeEntries =
+    itinerary?.itinerary_days.flatMap((day) =>
+      day.itinerary_items.map((item, index) => {
+        const time = item.start_time?.slice(0, 5) ?? null;
+        const startTime = time
+          ? new Date(`${day.day_date}T${time}:00`).getTime()
+          : Number.MAX_SAFE_INTEGER - 1000 + index;
+        const durationMs = Math.max(30, item.duration_min ?? 90) * 60_000;
+
+        return {
+          id: `route-${item.id}`,
+          dayKey: day.day_date,
+          sortTime: startTime,
+          endTime: startTime + durationMs,
+          timeLabel: time ?? `parada ${index + 1}`,
+          source: "roteiro" as const,
+          title: item.title,
+          description: item.description,
+          label: item.category ?? "Roteiro",
+          place: item.place_query,
+          statusLabel: item.verified ? "verificado" : item.needs_vote ? "votacao" : "planejado",
+          amount: item.cost_estimate,
+          url: null,
+          attention: item.needs_vote,
+        };
+      })
+    ) ?? [];
+
+  const vaultEntries = vaultItems
+    .filter((item) => item.status !== "canceled" && (item.starts_at || item.ends_at))
+    .map((item) => {
+      const dateValue = item.starts_at ?? item.ends_at ?? "";
+      const startTime = new Date(dateValue).getTime();
+      const endTime = item.ends_at ? new Date(item.ends_at).getTime() : startTime + 60 * 60_000;
+
+      return {
+        id: `vault-${item.id}`,
+        dayKey: localDateKey(dateValue),
+        sortTime: startTime,
+        endTime,
+        timeLabel: formatAgendaTime(dateValue),
+        source: "cofre" as const,
+        title: item.title,
+        description: item.notes,
+        label: vaultKindLabel(item.kind),
+        place: item.location,
+        statusLabel: vaultStatusLabel(item.status),
+        amount: item.amount,
+        currency: item.currency,
+        url: item.url,
+        attention: item.status === "attention" || isOutsideTripDates(item, trip),
+      };
+    });
+
+  return [...routeEntries, ...vaultEntries].sort((a, b) => a.sortTime - b.sortTime);
 }
 
 function authHeaders(accessToken: string | null) {
@@ -261,6 +354,12 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   const plannedIdeaCount = ideas.filter((idea) => idea.status === "planned").length;
   const inviteUrl =
     typeof window !== "undefined" ? `${window.location.origin}/v/${slug}` : `/v/${slug}`;
+  const todayKey = dateKeyFromDate(new Date());
+  const travelPulseCount =
+    vault_items.filter((item) => item.status === "attention").length +
+    checklist_items.filter(
+      (item) => item.status === "open" && item.due_date && item.due_date <= todayKey
+    ).length;
 
   async function generate() {
     if (!accessToken) {
@@ -337,6 +436,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               (itinerary?.itinerary_days.reduce((sum, day) => sum + day.itinerary_items.length, 0) ?? 0) +
               vault_items.filter((item) => item.starts_at || item.ends_at).length
             }
+            travelPulseCount={travelPulseCount}
             vaultCount={vault_items.length}
             expenseCount={expenses.length}
           />
@@ -454,6 +554,20 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             />
           )}
 
+          {tab === "viagem" && (
+            <TravelModeView
+              trip={trip}
+              itinerary={itinerary}
+              vaultItems={vault_items}
+              checklistItems={checklist_items}
+              generating={generating}
+              onGenerate={generate}
+              onGoToAgenda={() => setTab("agenda")}
+              onGoToChecklist={() => setTab("checklist")}
+              onGoToVault={() => setTab("cofre")}
+            />
+          )}
+
           {tab === "cofre" && (
             <TravelVaultView
               accessToken={accessToken}
@@ -511,6 +625,7 @@ function WorkspaceTabs({
   ideaCount,
   itineraryDays,
   timelineCount,
+  travelPulseCount,
   vaultCount,
   expenseCount,
 }: {
@@ -523,6 +638,7 @@ function WorkspaceTabs({
   ideaCount: number;
   itineraryDays: number;
   timelineCount: number;
+  travelPulseCount: number;
   vaultCount: number;
   expenseCount: number;
 }) {
@@ -536,6 +652,11 @@ function WorkspaceTabs({
     { id: "ideias", label: "Ideias", meta: ideaCount ? `${ideaCount} no quadro` : "em aberto" },
     { id: "roteiro", label: "Roteiro", meta: itineraryDays ? `${itineraryDays} dias` : "a gerar" },
     { id: "agenda", label: "Agenda", meta: timelineCount ? `${timelineCount} marcos` : "a montar" },
+    {
+      id: "viagem",
+      label: "Modo viagem",
+      meta: travelPulseCount ? `${travelPulseCount} alerta${travelPulseCount === 1 ? "" : "s"}` : "ao vivo",
+    },
     { id: "cofre", label: "Cofre", meta: vaultCount ? `${vaultCount} salvo${vaultCount === 1 ? "" : "s"}` : "vazio" },
     { id: "agente", label: "Agente", meta: itineraryDays ? "consultor ativo" : "pre-roteiro" },
     { id: "gastos", label: "Gastos", meta: expenseCount ? `${expenseCount} lancados` : "zerado" },
@@ -704,6 +825,13 @@ function TripExecutiveSummary({
       disabled: false,
       primary: false,
     },
+    (itinerary || activeVaultItems.some((item) => item.starts_at || item.ends_at)) && {
+      label: "Modo viagem",
+      hint: "Proximo passo, hoje e alertas",
+      onClick: () => onGoToTab("viagem"),
+      disabled: false,
+      primary: false,
+    },
     openChecklist > 0 && {
       label: "Resolver checklist",
       hint: `${openChecklist} pendencia${openChecklist === 1 ? "" : "s"} aberta${openChecklist === 1 ? "" : "s"}`,
@@ -835,6 +963,244 @@ function TripExecutiveSummary({
   );
 }
 
+function TravelModeView({
+  trip,
+  itinerary,
+  vaultItems,
+  checklistItems,
+  generating,
+  onGenerate,
+  onGoToAgenda,
+  onGoToChecklist,
+  onGoToVault,
+}: {
+  trip: Trip;
+  itinerary: Itinerary | null;
+  vaultItems: TripVaultItem[];
+  checklistItems: TripChecklistItem[];
+  generating: boolean;
+  onGenerate: () => void;
+  onGoToAgenda: () => void;
+  onGoToChecklist: () => void;
+  onGoToVault: () => void;
+}) {
+  const now = new Date();
+  const todayKey = dateKeyFromDate(now);
+  const tripStart = new Date(`${trip.start_date}T00:00:00`);
+  const tripEnd = new Date(`${trip.end_date}T23:59:59`);
+  const entries = buildTravelTimeline(trip, itinerary, vaultItems);
+  const todayEntries = entries.filter((entry) => entry.dayKey === todayKey);
+  const currentEntry = entries.find((entry) => entry.sortTime <= now.getTime() && entry.endTime >= now.getTime());
+  const nextEntry = entries.find((entry) => entry.sortTime > now.getTime());
+  const upcomingToday = todayEntries.filter((entry) => entry.sortTime >= now.getTime()).slice(0, 5);
+  const activeVaultItems = vaultItems.filter((item) => item.status !== "canceled");
+  const attentionVault = activeVaultItems.filter((item) => item.status === "attention" || isOutsideTripDates(item, trip));
+  const overdueChecklist = checklistItems.filter(
+    (item) => item.status === "open" && item.due_date && item.due_date < todayKey
+  );
+  const dueTodayChecklist = checklistItems.filter(
+    (item) => item.status === "open" && item.due_date === todayKey
+  );
+  const openChecklist = checklistItems.filter((item) => item.status === "open");
+  const undatedVault = activeVaultItems.filter((item) => !item.starts_at && !item.ends_at);
+  const daysToTrip = Math.ceil((tripStart.getTime() - now.getTime()) / 86_400_000);
+  const isDuringTrip = now >= tripStart && now <= tripEnd;
+  const isAfterTrip = now > tripEnd;
+  const heroTitle = isDuringTrip
+    ? "Modo viagem ligado"
+    : isAfterTrip
+      ? "Viagem concluida, hora de fechar a organizacao"
+      : daysToTrip <= 1
+        ? "Pre-embarque final"
+        : "Sala de preparo da viagem";
+  const heroSubtitle = isDuringTrip
+    ? "Acompanhe o que esta acontecendo agora, o que vem em seguida e qualquer alerta operacional."
+    : isAfterTrip
+      ? "Revise gastos, guarde comprovantes finais e use o historico como memoria da viagem."
+      : "Use esta tela como checklist vivo antes de embarcar: reservas, horarios, documentos e pendencias.";
+  const statusLabel = isDuringTrip
+    ? "em andamento"
+    : isAfterTrip
+      ? "pos-viagem"
+      : daysToTrip > 1
+        ? `faltam ${daysToTrip} dias`
+        : daysToTrip === 1
+          ? "amanha"
+          : "comeca hoje";
+  const focusEntry = currentEntry ?? nextEntry;
+  const firstChecklist = overdueChecklist[0] ?? dueTodayChecklist[0] ?? openChecklist[0] ?? null;
+  const alerts = [
+    ...overdueChecklist.slice(0, 3).map((item) => ({
+      title: item.title,
+      body: `Checklist atrasado · ${checklistCategoryLabel(item.category)}`,
+      action: onGoToChecklist,
+    })),
+    ...dueTodayChecklist.slice(0, 3).map((item) => ({
+      title: item.title,
+      body: `Para hoje · ${checklistCategoryLabel(item.category)}`,
+      action: onGoToChecklist,
+    })),
+    ...attentionVault.slice(0, 4).map((item) => ({
+      title: item.title,
+      body: `${vaultKindLabel(item.kind)} · ${vaultStatusLabel(item.status)}`,
+      action: onGoToVault,
+    })),
+    ...undatedVault.slice(0, 2).map((item) => ({
+      title: item.title,
+      body: "No Cofre, mas sem data ou horario",
+      action: onGoToVault,
+    })),
+  ].slice(0, 6);
+
+  return (
+    <div className="travel-mode-shell">
+      <section className="travel-mode-hero">
+        <div className="travel-mode-map">
+          <span className="travel-pulse" />
+          <span className="travel-route-line" />
+          <span className="travel-dot d1" />
+          <span className="travel-dot d2" />
+          <span className="travel-dot d3" />
+        </div>
+        <div className="travel-mode-copy">
+          <span className="badge b-ok">modo viagem</span>
+          <h2>{heroTitle}</h2>
+          <p>{heroSubtitle}</p>
+          <div className="travel-mode-actions">
+            {!itinerary && (
+              <button className="btn" type="button" onClick={onGenerate} disabled={generating}>
+                {generating ? "Gerando..." : "Gerar roteiro"}
+              </button>
+            )}
+            <button className="btn ghost" type="button" onClick={onGoToAgenda}>
+              Abrir agenda completa
+            </button>
+            <button className="btn ghost" type="button" onClick={onGoToVault}>
+              Ver reservas
+            </button>
+          </div>
+        </div>
+        <div className="travel-mode-status-card">
+          <span className="stat-label">Status da viagem</span>
+          <strong>{statusLabel}</strong>
+          <small>
+            {entries.length
+              ? `${entries.length} marco${entries.length === 1 ? "" : "s"} entre roteiro e cofre`
+              : "Sem agenda montada ainda"}
+          </small>
+        </div>
+      </section>
+
+      <div className="travel-mode-grid">
+        <div className="card travel-now-card">
+          <span className="stat-label">{currentEntry ? "Acontecendo agora" : "Proximo passo"}</span>
+          {focusEntry ? (
+            <>
+              <h3>{focusEntry.title}</h3>
+              <p className="sub">
+                {focusEntry.timeLabel} · {formatAgendaDay(focusEntry.dayKey)} ·{" "}
+                {focusEntry.source === "cofre" ? "Cofre" : "Roteiro"}
+              </p>
+              <div className="travel-now-meta">
+                <span>{focusEntry.label}</span>
+                <span>{focusEntry.statusLabel}</span>
+                {focusEntry.place && <span>{focusEntry.place}</span>}
+                {focusEntry.amount != null && (
+                  <span>
+                    {focusEntry.currency
+                      ? `${focusEntry.currency} ${Number(focusEntry.amount).toFixed(2)}`
+                      : formatMoney(Number(focusEntry.amount))}
+                  </span>
+                )}
+              </div>
+              {focusEntry.description && <p className="item-d">{focusEntry.description}</p>}
+              {focusEntry.url && (
+                <a className="btn ghost sm" href={focusEntry.url} target="_blank" rel="noreferrer">
+                  Abrir link salvo
+                </a>
+              )}
+            </>
+          ) : (
+            <>
+              <h3>Nenhum compromisso com horario ainda</h3>
+              <p className="sub">
+                Adicione horarios no Cofre ou gere um roteiro para esta tela virar o copiloto do dia.
+              </p>
+              <button className="btn ghost" type="button" onClick={onGoToVault}>
+                Guardar reserva no Cofre
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="card travel-next-card">
+          <span className="stat-label">Hoje</span>
+          <h3>{todayEntries.length ? `${todayEntries.length} marco${todayEntries.length === 1 ? "" : "s"}` : "Dia livre"}</h3>
+          {upcomingToday.length ? (
+            <div className="travel-mini-timeline">
+              {upcomingToday.map((entry) => (
+                <button type="button" key={entry.id} onClick={onGoToAgenda}>
+                  <strong>{entry.timeLabel}</strong>
+                  <span>{entry.title}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="sub">
+              {todayEntries.length
+                ? "Os marcos de hoje ja passaram. Se ainda estiver na rua, confira a agenda completa."
+                : "Nada datado para hoje. Bom para explorar, descansar ou completar pendencias."}
+            </p>
+          )}
+        </div>
+
+        <div className="card travel-alert-card">
+          <div className="travel-card-head">
+            <div>
+              <span className="stat-label">Radar de campo</span>
+              <h3>{alerts.length ? `${alerts.length} alerta${alerts.length === 1 ? "" : "s"}` : "Tudo calmo"}</h3>
+            </div>
+            <button className="btn ghost sm" type="button" onClick={onGoToChecklist}>
+              Checklist
+            </button>
+          </div>
+          {alerts.length ? (
+            <div className="travel-alert-list">
+              {alerts.map((alert) => (
+                <button type="button" key={`${alert.title}-${alert.body}`} onClick={alert.action}>
+                  <strong>{alert.title}</strong>
+                  <span>{alert.body}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="sub">Sem checklist atrasado e sem reserva marcada para conferir. O raro sabor da ordem.</p>
+          )}
+        </div>
+
+        <div className="card travel-quick-card">
+          <span className="stat-label">Atalhos uteis</span>
+          <h3>Se algo apertar</h3>
+          <div className="travel-quick-grid">
+            <button type="button" onClick={onGoToVault}>
+              <strong>Reservas</strong>
+              <span>voo, hotel, codigos e links</span>
+            </button>
+            <button type="button" onClick={onGoToAgenda}>
+              <strong>Agenda</strong>
+              <span>dia por dia em ordem</span>
+            </button>
+            <button type="button" onClick={onGoToChecklist}>
+              <strong>Pendencias</strong>
+              <span>{firstChecklist ? firstChecklist.title : "nada urgente agora"}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TripAgendaView({
   trip,
   itinerary,
@@ -852,53 +1218,9 @@ function TripAgendaView({
   onGoToRoute: () => void;
   onGoToVault: () => void;
 }) {
-  const routeEntries =
-    itinerary?.itinerary_days.flatMap((day) =>
-      day.itinerary_items.map((item, index) => {
-        const time = item.start_time?.slice(0, 5) ?? null;
-        const sortTime = time ? new Date(`${day.day_date}T${time}:00`).getTime() : Number.MAX_SAFE_INTEGER - 1000 + index;
-        return {
-          id: `route-${item.id}`,
-          dayKey: day.day_date,
-          sortTime,
-          timeLabel: time ?? `parada ${index + 1}`,
-          source: "roteiro" as const,
-          title: item.title,
-          description: item.description,
-          label: item.category ?? "Roteiro",
-          place: item.place_query,
-          statusLabel: item.verified ? "verificado" : item.needs_vote ? "votacao" : "planejado",
-          amount: item.cost_estimate,
-          url: null,
-          attention: item.needs_vote,
-        };
-      })
-    ) ?? [];
-
   const activeVaultItems = vaultItems.filter((item) => item.status !== "canceled");
-  const vaultEntries = activeVaultItems
-    .filter((item) => item.starts_at || item.ends_at)
-    .map((item) => {
-      const dateValue = item.starts_at ?? item.ends_at ?? "";
-      return {
-        id: `vault-${item.id}`,
-        dayKey: localDateKey(dateValue),
-        sortTime: new Date(dateValue).getTime(),
-        timeLabel: formatAgendaTime(dateValue),
-        source: "cofre" as const,
-        title: item.title,
-        description: item.notes,
-        label: vaultKindLabel(item.kind),
-        place: item.location,
-        statusLabel: vaultStatusLabel(item.status),
-        amount: item.amount,
-        currency: item.currency,
-        url: item.url,
-        attention: item.status === "attention" || isOutsideTripDates(item, trip),
-      };
-    });
-
-  const entries = [...routeEntries, ...vaultEntries].sort((a, b) => a.sortTime - b.sortTime);
+  const entries = buildTravelTimeline(trip, itinerary, vaultItems);
+  const routeEntryCount = entries.filter((entry) => entry.source === "roteiro").length;
   const dayKeys = Array.from(new Set(entries.map((entry) => entry.dayKey))).sort();
   const undatedVault = activeVaultItems.filter((item) => !item.starts_at && !item.ends_at);
   const outsideTripDates = activeVaultItems.filter((item) => isOutsideTripDates(item, trip)).length;
@@ -914,7 +1236,7 @@ function TripAgendaView({
       `${outsideTripDates} item${outsideTripDates === 1 ? "" : "s"} com data fora do periodo da viagem.`,
     attentionVault > 0 &&
       `${attentionVault} item${attentionVault === 1 ? "" : "s"} marcado${attentionVault === 1 ? "" : "s"} para conferir.`,
-    entries.length > 0 && routeEntries.length === 0 && "A Agenda ainda depende so do Cofre; gere o roteiro para ver os passeios.",
+    entries.length > 0 && routeEntryCount === 0 && "A Agenda ainda depende so do Cofre; gere o roteiro para ver os passeios.",
   ].filter(Boolean) as string[];
 
   return (
