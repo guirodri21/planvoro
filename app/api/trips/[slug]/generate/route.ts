@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
-import { currentModelName, generateItinerary } from "@/lib/generate";
+import { currentModelName, datasEntre, generateItinerary } from "@/lib/generate";
 import { verifyPlace, type PlaceInfo } from "@/lib/places";
 import type { Idea, IdeaVote, Preference } from "@/lib/types";
 
@@ -13,6 +13,14 @@ export const maxDuration = 60;
 // orcamento de tempo: o que nao der pra conferir fica como nao verificado.
 const VERIFY_BUDGET_MS = 8_000;
 const NOT_VERIFIED: PlaceInfo = { verified: false, lat: null, lng: null, data: null };
+const DIAS_POR_LOTE = 7;
+
+type ExistingItinerary = {
+  id: string;
+  version: number;
+  rationale: string | null;
+  itinerary_days: { day_date: string }[];
+};
 
 export async function POST(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   try {
@@ -71,32 +79,78 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
     const prefs: Record<string, Preference> = {};
     for (const p of prefRows) prefs[p.member_id] = p as Preference;
 
-    const generated = await generateItinerary(trip, members, prefs, plannedIdeas, ideaVotes);
-
-    // Nova versao em vez de sobrescrever: da pra comparar e voltar atras.
-    const { data: last } = await db
+    const allDates = datasEntre(trip.start_date, trip.end_date);
+    const { data: lastRows, error: lastError } = await db
       .from("itineraries")
-      .select("version")
+      .select("id, version, rationale, itinerary_days(day_date)")
       .eq("trip_id", trip.id)
       .order("version", { ascending: false })
       .limit(1);
-    const version = (last?.[0]?.version ?? 0) + 1;
+    if (lastError) throw lastError;
 
-    const { data: itinerary, error: itError } = await db
-      .from("itineraries")
-      .insert({
-        trip_id: trip.id,
-        version,
-        model: currentModelName(),
-        rationale: generated.rationale,
-      })
-      .select()
-      .single();
-    if (itError) throw itError;
+    const last = (lastRows?.[0] ?? null) as ExistingItinerary | null;
+    const lastDates = new Set(last?.itinerary_days?.map((day) => day.day_date) ?? []);
+    const lastIsIncomplete = Boolean(last && allDates.some((date) => !lastDates.has(date)));
+    const itineraryToContinue = lastIsIncomplete ? last : null;
+    const existingDates = new Set(itineraryToContinue ? lastDates : []);
+    const missingDates = allDates.filter((date) => !existingDates.has(date));
+    const targetDates = (itineraryToContinue ? missingDates : allDates).slice(0, DIAS_POR_LOTE);
+
+    if (!targetDates.length) {
+      return NextResponse.json({
+        ok: true,
+        concluido: true,
+        dias_gerados: allDates.length,
+        dias_totais: allDates.length,
+        version: last?.version ?? null,
+      });
+    }
+
+    const generated = await generateItinerary(trip, members, prefs, plannedIdeas, ideaVotes, targetDates);
+
+    if (!generated.days.length) {
+      return NextResponse.json(
+        {
+          error:
+            "A IA nao devolveu nenhum dos dias pedidos para este lote. Tente novamente para continuar o roteiro.",
+          faltando: generated.faltando ?? targetDates,
+        },
+        { status: 502 }
+      );
+    }
+
+    let itinerary = itineraryToContinue;
+    if (!itinerary) {
+      const version = (last?.version ?? 0) + 1;
+      const { data: created, error: itError } = await db
+        .from("itineraries")
+        .insert({
+          trip_id: trip.id,
+          version,
+          model: currentModelName(),
+          rationale: generated.rationale,
+        })
+        .select("id, version, rationale")
+        .single();
+      if (itError) throw itError;
+      itinerary = { ...created, itinerary_days: [] } as ExistingItinerary;
+    } else {
+      const { error: updateError } = await db
+        .from("itineraries")
+        .update({
+          model: currentModelName(),
+          rationale: generated.rationale || itinerary.rationale,
+        })
+        .eq("id", itinerary.id);
+      if (updateError) throw updateError;
+    }
 
     const deadline = Date.now() + VERIFY_BUDGET_MS;
 
-    for (const [dayIndex, day] of generated.days.entries()) {
+    let insertedDays = 0;
+    for (const day of generated.days) {
+      if (existingDates.has(day.day_date)) continue;
+
       const { data: dayRow, error: dayError } = await db
         .from("itinerary_days")
         .insert({
@@ -104,11 +158,13 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
           day_date: day.day_date,
           title: day.title,
           note: day.note,
-          position: dayIndex,
+          position: allDates.indexOf(day.day_date),
         })
         .select()
         .single();
       if (dayError) throw dayError;
+      insertedDays += 1;
+      existingDates.add(day.day_date);
 
       const items = day.items ?? [];
       const checked: PlaceInfo[] = [];
@@ -139,7 +195,17 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
       }
     }
 
-    return NextResponse.json({ ok: true, version });
+    const diasGerados = allDates.filter((date) => existingDates.has(date)).length;
+
+    return NextResponse.json({
+      ok: true,
+      version: itinerary.version,
+      concluido: diasGerados >= allDates.length,
+      dias_gerados: diasGerados,
+      dias_totais: allDates.length,
+      dias_lote: insertedDays,
+      faltando: allDates.filter((date) => !existingDates.has(date)),
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao gerar o roteiro.";
     return NextResponse.json({ error: msg }, { status: 500 });

@@ -82,6 +82,19 @@ type AgentReply = {
   watchouts: string[];
 };
 
+type GenerationProgress = {
+  diasGerados: number;
+  diasTotais: number;
+};
+
+type GenerateResponse = {
+  ok?: boolean;
+  error?: string;
+  concluido?: boolean;
+  dias_gerados?: number;
+  dias_totais?: number;
+};
+
 const IDEA_CATEGORIES = [
   "Restaurante",
   "Passeio",
@@ -304,6 +317,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   const [tab, setTab] = useState<WorkspaceTab>("grupo");
   const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState<GenerationProgress | null>(null);
 
   const load = useCallback(async () => {
     setError("");
@@ -368,18 +382,38 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     }
 
     setGenerating(true);
+    setProgress(null);
     setError("");
 
     try {
-      const res = await fetch(`/api/trips/${slug}/generate`, {
-        method: "POST",
-        headers: authJsonHeaders(accessToken),
-      });
-      const json = await readApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel gerar o roteiro.");
+      let completed = false;
+      for (let round = 0; round < 60; round += 1) {
+        const res = await fetch(`/api/trips/${slug}/generate`, {
+          method: "POST",
+          headers: authJsonHeaders(accessToken),
+        });
+        const json = await readApiJson<GenerateResponse>(res);
+        if (!res.ok) throw new Error(json.error ?? "Nao foi possivel gerar o roteiro.");
 
-      setTab("roteiro");
-      await load();
+        if (json.dias_totais) {
+          setProgress({
+            diasGerados: json.dias_gerados ?? 0,
+            diasTotais: json.dias_totais,
+          });
+        }
+
+        setTab("roteiro");
+        await load();
+        if (json.concluido !== false) {
+          completed = true;
+          break;
+        }
+      }
+      if (!completed) {
+        throw new Error("A geracao passou do limite de seguranca. Reabra a viagem e tente continuar.");
+      }
+
+      setProgress(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao gerar.");
     }
@@ -453,6 +487,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                 vaultItems={vault_items}
                 checklistItems={checklist_items}
                 generating={generating}
+                progress={progress}
                 onGenerate={generate}
                 onGoToTab={setTab}
               />
@@ -476,6 +511,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                   itinerary={itinerary}
                   plannedIdeaCount={plannedIdeaCount}
                   generating={generating}
+                  progress={progress}
                   onGenerate={generate}
                 />
               </div>
@@ -537,6 +573,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                   itinerary={itinerary}
                   plannedIdeaCount={plannedIdeaCount}
                   generating={generating}
+                  progress={progress}
                   onGenerate={generate}
                 />
               </div>
@@ -689,6 +726,7 @@ function TripExecutiveSummary({
   vaultItems,
   checklistItems,
   generating,
+  progress,
   onGenerate,
   onGoToTab,
 }: {
@@ -701,6 +739,7 @@ function TripExecutiveSummary({
   vaultItems: TripVaultItem[];
   checklistItems: TripChecklistItem[];
   generating: boolean;
+  progress: GenerationProgress | null;
   onGenerate: () => void;
   onGoToTab: (tab: WorkspaceTab) => void;
 }) {
@@ -812,7 +851,11 @@ function TripExecutiveSummary({
 
   const actionCards = [
     !itinerary && {
-      label: generating ? "Gerando roteiro..." : "Gerar roteiro",
+      label: progress
+        ? `Montando ${progress.diasGerados}/${progress.diasTotais} dias`
+        : generating
+          ? "Gerando roteiro..."
+          : "Gerar roteiro",
       hint: preferences.length ? "Criar primeira versao com IA" : "Preencha ao menos uma preferencia",
       onClick: onGenerate,
       disabled: generating || preferences.length === 0,
@@ -2735,6 +2778,7 @@ function PlanningCard({
   itinerary,
   plannedIdeaCount,
   generating,
+  progress,
   onGenerate,
 }: {
   accessToken: string | null;
@@ -2747,6 +2791,7 @@ function PlanningCard({
   itinerary: Itinerary | null;
   plannedIdeaCount: number;
   generating: boolean;
+  progress: GenerationProgress | null;
   onGenerate: () => void;
 }) {
   const [emails, setEmails] = useState("");
@@ -2850,7 +2895,9 @@ function PlanningCard({
       )}
 
       <button className="btn full" onClick={onGenerate} disabled={generating || preferences.length === 0}>
-        {generating
+        {progress
+          ? `Montando roteiro: ${progress.diasGerados} de ${progress.diasTotais} dias prontos...`
+          : generating
           ? "A IA esta montando o roteiro..."
           : itinerary
             ? plannedIdeaCount
@@ -2860,6 +2907,11 @@ function PlanningCard({
               ? "Gerar meu roteiro"
               : "Gerar roteiro do grupo"}
       </button>
+      {progress && (
+        <p className="sub small" style={{ marginTop: 10, marginBottom: 0 }}>
+          Viagens longas agora sao geradas em lotes para salvar cada parte assim que fica pronta.
+        </p>
+      )}
       {plannedIdeaCount > 0 && (
         <p className="sub small" style={{ marginTop: 10, marginBottom: 0 }}>
           A proxima geracao vai priorizar {plannedIdeaCount} ideia

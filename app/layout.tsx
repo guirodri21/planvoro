@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
+import Analytics from "@/app/analytics";
 import { AuthNav } from "@/components/auth-nav";
 import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
@@ -89,6 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <AuthProvider>
+          <Analytics />
           <nav className="topnav">
             <div className="wrap">
               <div className="nv">
