@@ -4,6 +4,8 @@ import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
 import Analytics from "@/app/analytics";
 import { AuthNav } from "@/components/auth-nav";
 import { AuthProvider } from "@/components/auth-provider";
+import { OfflineBanner } from "@/components/offline-banner";
+import { ServiceWorkerRegistrar } from "@/components/service-worker";
 import "./globals.css";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";
@@ -128,7 +130,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </nav>
 
+          <OfflineBanner />
+
           <main className="wrap main">{children}</main>
+
+          <ServiceWorkerRegistrar />
 
           <footer className="site-footer">
             <div className="wrap">
