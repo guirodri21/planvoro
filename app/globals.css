@@ -4619,3 +4619,71 @@ details p {
   display: grid;
   gap: 2px;
 }
+
+/* Paginas legais */
+.legal-page {
+  max-width: 68ch;
+  margin: 0 auto;
+  padding: 8px 0 48px;
+}
+
+.legal-page header {
+  margin-bottom: 22px;
+}
+
+.legal-page h1 {
+  margin-bottom: 6px;
+}
+
+.legal-body h2 {
+  font-size: 17px;
+  margin: 28px 0 8px;
+}
+
+.legal-body p,
+.legal-body li {
+  line-height: 1.65;
+  opacity: 0.9;
+}
+
+.legal-body ul {
+  margin: 8px 0 8px 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.legal-body a {
+  text-decoration: underline;
+}
+
+.site-footer .fbot {
+  display: grid;
+  gap: 8px;
+}
+
+/* Exclusao de conta */
+.danger-zone {
+  margin-top: 32px;
+  padding: 18px;
+  border: 1px solid rgba(220, 80, 80, 0.35);
+  border-radius: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.danger-zone h2 {
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+
+.danger-confirm {
+  display: grid;
+  gap: 8px;
+  max-width: 340px;
+}
+
+.danger-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

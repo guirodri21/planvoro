@@ -137,9 +137,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <a href="/#faq">Perguntas frequentes</a>
                     <a href="/nova">Criar viagem</a>
                   </div>
+                  <div className="fcol">
+                    <h4>Legal</h4>
+                    <a href="/termos">Termos de uso</a>
+                    <a href="/privacidade">Privacidade</a>
+                    <a href="/contato">Contato e suporte</a>
+                  </div>
                 </div>
                 <div className="fbot">
                   <span>© 2026 Planvoro. Feito no Brasil.</span>
+                  <span className="tiny">
+                    Roteiros e respostas são gerados por IA e podem conter erros. Confira preços,
+                    horários, vistos e regras oficiais na fonte antes de decidir.
+                  </span>
                 </div>
               </div>
             </div>
