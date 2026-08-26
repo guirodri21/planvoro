@@ -80,16 +80,24 @@ https://planvoro-app.vercel.app
 
 ## Proxima tarefa recomendada
 
-Implementar anexos reais no Cofre com Supabase Storage.
+Testar em producao o que foi entregue em 26/08/2026: anexos do Cofre,
+limites de uso da IA, exclusao de conta e acabamento mobile. Nada disso
+foi exercitado por uma pessoa ainda, so por tipagem e build.
 
-Objetivo:
+Depois, na ordem:
 
-- anexar PDF, imagem ou comprovante a um item do Cofre;
-- listar anexos no card do item;
-- abrir/remover anexos;
-- manter acesso privado apenas para membros da viagem.
+1. Preencher `lib/legal.ts` (razao social, CNPJ, foro, e-mails). Enquanto
+   estiver em branco, as paginas legais se declaram em preparacao.
+2. Stripe de verdade. As chaves ja estao na Vercel; falta criar produtos
+   e precos e validar o webhook em modo teste.
 
-Depois da entrega:
+Ha commits locais ainda nao enviados. Rodar o push antes de comecar:
+
+```bash
+git push origin HEAD:claude/consegye-ver-planvoro-ysh8r9
+```
+
+Depois de cada entrega:
 
 - rodar `npx tsc --noEmit`;
 - rodar `npm run build`;

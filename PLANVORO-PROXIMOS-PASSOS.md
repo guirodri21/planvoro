@@ -1,6 +1,6 @@
 # Planvoro - Geral da SaaS e proximos passos
 
-Atualizado em: 26/08/2026
+Atualizado em: 26/08/2026 (segunda revisao do dia)
 
 Este arquivo e o handoff operacional do Planvoro. Ele resume o que a SaaS e, o que ja existe no codigo, o estado atual de deploy e o que deve ser feito em seguida.
 
@@ -101,19 +101,24 @@ https://planvoro-app.vercel.app
 Deploy atual confirmado:
 
 ```text
-dpl_37fUzzNKrAFimxso7L3QwBq6K4We
 Status: READY
 ```
 
 Ultimos commits relevantes:
 
 ```text
+2c4d44b fix(planvoro): acabamento mobile do workspace
+f099758 feat(planvoro): termos, privacidade, contato e exclusao de conta
+f0780e3 feat(planvoro): observabilidade nas rotas criticas
+6df5562 feat(planvoro): limitar uso da ia na beta
+094ca19 fix(planvoro): abrir anexo do cofre sem forcar download
+ab8a54b feat(planvoro): anexar arquivos ja no cadastro do cofre
 a78b86e feat(planvoro): importar reservas para o cofre
-3b72271 feat(planvoro): adicionar convite por whatsapp
-a408339 fix(planvoro): gerar roteiros longos em lotes
-8f91a23 feat(planvoro): adicionar modo viagem operacional
-4f2a842 feat(planvoro): preparar beta gratis e auth persistente
 ```
+
+Atencao: os seis commits acima de `a78b86e` estao apenas no repositorio
+local. Producao ja tem tudo, porque o deploy Vercel envia os arquivos da
+maquina, mas o GitHub esta atras. Rodar o push antes de continuar.
 
 ## 5. Stack
 
@@ -242,6 +247,36 @@ Cofre:
 - Agenda e alertas inteligentes do Cofre.
 - Importacao inteligente: usuario cola texto de confirmacao e a IA preenche um rascunho do formulario.
 - Importacao nao salva automaticamente; usuario precisa revisar e clicar em guardar.
+- Anexos reais: PDF, print ou comprovante presos ao item, em bucket privado do Supabase Storage.
+- Anexo pode ser escolhido ja no formulario de cadastro e sobe junto ao salvar.
+- Abertura por signed URL de 2 minutos; botao separado para baixar.
+- Remover item do Cofre tambem apaga os objetos no Storage.
+
+Limites de uso (beta gratis):
+
+- Roteiro: 15 por viagem e 25 por pessoa/dia.
+- Agente: 40 perguntas por pessoa/dia.
+- Importacao do Cofre: 30 por pessoa/dia.
+- Viagens criadas: 12 por pessoa.
+- Tabela `ai_usage_events` registra cada chamada cobravel de IA.
+- Limite responde 429 com mensagem explicando o que fazer.
+
+Observabilidade:
+
+- `lib/logger.ts` escreve uma linha JSON por evento, filtravel nos logs da Vercel.
+- Roteiro, agente e importacao logam sucesso, falha e limite atingido.
+- Webhook Stripe e convite por e-mail logam sucesso e falha.
+- Log nunca leva conteudo de usuario nem segredo.
+- Eventos PostHog ligados: viagem criada, roteiro gerado/falhou, item do Cofre salvo, anexo enviado, importacao usada, pergunta ao agente e limite atingido.
+- `NEXT_PUBLIC_POSTHOG_KEY` confirmada na Vercel em producao.
+
+Legal e conta:
+
+- `/termos`, `/privacidade` e `/contato`, linkadas no rodape e no sitemap.
+- Aviso no rodape de que a IA erra e precisa ser conferida na fonte.
+- `DELETE /api/me` apaga conta, viagens organizadas e anexos no Storage.
+- Painel tem zona de exclusao com confirmacao digitada.
+- Identificacao juridica fica em `lib/legal.ts`, ainda em branco.
 
 Pagamentos:
 
@@ -298,6 +333,27 @@ Extrator Gemini para reservas/documentos colados no Cofre.
 
 lib/guards.ts
 Autorizacao de rotas por usuario e membro da viagem.
+
+lib/ai-limits.ts
+Limites de uso da IA e teto de viagens por pessoa.
+
+lib/logger.ts
+Log estruturado das rotas criticas. Uma linha JSON por evento.
+
+lib/legal.ts
+Identificacao juridica e contatos. AINDA EM BRANCO.
+
+lib/vault-attachments.ts
+Regras dos anexos: mime aceito, tamanho, nome seguro, caminho no Storage.
+
+app/api/trips/[slug]/vault/[itemId]/attachments
+Upload, abertura por signed URL e remocao de anexos.
+
+app/api/me/route.ts
+Exclusao de conta, viagens organizadas e anexos no Storage.
+
+app/termos, app/privacidade, app/contato
+Paginas legais.
 
 lib/supabase.ts
 Cliente admin server-side.
@@ -382,80 +438,59 @@ vercel curl https://planvoro-app.vercel.app
 
 Observacao: se a importacao ou agente falhar, verificar primeiro `GEMINI_API_KEY`, `GEMINI_MODEL` e limites gratuitos do Gemini.
 
-### Prioridade 1 - anexos reais no Cofre
+### Concluido em 26/08/2026
 
-Objetivo:
+Entregue, em producao, com `npx tsc --noEmit` e `npm run build` limpos:
 
-- Permitir anexar PDF, print, imagem ou comprovante a um item do Cofre.
+- Anexos reais no Cofre (era Prioridade 1).
+- Limites de uso da IA (era Prioridade 3).
+- Observabilidade: logs estruturados e eventos PostHog (era Prioridade 4).
+- Acabamento mobile (era Prioridade 5).
+- Termos, privacidade, contato e exclusao de conta (era Prioridade 6).
 
-Implementacao sugerida:
+Ressalva do mobile: foi auditoria de CSS, nao teste visual. Nao ha
+navegador headless no projeto e o workspace fica atras de login. Os
+problemas corrigidos foram confirmados lendo as regras; nao da para
+afirmar que nao sobrou nada.
 
-- Criar bucket no Supabase Storage, por exemplo `trip-vault`.
-- Criar tabela de anexos, por exemplo `trip_vault_attachments`.
-- Usar path privado por viagem/item.
-- Upload apenas para membro autenticado da viagem.
-- Download via rota server-side ou signed URL.
-- Mostrar anexos dentro do card do Cofre.
+### Prioridade 1 - preencher a identificacao juridica
 
-Cuidados:
+Arquivo: `lib/legal.ts`.
 
-- Nao deixar bucket publico sem necessidade.
-- Validar tamanho e tipo de arquivo.
-- Nunca confiar em nome de arquivo vindo do usuario.
-- Conferir RLS e permissoes do Storage.
+Faltam razao social, CNPJ, cidade, foro, e-mail de suporte e e-mail de
+privacidade. Enquanto estiverem em branco, as tres paginas legais mostram
+um aviso de "documento em preparacao" em vez de posar de versao final sem
+dizer quem e o controlador, que e o que a LGPD exige.
+
+Os textos sao bons rascunhos, escritos para o que o produto faz. Nao
+substituem revisao de advogado antes de cobrar de alguem.
 
 ### Prioridade 2 - Stripe de verdade
 
-Objetivo:
+O que ja existe:
 
-- Preparar cobranca sem quebrar beta gratis.
+- Rotas de checkout, portal e webhook.
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e as publishable ja estao
+  na Vercel em producao.
 
-Passos:
+O que falta:
 
-- Confirmar se Vercel tem `STRIPE_SECRET_KEY` e `STRIPE_WEBHOOK_SECRET`.
-- Criar produtos/precos no Stripe ou usar prices inline temporarios.
-- Testar em modo teste do Stripe com cartao de teste, sem dinheiro real.
-- Validar webhook `checkout.session.completed`.
+- Criar produtos e precos no painel da Stripe.
+- Definir o modelo: por viagem, Pro anual, quanto custa cada um.
+- Testar em modo teste com cartao de teste, sem dinheiro real.
+- Validar o webhook `checkout.session.completed`.
 - Persistir status de plano de forma confiavel.
-- Definir regra de limite: beta gratis, por viagem, Pro anual.
+- Decidir o que a beta gratis libera e o que passa a ser pago.
 
-Nota:
+Cuidado encontrado: `STRIPE_SECRET_KEY` esta marcada como Non-sensitive
+na Vercel. Nao vaza para o navegador, porque nao tem prefixo
+`NEXT_PUBLIC_`, mas qualquer pessoa com acesso ao projeto le o valor.
+Trocar para sensitive ao mexer no Stripe.
 
-- Nao precisa dinheiro real para testar Stripe em modo teste.
+### Prioridade 3 - validar o mobile no aparelho
 
-### Prioridade 3 - limites e planos
-
-Objetivo:
-
-- Evitar custo infinito de IA antes de abrir para usuarios reais.
-
-Sugestoes:
-
-- Limite de viagens por usuario na beta.
-- Limite de geracoes por viagem.
-- Limite de perguntas ao agente por dia.
-- Limite de importacoes do Cofre por dia.
-- Log de uso por usuario/viagem.
-- Mensagens claras quando bater limite.
-
-### Prioridade 4 - observabilidade
-
-Objetivo:
-
-- Saber quando a IA, Supabase, Stripe ou Resend falham.
-
-Sugestoes:
-
-- Eventos PostHog para criacao de viagem, roteiro gerado, convite enviado, importacao do Cofre, pergunta ao agente e checkout.
-- Logs estruturados nas rotas criticas.
-- Tela simples de erro para usuario.
-- Monitorar Vercel logs apos deploy.
-
-### Prioridade 5 - acabamento mobile
-
-Objetivo:
-
-- Deixar o uso durante a viagem excelente no celular.
+O CSS ja foi auditado e corrigido. Falta abrir num aparelho de verdade e
+ver o que sobrou, porque leitura de regra nao substitui olho.
 
 Checar:
 
@@ -467,20 +502,20 @@ Checar:
 - Formulario do Cofre e importador.
 - Fluxo de login Google em mobile.
 
-### Prioridade 6 - legal e confianca
+### Prioridade 4 - produto publico/viral
 
-Antes de abrir para usuarios reais:
+Objetivo:
 
-- Termos de uso.
-- Politica de privacidade.
-- Aviso de que IA pode errar.
-- Aviso de que precos, disponibilidade, vistos e horarios oficiais precisam ser conferidos fora do app.
-- Politica de exclusao de conta/dados.
-- Pagina de contato/suporte.
+- Dar tracao sem depender de anuncio pago.
 
-### Prioridade 7 - produto publico/viral
+O que faz mais sentido primeiro:
 
-Ideias futuras:
+- Exportar roteiro para PDF, que e o que a pessoa manda pro grupo.
+- Compartilhar resumo no WhatsApp.
+- Duplicar viagem/roteiro.
+- Templates de viagem.
+
+### Ideias sem prioridade definida
 
 - Link publico bonito do roteiro.
 - Exportar roteiro para PDF.
@@ -544,15 +579,30 @@ Uma entrega so deve ser considerada pronta quando:
 
 ## 13. Proxima tarefa recomendada para o Claude
 
-Implementar anexos reais no Cofre com Supabase Storage.
+Testar o que foi entregue, em producao, com conta real. Nada do que
+entrou em 26/08 foi exercitado por uma pessoa: anexos, limites, exclusao
+de conta e mobile foram validados so por tipagem e build.
+
+Roteiro de teste:
+
+1. Criar viagem e gerar um roteiro curto.
+2. Cadastrar item no Cofre com anexo escolhido ja no formulario.
+3. Abrir o anexo (tem que exibir, nao baixar) e depois baixar.
+4. Remover o anexo, e depois remover o item inteiro.
+5. Conferir no painel do Supabase que o objeto sumiu do bucket.
+6. Colar uma confirmacao real no importador.
+7. Perguntar algo ao agente.
+8. Abrir o workspace no celular e percorrer as abas.
+9. Apagar uma conta de teste e conferir que as viagens dela sumiram.
+
+Depois: preencher `lib/legal.ts` e partir para o Stripe.
 
 Prompt sugerido:
 
 ```text
-Continuar o Planvoro no projeto local C:\Users\guiro\Downloads\planvoro_1\planvoro-app.
-Leia primeiro PLANVORO-PROXIMOS-PASSOS.md e README.md.
-Proxima entrega: implementar anexos reais no Cofre usando Supabase Storage.
-O usuario deve poder anexar PDF/imagem/print a um item do Cofre, visualizar/listar/remover anexos e manter acesso privado apenas para membros da viagem.
-Nao expor secrets. Rodar npx tsc --noEmit e npm run build. Fazer commit, push para origin HEAD:claude/consegye-ver-planvoro-ysh8r9 e deploy Vercel se a entrega afetar producao.
+Continuar o Planvoro em C:\Users\guiro\Downloads\planvoro_1\planvoro-app.
+Leia primeiro PLANVORO-PROXIMOS-PASSOS.md.
+Rodar o push dos commits locais antes de comecar.
+Depois seguir a Prioridade 1 (lib/legal.ts) ou a 2 (Stripe), conforme o usuario decidir.
+Nao expor secrets. Rodar npx tsc --noEmit e npm run build antes de considerar pronto.
 ```
-
