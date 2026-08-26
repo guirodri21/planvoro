@@ -4,10 +4,12 @@ import {
   use,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
 } from "react";
 import { RouteMap } from "@/components/route-map";
+import { identificar, track } from "@/lib/analytics";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -391,6 +393,41 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     load();
   }, [authLoading, load]);
 
+  // Denominador da metrica que decide o produto. Dispara uma vez por sessao,
+  // so para quem ainda nao e do grupo e so em viagem de grupo: viagem solo nao
+  // tem convite, e conta-la inflaria o denominador e faria a metrica mentir
+  // para melhor.
+  const conviteSlug = data?.trip.slug ?? null;
+  const conviteSolo = data?.trip.is_solo ?? true;
+  const jaEMembro = Boolean(data?.viewer_member_id);
+  // O sessionStorage e a trava entre recarregamentos da pagina; o ref e a trava
+  // dentro desta. Sem o ref, um navegador que proibe sessionStorage redispararia
+  // o evento a cada refetch e inflaria o denominador.
+  const conviteContado = useRef(false);
+  useEffect(() => {
+    if (!conviteSlug || conviteSolo || jaEMembro || conviteContado.current) return;
+    const chave = `planvoro:convite_aberto:${conviteSlug}`;
+    try {
+      if (sessionStorage.getItem(chave)) {
+        conviteContado.current = true;
+        return;
+      }
+      sessionStorage.setItem(chave, "1");
+    } catch {
+      // navegador sem sessionStorage: o ref sozinho ainda garante uma contagem
+      // por carregamento de pagina.
+    }
+    conviteContado.current = true;
+    track("convite_aberto", { slug: conviteSlug });
+  }, [conviteSlug, conviteSolo, jaEMembro]);
+
+  // Amarra os eventos a pessoa. Sem isso o funil conta eventos soltos e nao
+  // consegue dizer quantas PESSOAS distintas atravessaram cada etapa.
+  const meuMemberId = data?.viewer_member_id ?? null;
+  useEffect(() => {
+    if (meuMemberId) identificar(meuMemberId);
+  }, [meuMemberId]);
+
   if (error && !data) return <div className="card">{error}</div>;
   if (!data) {
     return <div className="card muted">{authLoading ? "Carregando sua conta..." : "Carregando..."}</div>;
@@ -462,8 +499,13 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
       }
 
       setProgress(null);
+      track("roteiro_gerado", { slug });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao gerar.");
+      const motivo = e instanceof Error ? e.message : "Erro ao gerar.";
+      setError(motivo);
+      // o motivo vai junto: erro de prompt so aparece quando da para agrupar
+      // as falhas por mensagem
+      track("roteiro_falhou", { slug, motivo });
     }
 
     setGenerating(false);
@@ -502,7 +544,13 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
           nextPath={`/v/${slug}`}
         />
       ) : !me ? (
-        <JoinCard accessToken={accessToken} slug={slug} userName={userDisplayName(user)} onJoined={load} />
+        <JoinCard
+          accessToken={accessToken}
+          slug={slug}
+          userName={userDisplayName(user)}
+          isSolo={trip.is_solo}
+          onJoined={load}
+        />
       ) : (
         <>
           <WorkspaceTabs
@@ -3006,13 +3054,22 @@ function PlanningCard({
           <h3>Convide o grupo</h3>
           <div className="copybox">{inviteUrl}</div>
           <div className="invite-actions">
-            <a className="btn whatsapp full" href={whatsappInviteUrl} target="_blank" rel="noreferrer">
+            <a
+              className="btn whatsapp full"
+              href={whatsappInviteUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => track("convite_copiado", { slug, via: "whatsapp" })}
+            >
               Chamar no WhatsApp
             </a>
             <button
               className="btn ghost full"
               type="button"
-              onClick={() => navigator.clipboard?.writeText(inviteUrl)}
+              onClick={() => {
+                navigator.clipboard?.writeText(inviteUrl);
+                track("convite_copiado", { slug, via: "link" });
+              }}
             >
               Copiar link
             </button>
@@ -3123,11 +3180,13 @@ function JoinCard({
   accessToken,
   slug,
   userName,
+  isSolo,
   onJoined,
 }: {
   accessToken: string | null;
   slug: string;
   userName: string;
+  isSolo: boolean;
   onJoined: () => Promise<void> | void;
 }) {
   const [name, setName] = useState(userName);
@@ -3151,6 +3210,9 @@ function JoinCard({
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
 
+      // Numerador da metrica. So conta em viagem de grupo, para casar com o
+      // denominador de convite_aberto.
+      if (!isSolo) track("convidado_entrou", { slug });
       await onJoined();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro ao entrar.");
@@ -3225,6 +3287,7 @@ function PreferencesCard({
 
     setLoading(false);
     setSaved(true);
+    track("preferencias_salvas", { slug });
     await onSaved();
   }
 
@@ -3780,6 +3843,7 @@ function ItemRow({
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
 
+      track("voto_registrado", { slug, valor: value });
       await onChange();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao votar.");
@@ -3802,6 +3866,7 @@ function ItemRow({
       if (!res.ok) throw new Error(json.error);
 
       setText("");
+      track("comentario_enviado", { slug });
       await onChange();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao comentar.");
@@ -4347,6 +4412,9 @@ function AfterItinerary({
 
   function copy(url: string) {
     navigator.clipboard?.writeText(url);
+    // O mesmo helper copia o convite e o link publico do roteiro. So o convite
+    // entra no funil: contar o link publico inflaria a etapa de convite.
+    if (url === inviteUrl) track("convite_copiado", { slug, via: "link" });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -4363,7 +4431,13 @@ function AfterItinerary({
           </p>
           <div className="copybox">{inviteUrl}</div>
           <div className="invite-actions">
-            <a className="btn whatsapp full" href={whatsappInviteUrl} target="_blank" rel="noreferrer">
+            <a
+              className="btn whatsapp full"
+              href={whatsappInviteUrl}
+              target="_blank"
+              rel="noreferrer"
+              onClick={() => track("convite_copiado", { slug, via: "whatsapp" })}
+            >
               Chamar no WhatsApp
             </a>
             <button className="btn ghost full" type="button" onClick={() => copy(inviteUrl)}>

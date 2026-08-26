@@ -6,6 +6,7 @@ import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import { BUDGET_BANDS, DAILY_BUDGETS, INTERESTS, RESTRICTIONS, STYLES } from "@/lib/types";
 import { userDisplayName } from "@/lib/user-name";
+import { track } from "@/lib/analytics";
 
 type TripKind = "solo" | "couple" | "friends" | "family" | "work";
 type SubmitPhase = "idle" | "creating" | "preferences" | "generating" | "opening";
@@ -262,6 +263,13 @@ export default function NovaViagem() {
       if (!createRes.ok) throw new Error(created.error ?? "Não foi possível criar a viagem.");
 
       const slug = String(created.slug);
+      track("viagem_criada", {
+        slug,
+        solo: isSolo,
+        pessoas: isSolo ? 1 : form.party_size,
+        dias:
+          (new Date(form.end_date).getTime() - new Date(form.start_date).getTime()) / 86400000 + 1,
+      });
 
       setPhase("preferences");
       await fetch(`/api/trips/${slug}/preferences`, {
