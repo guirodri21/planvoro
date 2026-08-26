@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
-import { TRIPS_PER_USER } from "@/lib/ai-limits";
+import { tripsAllowedFor } from "@/lib/ai-limits";
 import { slugify } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -47,10 +47,11 @@ export async function POST(req: Request) {
       .eq("is_organizer", true);
     if (countError) throw countError;
 
-    if ((ownedTrips ?? 0) >= TRIPS_PER_USER) {
+    const tripsAllowed = await tripsAllowedFor(db, user.id);
+    if ((ownedTrips ?? 0) >= tripsAllowed) {
       return NextResponse.json(
         {
-          error: `A beta permite ate ${TRIPS_PER_USER} viagens criadas por pessoa. Arquive uma viagem antiga ou fale com a gente.`,
+          error: `Seu plano permite ate ${tripsAllowed} viagens criadas. Arquive uma viagem antiga ou fale com a gente.`,
         },
         { status: 429 }
       );

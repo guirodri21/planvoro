@@ -1,17 +1,25 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
 
 /**
- * Limites de uso da IA na beta gratis.
+ * Limites de uso da IA.
  *
- * O objetivo aqui nao e monetizar, e evitar que uma conta sozinha gere
- * custo ilimitado de modelo antes de existir cobranca. Os numeros sao
- * folgados para uso real e apertados para abuso.
+ * O objetivo nao e monetizar, e evitar que uma conta sozinha gere custo
+ * ilimitado de modelo. Os numeros sao folgados para uso real e apertados
+ * para abuso.
  *
  * O evento e gravado ANTES da chamada ao modelo: o custo nasce na chamada,
  * entao contar apenas as respostas bem-sucedidas deixaria o retry livre.
+ *
+ * Quem pagou tem teto mais alto, nao teto infinito. Sem nenhum limite, um
+ * unico script com uma assinatura ativa consegue queimar a conta de IA do
+ * mes inteiro.
  */
 
 export type AiUsageKind = "itinerary_generation" | "agent_question" | "vault_import";
+
+/** free = beta gratis. trip_pass = esta viagem foi liberada. pro = assinatura ativa. */
+export type BillingTier = "free" | "trip_pass" | "pro";
 
 type LimitRule = {
   /** Teto por viagem, somando todos os participantes. */
@@ -22,7 +30,7 @@ type LimitRule = {
   label: string;
 };
 
-export const AI_LIMITS: Record<AiUsageKind, LimitRule> = {
+const FREE_LIMITS: Record<AiUsageKind, LimitRule> = {
   itinerary_generation: {
     perTripTotal: 15,
     perUserPerDay: 25,
@@ -38,10 +46,76 @@ export const AI_LIMITS: Record<AiUsageKind, LimitRule> = {
   },
 };
 
-/** Teto de viagens por usuario enquanto a beta gratis estiver ligada. */
+const PAID_LIMITS: Record<AiUsageKind, LimitRule> = {
+  itinerary_generation: {
+    perTripTotal: 80,
+    perUserPerDay: 120,
+    label: "geracoes de roteiro",
+  },
+  agent_question: {
+    perUserPerDay: 250,
+    label: "perguntas ao agente",
+  },
+  vault_import: {
+    perUserPerDay: 150,
+    label: "importacoes do Cofre",
+  },
+};
+
+export const AI_LIMITS = FREE_LIMITS;
+
+/** Teto de viagens criadas por pessoa. */
 export const TRIPS_PER_USER = 12;
+export const TRIPS_PER_PRO_USER = 100;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+function limitsFor(tier: BillingTier) {
+  return tier === "free" ? FREE_LIMITS : PAID_LIMITS;
+}
+
+/**
+ * Descobre o que a pessoa pagou.
+ *
+ * O passe de viagem vale para a viagem, nao para a pessoa: qualquer
+ * participante de uma viagem liberada usa o teto maior ali dentro, porque
+ * quem pagou comprou para o grupo.
+ */
+export async function resolveBillingTier(
+  db: SupabaseClient,
+  userId: string,
+  tripId?: string
+): Promise<BillingTier> {
+  const { data: subscription } = await db
+    .from("user_subscriptions")
+    .select("status, current_period_end")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (isProStatusActive(subscription?.status, subscription?.current_period_end)) {
+    return "pro";
+  }
+
+  if (tripId) {
+    const { data: entitlement } = await db
+      .from("trip_entitlements")
+      .select("status, access_expires_at")
+      .eq("trip_id", tripId)
+      .eq("status", "paid")
+      .maybeSingle();
+
+    if (isTripEntitlementActive(entitlement?.status, entitlement?.access_expires_at)) {
+      return "trip_pass";
+    }
+  }
+
+  return "free";
+}
+
+export async function tripsAllowedFor(db: SupabaseClient, userId: string) {
+  const tier = await resolveBillingTier(db, userId);
+  return tier === "pro" ? TRIPS_PER_PRO_USER : TRIPS_PER_USER;
+}
 
 async function countEvents(
   db: SupabaseClient,
@@ -72,13 +146,17 @@ export async function reserveAiUsage(
   db: SupabaseClient,
   params: { kind: AiUsageKind; userId: string; tripId: string }
 ): Promise<string | null> {
-  const rule = AI_LIMITS[params.kind];
+  const tier = await resolveBillingTier(db, params.userId, params.tripId);
+  const rule = limitsFor(tier)[params.kind];
   const since = new Date(Date.now() - DAY_MS).toISOString();
+
+  const upgradeHint =
+    tier === "free" ? " Liberar esta viagem aumenta bastante esse limite." : " Fale com a gente se precisar de mais.";
 
   if (rule.perTripTotal !== undefined) {
     const used = await countEvents(db, { kind: params.kind, tripId: params.tripId });
     if (used >= rule.perTripTotal) {
-      return `Esta viagem ja usou as ${rule.perTripTotal} ${rule.label} incluidas na beta. Fale com a gente se precisar de mais.`;
+      return `Esta viagem ja usou as ${rule.perTripTotal} ${rule.label} disponiveis.${upgradeHint}`;
     }
   }
 

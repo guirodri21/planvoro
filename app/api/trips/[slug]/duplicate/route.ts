@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
-import { TRIPS_PER_USER } from "@/lib/ai-limits";
+import { tripsAllowedFor } from "@/lib/ai-limits";
 import { memberForUserInTrip } from "@/lib/guards";
 import { logError, logInfo, startTimer } from "@/lib/logger";
 import { slugify } from "@/lib/slug";
@@ -58,9 +58,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       .eq("is_organizer", true);
     if (countError) throw countError;
 
-    if ((ownedTrips ?? 0) >= TRIPS_PER_USER) {
+    const tripsAllowed = await tripsAllowedFor(db, user.id);
+    if ((ownedTrips ?? 0) >= tripsAllowed) {
       return NextResponse.json(
-        { error: `A beta permite ate ${TRIPS_PER_USER} viagens criadas por pessoa.` },
+        { error: `Seu plano permite ate ${tripsAllowed} viagens criadas.` },
         { status: 429 }
       );
     }
