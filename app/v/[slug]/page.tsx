@@ -202,8 +202,29 @@ function formatVaultRange(item: TripVaultItem) {
   return `${formatVaultDate(item.starts_at)} -> ${formatVaultDate(item.ends_at)}`;
 }
 
+/** "2026-11-12T22:40" — sem Z e sem deslocamento de fuso. */
+const NAIVE_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/;
+
+/**
+ * Valor para um input datetime-local.
+ *
+ * Item vindo do banco e um instante com fuso e precisa ser convertido para
+ * o relogio de quem olha. Rascunho vindo da importacao ja e hora de parede
+ * copiada da confirmacao — converter de novo tiraria as horas do fuso e
+ * mostraria um embarque que nunca existiu.
+ */
+/** "2026-08-21" vira "21/08/2026". O formato ISO cru na tela e ruido. */
+function formatTripDate(value: string) {
+  if (!value) return "";
+  const [year, month, day] = value.split("-");
+  return day && month && year ? `${day}/${month}/${year}` : value;
+}
+
 function toDateTimeLocalValue(value: string | null) {
   if (!value) return "";
+
+  if (NAIVE_DATETIME.test(value)) return value.slice(0, 16);
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
@@ -493,7 +514,11 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
           <div>
             <h1 style={{ marginBottom: 4 }}>{trip.destination}</h1>
             <p className="sub" style={{ margin: 0 }}>
-              {trip.start_date} ate {trip.end_date} · {trip.party_size} pessoas ·{" "}
+              {formatTripDate(trip.start_date)} a {formatTripDate(trip.end_date)} ·{" "}
+              {trip.is_solo || trip.party_size === 1
+                ? "viagem individual"
+                : `${trip.party_size} pessoas`}{" "}
+              ·{" "}
               {trip.budget_band ?? "orcamento livre"}
             </p>
           </div>
@@ -625,7 +650,14 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                   slug={slug}
                   onChange={load}
                 />
-                <AfterItinerary trip={trip} slug={slug} inviteUrl={inviteUrl} />
+                <AfterItinerary
+                  trip={trip}
+                  slug={slug}
+                  inviteUrl={inviteUrl}
+                  accessToken={accessToken}
+                  isOrganizer={Boolean(me?.is_organizer)}
+                  onChange={load}
+                />
               </>
             ) : (
               <div className="grid2">
@@ -898,7 +930,7 @@ function TripExecutiveSummary({
       tab: "cofre" as WorkspaceTab,
     },
     !hasTravelMovement && {
-      title: "Transporte principal nao salvo",
+      title: "Transporte principal não salvo",
       body: "Guarde voo, trem, carro ou transfer no Cofre.",
       tab: "cofre" as WorkspaceTab,
     },
@@ -973,7 +1005,7 @@ function TripExecutiveSummary({
     },
     {
       label: "Perguntar ao agente",
-      hint: "Prioridades, riscos e proximas acoes",
+      hint: "Prioridades, riscos e próximas ações",
       onClick: () => onGoToTab("agente"),
       disabled: false,
       primary: false,
@@ -1009,13 +1041,13 @@ function TripExecutiveSummary({
           </div>
           <div className="command-meta">
             <div>
-              <span className="stat-label">Periodo</span>
+              <span className="stat-label">Período</span>
               <strong>
                 {formatDueDate(trip.start_date)} a {formatDueDate(trip.end_date)}
               </strong>
             </div>
             <div>
-              <span className="stat-label">Duracao</span>
+              <span className="stat-label">Duração</span>
               <strong>{travelDays} dia{travelDays === 1 ? "" : "s"}</strong>
             </div>
             <div>
@@ -1664,6 +1696,14 @@ function TripChecklistView({
   async function removeItem(itemId: string) {
     if (!accessToken || workingId) return;
 
+    // Item do Cofre costuma ser a unica copia de um localizador. Um toque
+    // errado no celular nao pode apagar isso em silencio.
+    const item = items.find((entry) => entry.id === itemId);
+    const ok = window.confirm(
+      `Remover "${item?.title ?? "este item"}" do Cofre? Os anexos dele também são apagados.`
+    );
+    if (!ok) return;
+
     setWorkingId(itemId);
     setError("");
 
@@ -1917,7 +1957,11 @@ function TripMapView({ itinerary }: { itinerary: Itinerary | null }) {
       <div className="card map-card">
         <div className="map-head">
           <div>
-            <span className="stat-label">Dia {safeIndex + 1} de {mappable.length}</span>
+            <span className="stat-label">
+              {mappable.length === days.length
+                ? `Dia ${safeIndex + 1} de ${days.length}`
+                : `Dia ${safeIndex + 1} de ${mappable.length} com lugares no mapa`}
+            </span>
             <h2>{active.day.title || formatVaultDate(`${active.day.day_date}T12:00:00`)}</h2>
           </div>
           <div className="map-nav">
@@ -1943,8 +1987,9 @@ function TripMapView({ itinerary }: { itinerary: Itinerary | null }) {
         <TripMap points={route.current} />
 
         <p className="tiny">
-          {active.points.length} lugar{active.points.length === 1 ? "" : "es"} no mapa ·{" "}
-          {formatKm(route.currentKm)} de deslocamento em linha reta
+          {active.points.length === 1
+            ? "1 lugar no mapa neste dia"
+            : `${active.points.length} lugares no mapa · ${formatKm(route.currentKm)} de deslocamento em linha reta`}
         </p>
       </div>
 
@@ -4538,7 +4583,7 @@ function BudgetAlert({
   return (
     <div className={`budget-alert ${budgetTone(budget.status)}`}>
       <div className="budget-alert-head">
-        <div>
+        <div className="budget-alert-title">
           <span className="stat-label">Orçamento</span>
           <strong>{budget.headline}</strong>
         </div>
@@ -4764,6 +4809,7 @@ function ExpensesView({
   const [splitIds, setSplitIds] = useState<string[]>(members.map((member) => member.id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [removingId, setRemovingId] = useState("");
 
   useEffect(() => {
     setPayerId((current) => (current ? current : me.id));
@@ -4810,6 +4856,28 @@ function ExpensesView({
       }
       return [...current, id];
     });
+  }
+
+  async function removeExpense(expenseId: string) {
+    if (!accessToken || removingId) return;
+
+    setRemovingId(expenseId);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/trips/${slug}/expenses/${expenseId}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      });
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel remover o gasto.");
+
+      await onSaved();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao remover o gasto.");
+    } finally {
+      setRemovingId("");
+    }
   }
 
   async function saveExpense() {
@@ -5177,7 +5245,20 @@ function ExpensesView({
                       {formatExpenseDate(expense.created_at)}
                     </div>
                   </div>
-                  <b>{formatMoney(total)}</b>
+                  <div className="expense-row-end">
+                    <b>{formatMoney(total)}</b>
+                    {(me.is_organizer || expense.payer_member_id === me.id) && (
+                      <button
+                        className="btn ghost sm"
+                        type="button"
+                        onClick={() => removeExpense(expense.id)}
+                        disabled={removingId === expense.id}
+                        aria-label={`Remover ${expense.description}`}
+                      >
+                        {removingId === expense.id ? "Removendo..." : "Remover"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -5197,12 +5278,20 @@ function AfterItinerary({
   trip,
   slug,
   inviteUrl,
+  accessToken,
+  isOrganizer,
+  onChange,
 }: {
   trip: Trip;
   slug: string;
   inviteUrl: string;
+  accessToken: string | null;
+  isOrganizer: boolean;
+  onChange: () => Promise<void> | void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
   const publicUrl =
     typeof window !== "undefined" ? `${window.location.origin}/r/${slug}` : `/r/${slug}`;
   const whatsappInviteUrl = whatsappShareUrl(buildTripInviteMessage(trip, inviteUrl));
@@ -5213,6 +5302,39 @@ function AfterItinerary({
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
+
+  /**
+   * Publicar e despublicar o roteiro.
+   *
+   * Viagem de grupo nasce privada, entao sem este controle o bloco de
+   * compartilhar mandava o grupo para um 404 — justamente na viagem em
+   * que compartilhar faz mais sentido.
+   */
+  async function setPublic(next: boolean) {
+    if (!accessToken || publishing) return;
+
+    setPublishing(true);
+    setPublishError("");
+
+    try {
+      const res = await fetch(`/api/trips/${slug}`, {
+        method: "PATCH",
+        headers: authJsonHeaders(accessToken),
+        body: JSON.stringify({ is_public: next }),
+      });
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel mudar a visibilidade.");
+
+      await onChange();
+    } catch (e) {
+      setPublishError(e instanceof Error ? e.message : "Erro ao mudar a visibilidade.");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  const publish = () => setPublic(true);
+  const unpublish = () => setPublic(false);
 
   return (
     <div className="grid2">
@@ -5238,7 +5360,38 @@ function AfterItinerary({
 
       <div className="card">
         <h3>Compartilhar o roteiro</h3>
-        <p className="sub">Link publico, sem login. Qualquer pessoa consegue abrir e ver o roteiro pronto.</p>
+        {trip.is_public ? (
+          <p className="sub">
+            Link publico, sem login. Qualquer pessoa consegue abrir e ver o roteiro pronto. Cofre,
+            gastos e checklist nunca aparecem ali.
+          </p>
+        ) : (
+          <p className="sub">
+            Esta viagem esta privada: quem receber o link vai encontrar uma pagina nao encontrada.
+            Publique o roteiro para poder compartilhar.
+          </p>
+        )}
+
+        {!trip.is_public ? (
+          <>
+            {isOrganizer ? (
+              <>
+                <button
+                  className="btn full"
+                  type="button"
+                  onClick={publish}
+                  disabled={publishing || !accessToken}
+                >
+                  {publishing ? "Publicando..." : "Publicar roteiro"}
+                </button>
+                {publishError && <div className="err">{publishError}</div>}
+              </>
+            ) : (
+              <p className="tiny">Quem organiza a viagem pode publicar o roteiro.</p>
+            )}
+          </>
+        ) : (
+          <>
         <div className="copybox">{publicUrl}</div>
         <div style={{ display: "flex", gap: 10 }}>
           <a className="btn whatsapp full" href={whatsappPublicUrl} target="_blank" rel="noreferrer">
@@ -5260,6 +5413,23 @@ function AfterItinerary({
             PDF
           </a>
         </div>
+
+        {isOrganizer && (
+          <>
+            <button
+              className="btn ghost sm"
+              type="button"
+              onClick={unpublish}
+              disabled={publishing || !accessToken}
+              style={{ marginTop: 10, justifySelf: "start" }}
+            >
+              {publishing ? "Salvando..." : "Tornar privado"}
+            </button>
+            {publishError && <div className="err">{publishError}</div>}
+          </>
+        )}
+          </>
+        )}
 
         <div className="duplicate-inline">
           <h4>Repetir esta viagem</h4>

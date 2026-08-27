@@ -114,8 +114,14 @@ export function summarizeBudget({
   };
 }
 
-export function budgetTone(status: BudgetStatus): "ok" | "warn" | "neutral" {
-  if (status === "estourado" || status === "no_limite") return "warn";
+/**
+ * Estourar e estar no limite sao situacoes diferentes e precisam de cores
+ * diferentes: quem ja passou do teto nao tem mais o que evitar, tem o que
+ * corrigir.
+ */
+export function budgetTone(status: BudgetStatus): "ok" | "warn" | "over" | "neutral" {
+  if (status === "estourado") return "over";
+  if (status === "no_limite") return "warn";
   if (status === "atencao") return "neutral";
   return "ok";
 }

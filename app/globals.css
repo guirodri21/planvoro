@@ -5249,3 +5249,56 @@ details p {
     display: none;
   }
 }
+
+.expense-row-end {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 560px) {
+  .expense-row-end {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Pino numerado do mapa. Desenhado em CSS: o ícone padrão do Leaflet
+   busca um PNG por caminho relativo e dá 404 dentro de /v/[slug]. */
+.trip-map-pin {
+  background: none;
+  border: none;
+}
+
+.trip-map-pin > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0e9c6b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(16, 24, 22, 0.35);
+}
+
+/* Orçamento estourado: vermelho, não âmbar. Passar do teto e estar
+   perto dele exigem reações diferentes de quem lê. */
+.budget-alert.over {
+  border-color: rgba(185, 28, 28, 0.5);
+  background: rgba(185, 28, 28, 0.05);
+}
+
+.budget-alert.over .budget-bar > span {
+  background: #b91c1c;
+}
+
+.budget-alert-title {
+  display: grid;
+  gap: 2px;
+}

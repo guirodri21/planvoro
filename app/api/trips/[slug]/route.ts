@@ -167,7 +167,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 /**
  * Ajustes da viagem feitos pelo organizador depois da criacao.
  *
- * Hoje so o orcamento por pessoa. Fica separado do POST de criacao
+ * Orcamento por pessoa e visibilidade do roteiro. Fica separado do POST
  * porque a maioria das viagens ja existia antes deste campo, e obrigar a
  * refazer a viagem para definir um teto seria absurdo.
  */
@@ -193,26 +193,36 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
       );
     }
 
-    if (!Object.prototype.hasOwnProperty.call(body, "budget_per_person")) {
-      return NextResponse.json({ error: "Nada para atualizar." }, { status: 400 });
+    const has = (key: string) => Object.prototype.hasOwnProperty.call(body, key);
+    const update: Record<string, unknown> = {};
+
+    if (has("budget_per_person")) {
+      const raw = String(body.budget_per_person ?? "").trim().replace(",", ".");
+
+      if (!raw) {
+        update.budget_per_person = null;
+      } else {
+        const amount = Number(raw);
+        if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
+          return NextResponse.json({ error: "Valor de orcamento invalido." }, { status: 400 });
+        }
+        update.budget_per_person = Number(amount.toFixed(2));
+      }
     }
 
-    const raw = String(body.budget_per_person ?? "").trim().replace(",", ".");
-    let budget: number | null = null;
+    if (has("is_public")) {
+      update.is_public = Boolean(body.is_public);
+    }
 
-    if (raw) {
-      const amount = Number(raw);
-      if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
-        return NextResponse.json({ error: "Valor de orcamento invalido." }, { status: 400 });
-      }
-      budget = Number(amount.toFixed(2));
+    if (!Object.keys(update).length) {
+      return NextResponse.json({ error: "Nada para atualizar." }, { status: 400 });
     }
 
     const { data, error } = await db
       .from("trips")
-      .update({ budget_per_person: budget })
+      .update(update)
       .eq("id", membership.tripId)
-      .select("id, budget_per_person")
+      .select("id, budget_per_person, is_public")
       .single();
     if (error) throw error;
 

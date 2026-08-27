@@ -54,7 +54,23 @@ export function TripMap({
       const latLngs: [number, number][] = points.map((point) => [point.lat, point.lng]);
 
       points.forEach((point, index) => {
-        const marker = L.marker([point.lat, point.lng]).addTo(map);
+        // O icone padrao do Leaflet aponta para marker-icon.png com caminho
+        // relativo, que aqui resolve para /v/marker-icon.png e da 404 — o
+        // que aparecia era a palavra "Marker" cortada. Um divIcon nao busca
+        // arquivo nenhum e ainda carrega a ordem da parada, que e a
+        // informacao que o mapa existe para dar.
+        const marker = L.marker([point.lat, point.lng], {
+          icon: L.divIcon({
+            className: "trip-map-pin",
+            html: `<span>${index + 1}</span>`,
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+            popupAnchor: [0, -14],
+          }),
+          title: point.title,
+          alt: `Parada ${index + 1}: ${point.title}`,
+        }).addTo(map);
+
         marker.bindPopup(
           `<strong>${index + 1}. ${escapeHtml(point.title)}</strong>${
             point.startTime ? `<br>${escapeHtml(point.startTime)}` : ""

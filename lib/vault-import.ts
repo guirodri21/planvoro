@@ -93,12 +93,35 @@ function cleanCurrency(value: unknown) {
   return text.length >= 3 && text.length <= 8 ? text : "BRL";
 }
 
+/** Data e hora soltas dentro de um texto qualquer que a IA devolva. */
+const WALL_CLOCK = /(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/;
+
+/**
+ * Data extraida de uma confirmacao, preservada como hora de parede.
+ *
+ * Um cartao de embarque diz "22:40" e isso significa 22:40 no relogio do
+ * aeroporto — nao e um instante UTC. A versao anterior fazia
+ * `new Date(texto).toISOString()`: como a funcao roda no servidor da
+ * Vercel, que esta em UTC, "22:40" virava 22:40Z e o navegador do usuario
+ * no Brasil exibia 19:40. Tres horas a menos em toda importacao, e num
+ * voo de madrugada isso muda o dia.
+ *
+ * Agora o horario sai daqui sem fuso nenhum, e so vira instante quando a
+ * pessoa salva — ai sim no fuso do navegador dela, que e onde ela leu a
+ * confirmacao.
+ */
 function cleanDate(value: unknown) {
   const text = String(value ?? "").trim();
   if (!text) return null;
 
-  const date = new Date(text);
-  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  const match = WALL_CLOCK.exec(text);
+  if (!match) return null;
+
+  const [, year, month, day, hour, minute] = match;
+
+  // So a data, sem horario: meio-dia evita que qualquer ajuste de fuso
+  // empurre o item para o dia anterior ou seguinte.
+  return `${year}-${month}-${day}T${hour ?? "12"}:${minute ?? "00"}`;
 }
 
 function cleanAmount(value: unknown) {
@@ -195,7 +218,7 @@ REGRAS DE SEGURANCA
 - Nao invente numeros de reserva, datas, valores, links ou fornecedores.
 - Se um campo nao estiver claro, retorne string vazia e inclua o campo em missing_fields.
 - Use portugues do Brasil em summary e notes.
-- Datas devem vir em ISO 8601 quando houver data e horario claros. Se so houver data, use meio-dia local aproximado.
+- Datas: retorne no formato AAAA-MM-DDTHH:MM, SEM "Z" e SEM fuso horario. O horario impresso numa confirmacao e a hora local do lugar (o relogio do aeroporto, do hotel), entao copie exatamente o que esta escrito, sem converter nada. Se so houver data, use 12:00.
 - Para status: use paid se estiver explicitamente pago; reserved se houver confirmacao/reserva; attention se faltar dado essencial; saved para documento/link generico.
 - Para kind: flight, lodging, activity, transport, insurance, visa, restaurant, document ou other.
 - Para amount: retorne apenas numero decimal em texto, sem simbolo de moeda. Se desconhecido, string vazia.
