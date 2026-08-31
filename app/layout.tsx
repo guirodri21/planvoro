@@ -96,9 +96,9 @@ const structuredData = {
   description:
     "SaaS web brasileiro para planejar viagens sozinho ou em grupo com IA, roteiro, votação, gastos e convite por link.",
   offers: [
-    { "@type": "Offer", name: "Beta grátis", price: "0", priceCurrency: "BRL" },
-    { "@type": "Offer", name: "Por viagem pós-beta", price: "79", priceCurrency: "BRL" },
-    { "@type": "Offer", name: "Pro anual pós-beta", price: "149", priceCurrency: "BRL" },
+    { "@type": "Offer", name: "Grátis", price: "0", priceCurrency: "BRL" },
+    { "@type": "Offer", name: "Passe de viagem", price: "29", priceCurrency: "BRL" },
+    { "@type": "Offer", name: "Pro anual", price: "79", priceCurrency: "BRL" },
   ],
 };
 
@@ -141,7 +141,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       planvoro
                     </a>
                     <p className="small" style={{ maxWidth: "32ch", marginTop: 10 }}>
-                      Roteiro de viagem por IA. Sozinho ou com o grupo inteiro.
+                      Onde o grupo decide a viagem junto — e guarda tudo depois.
                     </p>
                   </div>
                   <div className="fcol">
