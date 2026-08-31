@@ -145,7 +145,7 @@ const IDEA_CATEGORIES = [
 const AGENT_PROMPTS = [
   "O que falta decidir antes dessa viagem?",
   "Como deixar esse roteiro mais barato sem perder qualidade?",
-  "O roteiro esta corrido demais? Onde voce ajustaria?",
+  "O roteiro esta corrido demais? Onde você ajustaria?",
   "Quais reservas eu deveria fazer primeiro?",
   "Que mensagem eu mando para alinhar o grupo?",
 ];
@@ -476,7 +476,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
         const json = await readApiJson<GenerateResponse>(res);
         if (!res.ok) {
           if (res.status === 429) track("limite_atingido", { acao: "roteiro" });
-          throw new Error(json.error ?? "Nao foi possivel gerar o roteiro.");
+          throw new Error(json.error ?? "Não foi possível gerar o roteiro.");
         }
 
         if (json.dias_totais) {
@@ -494,7 +494,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
         }
       }
       if (!completed) {
-        throw new Error("A geracao passou do limite de seguranca. Reabra a viagem e tente continuar.");
+        throw new Error("A geração passou do limite de segurança. Reabra a viagem e tente continuar.");
       }
 
       setProgress(null);
@@ -519,7 +519,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                 ? "viagem individual"
                 : `${trip.party_size} pessoas`}{" "}
               ·{" "}
-              {trip.budget_band ?? "orcamento livre"}
+              {trip.budget_band ?? "orçamento livre"}
             </p>
           </div>
           <div className="avatars">
@@ -540,7 +540,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
       {!user ? (
         <AuthRequiredCard
           title="Entre para acessar a viagem"
-          description="Agora o Planvoro usa conta para ligar voce aos votos, comentarios, preferencias e gastos dessa viagem."
+          description="Agora o Planvoro usa conta para ligar você aos votos, comentarios, preferencias e gastos dessa viagem."
           nextPath={`/v/${slug}`}
         />
       ) : !me ? (
@@ -803,7 +803,7 @@ function WorkspaceTabs({
     },
     { id: "cofre", label: "Cofre", meta: vaultCount ? `${vaultCount} salvo${vaultCount === 1 ? "" : "s"}` : "vazio" },
     { id: "agente", label: "Agente", meta: itineraryDays ? "consultor ativo" : "pre-roteiro" },
-    { id: "gastos", label: "Gastos", meta: expenseCount ? `${expenseCount} lancados` : "zerado" },
+    { id: "gastos", label: "Gastos", meta: expenseCount ? `${expenseCount} lançados` : "zerado" },
   ];
 
   return (
@@ -915,18 +915,18 @@ function TripExecutiveSummary({
       tab: "grupo" as WorkspaceTab,
     },
     !itinerary && {
-      title: "Roteiro ainda nao gerado",
-      body: "Gere uma primeira versao para transformar ideias em plano.",
+      title: "Roteiro ainda não gerado",
+      body: "Gere uma primeira versão para transformar ideias em plano.",
       tab: "roteiro" as WorkspaceTab,
     },
     openChecklist > 0 && {
       title: `${openChecklist} tarefa${openChecklist === 1 ? "" : "s"} pendente${openChecklist === 1 ? "" : "s"}`,
-      body: "Resolva pendencias operacionais antes de fechar reservas.",
+      body: "Resolva pendências operacionais antes de fechar reservas.",
       tab: "checklist" as WorkspaceTab,
     },
     attentionVault > 0 && {
       title: `${attentionVault} item${attentionVault === 1 ? "" : "s"} do Cofre para conferir`,
-      body: "Revise codigos, links, datas ou pagamentos marcados com atencao.",
+      body: "Revise códigos, links, datas ou pagamentos marcados com atenção.",
       tab: "cofre" as WorkspaceTab,
     },
     !hasTravelMovement && {
@@ -935,13 +935,13 @@ function TripExecutiveSummary({
       tab: "cofre" as WorkspaceTab,
     },
     !hasLodging && {
-      title: "Hospedagem nao salva",
-      body: "Centralize hotel ou Airbnb com endereco e check-in.",
+      title: "Hospedagem não salva",
+      body: "Centralize hotel ou Airbnb com endereço e check-in.",
       tab: "cofre" as WorkspaceTab,
     },
     outsideTripDates > 0 && {
       title: "Item com data fora da viagem",
-      body: "Pode ser conexao, fuso ou erro de cadastro.",
+      body: "Pode ser conexão, fuso ou erro de cadastro.",
       tab: "cofre" as WorkspaceTab,
     },
   ].filter(Boolean).slice(0, 5) as Array<{ title: string; body: string; tab: WorkspaceTab }>;
@@ -963,7 +963,7 @@ function TripExecutiveSummary({
         : generating
           ? "Gerando roteiro..."
           : "Gerar roteiro",
-      hint: preferences.length ? "Criar primeira versao com IA" : "Preencha ao menos uma preferencia",
+      hint: preferences.length ? "Criar primeira versão com IA" : "Preencha ao menos uma preferencia",
       onClick: onGenerate,
       disabled: generating || preferences.length === 0,
       primary: true,
@@ -977,7 +977,7 @@ function TripExecutiveSummary({
     },
     (itinerary || activeVaultItems.some((item) => item.starts_at || item.ends_at)) && {
       label: "Modo viagem",
-      hint: "Proximo passo, hoje e alertas",
+      hint: "Próximo passo, hoje e alertas",
       onClick: () => onGoToTab("viagem"),
       disabled: false,
       primary: false,
@@ -1031,8 +1031,8 @@ function TripExecutiveSummary({
         <span className="badge b-ok">central de comando</span>
         <h2>Resumo executivo da viagem</h2>
         <p className="sub">
-          Um painel rapido para saber se o grupo ja tem contexto suficiente, o que ainda esta solto
-          e qual acao mais aproxima a viagem de ficar redonda.
+          Um painel rápido para saber se o grupo já tem contexto suficiente, o que ainda está solto
+          e qual ação mais aproxima a viagem de ficar redonda.
         </p>
         <div className="command-readiness">
           <div className="readiness-ring" style={{ "--score": readiness } as CSSProperties}>
@@ -1061,7 +1061,7 @@ function TripExecutiveSummary({
       <div className="command-side">
         <div className="command-panel">
           <div className="command-panel-head">
-            <span className="stat-label">O que pede atencao</span>
+            <span className="stat-label">O que pede atenção</span>
             <strong>{risks.length ? `${risks.length} foco${risks.length === 1 ? "" : "s"}` : "sem travas"}</strong>
           </div>
           {risks.length ? (
@@ -1080,7 +1080,7 @@ function TripExecutiveSummary({
 
         <div className="command-panel done">
           <div className="command-panel-head">
-            <span className="stat-label">Ja encaminhado</span>
+            <span className="stat-label">Já encaminhado</span>
             <strong>{wins.length || "comecando"}</strong>
           </div>
           {wins.length ? (
@@ -1166,8 +1166,8 @@ function TravelModeView({
   const heroSubtitle = isDuringTrip
     ? "Acompanhe o que esta acontecendo agora, o que vem em seguida e qualquer alerta operacional."
     : isAfterTrip
-      ? "Revise gastos, guarde comprovantes finais e use o historico como memoria da viagem."
-      : "Use esta tela como checklist vivo antes de embarcar: reservas, horarios, documentos e pendencias.";
+      ? "Revise gastos, guarde comprovantes finais e use o histórico como memória da viagem."
+      : "Use esta tela como checklist vivo antes de embarcar: reservas, horarios, documentos e pendências.";
   const statusLabel = isDuringTrip
     ? "em andamento"
     : isAfterTrip
@@ -1243,7 +1243,7 @@ function TravelModeView({
 
       <div className="travel-mode-grid">
         <div className="card travel-now-card">
-          <span className="stat-label">{currentEntry ? "Acontecendo agora" : "Proximo passo"}</span>
+          <span className="stat-label">{currentEntry ? "Acontecendo agora" : "Próximo passo"}</span>
           {focusEntry ? (
             <>
               <h3>{focusEntry.title}</h3>
@@ -1274,7 +1274,7 @@ function TravelModeView({
             <>
               <h3>Nenhum compromisso com horario ainda</h3>
               <p className="sub">
-                Adicione horarios no Cofre ou gere um roteiro para esta tela virar o copiloto do dia.
+                Adicione horários no Cofre ou gere um roteiro para esta tela virar o copiloto do dia.
               </p>
               <button className="btn ghost" type="button" onClick={onGoToVault}>
                 Guardar reserva no Cofre
@@ -1298,8 +1298,8 @@ function TravelModeView({
           ) : (
             <p className="sub">
               {todayEntries.length
-                ? "Os marcos de hoje ja passaram. Se ainda estiver na rua, confira a agenda completa."
-                : "Nada datado para hoje. Bom para explorar, descansar ou completar pendencias."}
+                ? "Os marcos de hoje já passaram. Se ainda estiver na rua, confira a agenda completa."
+                : "Nada datado para hoje. Bom para explorar, descansar ou completar pendências."}
             </p>
           )}
         </div>
@@ -1334,14 +1334,14 @@ function TravelModeView({
           <div className="travel-quick-grid">
             <button type="button" onClick={onGoToVault}>
               <strong>Reservas</strong>
-              <span>voo, hotel, codigos e links</span>
+              <span>voo, hotel, códigos e links</span>
             </button>
             <button type="button" onClick={onGoToAgenda}>
               <strong>Agenda</strong>
               <span>dia por dia em ordem</span>
             </button>
             <button type="button" onClick={onGoToChecklist}>
-              <strong>Pendencias</strong>
+              <strong>Pendências</strong>
               <span>{firstChecklist ? firstChecklist.title : "nada urgente agora"}</span>
             </button>
           </div>
@@ -1378,7 +1378,7 @@ function TripAgendaView({
   const routeDays = itinerary?.itinerary_days.length ?? 0;
 
   const radar = [
-    !itinerary && "Roteiro ainda nao foi gerado.",
+    !itinerary && "Roteiro ainda não foi gerado.",
     activeVaultItems.length > 0 &&
       undatedVault.length > 0 &&
       `${undatedVault.length} item${undatedVault.length === 1 ? "" : "s"} do Cofre sem data ou horario.`,
@@ -1540,7 +1540,7 @@ function TripAgendaView({
                 ))}
               </div>
             ) : (
-              <p className="sub">Tudo que esta ativo no Cofre ja tem data ou horario.</p>
+              <p className="sub">Tudo que está ativo no Cofre já tem data ou horário.</p>
             )}
           </div>
         </aside>
@@ -1605,12 +1605,12 @@ function TripChecklistView({
     !hasVaultKind(["lodging"]) && {
       title: "Guardar hospedagem no Cofre",
       category: "booking" as TripChecklistCategory,
-      notes: "Inclua endereco, check-in, check-out, codigo da reserva e regras de cancelamento.",
+      notes: "Inclua endereço, check-in, check-out, código da reserva e regras de cancelamento.",
     },
     !hasVaultKind(["insurance"]) && {
       title: "Conferir seguro viagem",
       category: "health" as TripChecklistCategory,
-      notes: "Guarde apolice, contato de emergencia e cobertura principal.",
+      notes: "Guarde apolice, contato de emergência e cobertura principal.",
     },
     !hasVaultKind(["document", "visa"]) && {
       title: "Conferir documentos e requisitos de entrada",
@@ -1618,14 +1618,14 @@ function TripChecklistView({
       notes: "Verifique passaporte, visto, vacinas, autorizações e comprovantes necessarios.",
     },
     preferences.length < members.length && {
-      title: "Chamar quem ainda nao preencheu preferencias",
+      title: "Chamar quem ainda não preencheu preferencias",
       category: "group" as TripChecklistCategory,
       notes: `${members.length - preferences.length} pessoa(s) ainda faltam preencher preferencias.`,
     },
     vaultItems.some((item) => item.status === "attention") && {
       title: "Resolver itens marcados como precisa conferir",
       category: "planning" as TripChecklistCategory,
-      notes: "Revise o Cofre e atualize status, codigos ou links pendentes.",
+      notes: "Revise o Cofre e atualize status, códigos ou links pendentes.",
     },
   ].filter((item): item is { title: string; category: TripChecklistCategory; notes: string } =>
     Boolean(item && !hasExistingTask(item.title))
@@ -1657,7 +1657,7 @@ function TripChecklistView({
         body: JSON.stringify(payload),
       });
       const json = await readApiJson<{ item?: TripChecklistItem; error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel salvar a tarefa.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar a tarefa.");
 
       if (!input) {
         setForm({ title: "", category: "planning", due_date: "", notes: "" });
@@ -1683,7 +1683,7 @@ function TripChecklistView({
         body: JSON.stringify({ status }),
       });
       const json = await readApiJson<{ item?: TripChecklistItem; error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel atualizar a tarefa.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível atualizar a tarefa.");
 
       await onChange();
     } catch (e) {
@@ -1696,14 +1696,6 @@ function TripChecklistView({
   async function removeItem(itemId: string) {
     if (!accessToken || workingId) return;
 
-    // Item do Cofre costuma ser a unica copia de um localizador. Um toque
-    // errado no celular nao pode apagar isso em silencio.
-    const item = items.find((entry) => entry.id === itemId);
-    const ok = window.confirm(
-      `Remover "${item?.title ?? "este item"}" do Cofre? Os anexos dele também são apagados.`
-    );
-    if (!ok) return;
-
     setWorkingId(itemId);
     setError("");
 
@@ -1713,7 +1705,7 @@ function TripChecklistView({
         headers: authJsonHeaders(accessToken),
       });
       const json = await readApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel remover a tarefa.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível remover a tarefa.");
 
       await onChange();
     } catch (e) {
@@ -1729,7 +1721,7 @@ function TripChecklistView({
         <span className="badge b-ok">planejamento vivo</span>
         <h2>Checklist da viagem</h2>
         <p className="sub">
-          Aqui ficam as pendencias reais antes de viajar. O Planvoro cruza roteiro, Cofre e grupo
+          Aqui ficam as pendências reais antes de viajar. O Planvoro cruza roteiro, Cofre e grupo
           para sugerir o que ainda precisa ser resolvido.
         </p>
 
@@ -1785,7 +1777,7 @@ function TripChecklistView({
           rows={4}
           value={form.notes}
           onChange={(event) => updateForm({ notes: event.target.value })}
-          placeholder="Detalhes, link, pessoa responsavel ou contexto..."
+          placeholder="Detalhes, link, pessoa responsável ou contexto..."
         />
 
         {error && <div className="err">{error}</div>}
@@ -1798,8 +1790,8 @@ function TripChecklistView({
       <div className="checklist-stack">
         {suggestions.length > 0 && (
           <div className="card">
-            <h3>Sugestoes do Planvoro</h3>
-            <p className="sub">Atalhos baseados no que ainda nao aparece no Cofre ou no grupo.</p>
+            <h3>Sugestões do Planvoro</h3>
+            <p className="sub">Atalhos baseados no que ainda não aparece no Cofre ou no grupo.</p>
             <div className="checklist-suggestions">
               {suggestions.map((suggestion) => (
                 <button
@@ -1821,7 +1813,7 @@ function TripChecklistView({
           <div className="dashboard-head">
             <div>
               <h3>Tarefas da viagem</h3>
-              <p className="sub">Marque como feito, ignore o que nao se aplica ou remova tarefas antigas.</p>
+              <p className="sub">Marque como feito, ignore o que não se aplica ou remova tarefas antigas.</p>
             </div>
             <span className="badge b-ok">{items.length} total</span>
           </div>
@@ -1830,7 +1822,7 @@ function TripChecklistView({
             <div className="note">
               <b>Nenhuma tarefa ainda</b>
               <br />
-              Adicione tarefas manuais ou aceite uma sugestao para comecar.
+              Adicione tarefas manuais ou aceite uma sugestão para comecar.
             </div>
           ) : (
             <div className="checklist-items">
@@ -2110,7 +2102,7 @@ function TravelVaultView({
     !hasLodging && {
       tone: "warn",
       title: "Hospedagem sem registro",
-      body: "Quando escolher hotel ou Airbnb, salve endereco, check-in e codigo aqui.",
+      body: "Quando escolher hotel ou Airbnb, salve endereço, check-in e código aqui.",
     },
     !hasDocument && {
       tone: "neutral",
@@ -2120,17 +2112,17 @@ function TravelVaultView({
     attentionCount > 0 && {
       tone: "warn",
       title: `${attentionCount} item${attentionCount === 1 ? "" : "s"} para conferir`,
-      body: "Revise itens marcados como atencao antes de fechar o roteiro.",
+      body: "Revise itens marcados como atenção antes de fechar o roteiro.",
     },
     reservedNotPaidCount > 0 && {
       tone: "neutral",
       title: `${reservedNotPaidCount} reserva${reservedNotPaidCount === 1 ? "" : "s"} sem pago`,
-      body: "Se ja foi pago, marque como pago para o custo conhecido ficar mais confiavel.",
+      body: "Se já foi pago, marque como pago para o custo conhecido ficar mais confiavel.",
     },
     outsideTripCount > 0 && {
       tone: "warn",
       title: "Data fora da viagem",
-      body: "Existe item com data antes ou depois do periodo da viagem. Pode ser fuso, conexao ou erro.",
+      body: "Existe item com data antes ou depois do período da viagem. Pode ser fuso, conexão ou erro.",
     },
   ].filter(Boolean) as Array<{ tone: "warn" | "neutral"; title: string; body: string }>;
 
@@ -2247,7 +2239,7 @@ function TravelVaultView({
       const json = await readApiJson<{ draft?: VaultImportDraft; error?: string }>(res);
       if (!res.ok || !json.draft) {
         if (res.status === 429) track("limite_atingido", { acao: "importacao_cofre" });
-        throw new Error(json.error ?? "Nao foi possivel ler esse arquivo.");
+        throw new Error(json.error ?? "Não foi possível ler esse arquivo.");
       }
 
       track("cofre_importacao_usada", { confianca: json.draft.confidence, origem: "arquivo" });
@@ -2265,7 +2257,7 @@ function TravelVaultView({
 
     const text = importText.trim();
     if (text.length < 40) {
-      setImportError("Cole um email, recibo ou confirmacao com mais detalhes.");
+      setImportError("Cole um email, recibo ou confirmação com mais detalhes.");
       return;
     }
 
@@ -2282,7 +2274,7 @@ function TravelVaultView({
       const json = await readApiJson<{ draft?: VaultImportDraft; error?: string }>(res);
       if (!res.ok || !json.draft) {
         if (res.status === 429) track("limite_atingido", { acao: "importacao_cofre" });
-        throw new Error(json.error ?? "Nao foi possivel importar esse texto.");
+        throw new Error(json.error ?? "Não foi possível importar esse texto.");
       }
 
       track("cofre_importacao_usada", { confianca: json.draft.confidence });
@@ -2307,7 +2299,7 @@ function TravelVaultView({
         body: JSON.stringify(itemPayload()),
       });
       const json = await readApiJson<{ item?: TripVaultItem; error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel atualizar o Cofre.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível atualizar o Cofre.");
 
       // O item ja esta salvo. Se um anexo falhar daqui pra frente, o item
       // continua valendo: avisamos o que nao subiu em vez de desfazer tudo.
@@ -2360,7 +2352,7 @@ function TravelVaultView({
         body: JSON.stringify({ status }),
       });
       const json = await readApiJson<{ item?: TripVaultItem; error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel atualizar o status.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível atualizar o status.");
 
       await onChange();
     } catch (e) {
@@ -2373,6 +2365,15 @@ function TravelVaultView({
   async function removeItem(itemId: string) {
     if (!accessToken || workingId) return;
 
+    // Item do Cofre costuma ser a unica copia de um localizador, e some
+    // junto com os anexos. Um toque errado no celular nao pode fazer isso
+    // em silencio.
+    const item = items.find((entry) => entry.id === itemId);
+    const confirmado = window.confirm(
+      `Remover "${item?.title ?? "este item"}" do Cofre? Os anexos dele tambem sao apagados, e nao da para desfazer.`
+    );
+    if (!confirmado) return;
+
     setWorkingId(itemId);
     setError("");
 
@@ -2382,7 +2383,7 @@ function TravelVaultView({
         headers: authJsonHeaders(accessToken),
       });
       const json = await readApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel remover o item.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível remover o item.");
 
       await onChange();
     } catch (e) {
@@ -2410,14 +2411,14 @@ function TravelVaultView({
           <span className="badge b-ok">{editingId ? "editando item" : "central da viagem"}</span>
           {editingId && (
             <button className="btn ghost sm" type="button" onClick={resetForm} disabled={saving}>
-              Cancelar edicao
+              Cancelar edição
             </button>
           )}
         </div>
         <h2>{editingId ? "Editar item do Cofre" : "Cofre de reservas e documentos"}</h2>
         <p className="sub">
           Guarde tudo que foi comprado, reservado ou precisa ser conferido: voos, hospedagens,
-          passeios, seguros, vistos, restaurantes, links e codigos.
+          passeios, seguros, vistos, restaurantes, links e códigos.
         </p>
 
         <div className="vault-summary">
@@ -2443,20 +2444,20 @@ function TravelVaultView({
           <div className="vault-import-box">
             <div className="vault-import-head">
               <div>
-                <span className="badge b-warn">importacao inteligente</span>
-                <h3>Colar confirmacao</h3>
+                <span className="badge b-warn">importação inteligente</span>
+                <h3>Colar confirmação</h3>
               </div>
               <span className="tiny">Nada e salvo automaticamente.</span>
             </div>
             <p className="sub">
-              Cole um email ou recibo, ou envie o PDF da confirmacao e o print da tela. O
-              Planvoro extrai um rascunho para voce revisar antes de guardar no Cofre.
+              Cole um email ou recibo, ou envie o PDF da confirmação e o print da tela. O
+              Planvoro extrai um rascunho para você revisar antes de guardar no Cofre.
             </p>
             <textarea
               rows={5}
               value={importText}
               onChange={(event) => setImportText(event.target.value)}
-              placeholder="Ex: confirmacao de voo, reserva do hotel, seguro viagem, ingresso, transfer..."
+              placeholder="Ex: confirmação de voo, reserva do hotel, seguro viagem, ingresso, transfer..."
             />
             <div className="vault-import-actions">
               <button
@@ -2560,7 +2561,7 @@ function TravelVaultView({
             />
           </div>
           <div>
-            <label>Codigo / localizador</label>
+            <label>Código / localizador</label>
             <input
               value={form.confirmation_code}
               onChange={(event) => updateForm({ confirmation_code: event.target.value })}
@@ -2698,7 +2699,7 @@ function TravelVaultView({
       <div className="vault-list">
         <div className="vault-smart-grid">
           <div className="card vault-timeline-card">
-            <span className="badge b-ok">proximos</span>
+            <span className="badge b-ok">próximos</span>
             <h3>Agenda do Cofre</h3>
             {upcomingItems.length === 0 ? (
               <p className="sub">Adicione datas em voos, hospedagens e reservas para montar a linha do tempo.</p>
@@ -2725,7 +2726,7 @@ function TravelVaultView({
             <span className="badge b-warn">radar</span>
             <h3>Alertas inteligentes</h3>
             {vaultInsights.length === 0 ? (
-              <p className="sub">O Cofre esta redondo: itens essenciais cadastrados e nada marcado para conferir.</p>
+              <p className="sub">O Cofre está redondo: itens essenciais cadastrados e nada marcado para conferir.</p>
             ) : (
               <div className="vault-insights">
                 {vaultInsights.map((insight) => (
@@ -2743,8 +2744,8 @@ function TravelVaultView({
           <div className="card">
             <h3>Cofre vazio</h3>
             <p className="sub">
-              Quando voce tiver um localizador, reserva, comprovante ou link importante, guarda aqui
-              para o grupo nao depender de prints perdidos no WhatsApp.
+              Quando você tiver um localizador, reserva, comprovante ou link importante, guarda aqui
+              para o grupo não depender de prints perdidos no WhatsApp.
             </p>
             <div className="note">
               <b>Bom primeiro item</b>
@@ -2772,16 +2773,16 @@ function TravelVaultView({
                 </div>
                 <div>
                   <span>Fornecedor</span>
-                  <strong>{item.provider || "nao informado"}</strong>
+                  <strong>{item.provider || "não informado"}</strong>
                 </div>
                 <div>
-                  <span>Codigo</span>
-                  <strong>{item.confirmation_code || "sem codigo"}</strong>
+                  <span>Código</span>
+                  <strong>{item.confirmation_code || "sem código"}</strong>
                 </div>
                 <div>
                   <span>Valor</span>
                   <strong>
-                    {item.amount == null ? "nao informado" : `${item.currency} ${Number(item.amount).toFixed(2)}`}
+                    {item.amount == null ? "não informado" : `${item.currency} ${Number(item.amount).toFixed(2)}`}
                   </strong>
                 </div>
               </div>
@@ -2790,8 +2791,8 @@ function TravelVaultView({
               {item.notes && <p className="item-d">{item.notes}</p>}
               {isOutsideTripDates(item, trip) && (
                 <div className="note tight">
-                  A data deste item parece cair fora do periodo da viagem. Confira fuso, conexao ou
-                  horario cadastrado.
+                  A data deste item parece cair fora do período da viagem. Confira fuso, conexão ou
+                  horário cadastrado.
                 </div>
               )}
 
@@ -2902,7 +2903,7 @@ async function uploadVaultAttachment(
     body,
   });
   const json = await readApiJson<{ attachment?: TripVaultAttachment; error?: string }>(res);
-  if (!res.ok) throw new Error(json.error ?? "Nao foi possivel anexar o arquivo.");
+  if (!res.ok) throw new Error(json.error ?? "Não foi possível anexar o arquivo.");
 
   // So tipo e tamanho: nome de arquivo pode carregar dado pessoal.
   track("cofre_anexo_enviado", { mime: file.type, bytes: file.size });
@@ -2969,7 +2970,7 @@ function VaultAttachmentsBlock({
         { headers: authHeaders(accessToken) }
       );
       const json = await readApiJson<{ url?: string; error?: string }>(res);
-      if (!res.ok || !json.url) throw new Error(json.error ?? "Nao foi possivel abrir o anexo.");
+      if (!res.ok || !json.url) throw new Error(json.error ?? "Não foi possível abrir o anexo.");
 
       window.open(json.url, "_blank", "noopener,noreferrer");
     } catch (e) {
@@ -2991,7 +2992,7 @@ function VaultAttachmentsBlock({
         headers: authHeaders(accessToken),
       });
       const json = await readApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel remover o anexo.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível remover o anexo.");
 
       await onChange();
     } catch (e) {
@@ -3090,9 +3091,9 @@ function TripLockedNotice({ slug, isOrganizer }: { slug: string; isOrganizer: bo
   return (
     <div className="card locked-notice">
       <span className="badge b-warn">recursos do Passe</span>
-      <h3>Cofre, gastos e checklist estao trancados</h3>
+      <h3>Cofre, gastos e checklist estão trancados</h3>
       <p className="sub">
-        Roteiro, grupo, ideias e votacao continuam liberados. O que ja foi salvo continua visivel e
+        Roteiro, grupo, ideias e votacao continuam liberados. O que já foi salvo continua visivel e
         pode ser removido — nada fica preso aqui dentro.
       </p>
       {isOrganizer ? (
@@ -3101,7 +3102,7 @@ function TripLockedNotice({ slug, isOrganizer }: { slug: string; isOrganizer: bo
         </a>
       ) : (
         <p className="tiny">
-          Quem organiza a viagem pode liberar para o grupo todo. Voce nao precisa pagar nada.
+          Quem organiza a viagem pode liberar para o grupo todo. Você não precisa pagar nada.
         </p>
       )}
     </div>
@@ -3172,7 +3173,7 @@ function TravelAgentView({
       const json = await readApiJson<AgentReply & { error?: string }>(res);
       if (!res.ok) {
         if (res.status === 429) track("limite_atingido", { acao: "agente" });
-        throw new Error(json.error ?? "Nao foi possivel falar com o agente.");
+        throw new Error(json.error ?? "Não foi possível falar com o agente.");
       }
 
       track("agente_pergunta_feita");
@@ -3190,7 +3191,7 @@ function TravelAgentView({
   async function createAgentTask(title: string, category: TripChecklistCategory, key = title) {
     if (!accessToken || savingTaskKey || !title.trim()) return false;
     if (hasTask(title)) {
-      setActionMessage("Essa tarefa ja esta no Checklist.");
+      setActionMessage("Essa tarefa já esta no Checklist.");
       return false;
     }
 
@@ -3210,7 +3211,7 @@ function TravelAgentView({
         }),
       });
       const json = await readApiJson<{ item?: TripChecklistItem; error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel enviar para o Checklist.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível enviar para o Checklist.");
 
       await onChange();
       setActionMessage("Tarefa enviada para o Checklist.");
@@ -3245,7 +3246,7 @@ function TravelAgentView({
           }),
         });
         const json = await readApiJson<{ item?: TripChecklistItem; error?: string }>(res);
-        if (!res.ok) throw new Error(json.error ?? "Nao foi possivel enviar os passos para o Checklist.");
+        if (!res.ok) throw new Error(json.error ?? "Não foi possível enviar os passos para o Checklist.");
         created += 1;
       }
 
@@ -3253,7 +3254,7 @@ function TravelAgentView({
       setActionMessage(
         created
           ? `${created} tarefa${created === 1 ? "" : "s"} enviada${created === 1 ? "" : "s"} para o Checklist.`
-          : "Todos esses passos ja estavam no Checklist."
+          : "Todos esses passos já estavam no Checklist."
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao salvar passos no Checklist.");
@@ -3391,7 +3392,7 @@ function TravelAgentView({
             {actionMessage && <div className="note tight agent-action-note">{actionMessage}</div>}
             <div className="grid2 tight">
               <AgentList
-                title="Proximos passos"
+                title="Próximos passos"
                 items={reply.next_steps}
                 checklistItems={checklistItems}
                 savingKey={savingTaskKey}
@@ -3469,7 +3470,7 @@ function AgentList({
                 onClick={() => onCreateTask(item, categoryForItem(item), key)}
                 disabled={Boolean(savingKey) || saved}
               >
-                {savingKey === key ? "Salvando..." : saved ? "Ja no Checklist" : "Virar tarefa"}
+                {savingKey === key ? "Salvando..." : saved ? "Já no Checklist" : "Virar tarefa"}
               </button>
             </div>
           );
@@ -3612,7 +3613,7 @@ function PlanningCard({
       setEmails("");
       setMessage("");
     } catch (e) {
-      setInviteError(e instanceof Error ? e.message : "Nao foi possivel enviar os convites.");
+      setInviteError(e instanceof Error ? e.message : "Não foi possível enviar os convites.");
     }
 
     setSendingInvites(false);
@@ -3715,7 +3716,7 @@ function PlanningCard({
       )}
       {plannedIdeaCount > 0 && (
         <p className="sub small" style={{ marginTop: 10, marginBottom: 0 }}>
-          A proxima geracao vai priorizar {plannedIdeaCount} ideia
+          A próxima geração vai priorizar {plannedIdeaCount} ideia
           {plannedIdeaCount === 1 ? "" : "s"} separada{plannedIdeaCount === 1 ? "" : "s"} pelo grupo.
         </p>
       )}
@@ -3731,9 +3732,9 @@ function PlanningCard({
 function RouteEmptyState({ onBackToGroup }: { onBackToGroup: () => void }) {
   return (
     <div className="card">
-      <h2>Seu roteiro ainda nao existe</h2>
+      <h2>Seu roteiro ainda não existe</h2>
       <p className="sub">
-        Preencha as preferencias do grupo e gere a primeira versao. Depois essa aba vira o quadro
+        Preencha as preferencias do grupo e gere a primeira versão. Depois essa aba vira o quadro
         principal para votar, comentar e alinhar o plano.
       </p>
       <button className="btn ghost" onClick={onBackToGroup}>
@@ -3786,7 +3787,7 @@ function JoinCard({
   return (
     <div className="card" style={{ maxWidth: 460 }}>
       <h2>Entrar na viagem</h2>
-      <p className="sub">Sua conta ja foi reconhecida. Falta so escolher como seu nome aparece no grupo.</p>
+      <p className="sub">Sua conta já foi reconhecida. Falta so escolher como seu nome aparece no grupo.</p>
       <label>Seu nome no grupo</label>
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ana" />
       {err && <div className="err">{err}</div>}
@@ -3857,7 +3858,7 @@ function PreferencesCard({
       <h2>Suas preferencias, {me.name}</h2>
       <p className="sub">A IA usa isso para equilibrar o roteiro entre todo mundo do grupo.</p>
 
-      <label>O que voce nao quer perder</label>
+      <label>O que você não quer perder</label>
       <div className="chips">
         {INTERESTS.map((interest) => (
           <button
@@ -3885,7 +3886,7 @@ function PreferencesCard({
         ))}
       </div>
 
-      <label>Seu orcamento por dia</label>
+      <label>Seu orçamento por dia</label>
       <select value={budget} onChange={(e) => setBudget(e.target.value)}>
         {DAILY_BUDGETS.map((item) => (
           <option key={item}>{item}</option>
@@ -3894,11 +3895,11 @@ function PreferencesCard({
 
       <div className="grid2 tight">
         <div>
-          <label>Voce chega em</label>
+          <label>Você chega em</label>
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         </div>
         <div>
-          <label>Voce sai em</label>
+          <label>Você sai em</label>
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         </div>
       </div>
@@ -3997,7 +3998,7 @@ function IdeasView({
         <div className="card stat-card">
           <span className="stat-label">Ideias abertas</span>
           <strong className="stat-value">{openCount}</strong>
-          <span className="tiny">Sugestoes para o grupo lapidar</span>
+          <span className="tiny">Sugestões para o grupo lapidar</span>
         </div>
         <div className="card stat-card">
           <span className="stat-label">Separadas</span>
@@ -4019,7 +4020,7 @@ function IdeasView({
             roteiro.
           </p>
 
-          <label>Titulo</label>
+          <label>Título</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -4072,13 +4073,13 @@ function IdeasView({
         <div className="card">
           <h2>Como decidir</h2>
           <p className="sub">
-            Votos deixam o grupo comparar desejo, duvida e veto antes de mexer no roteiro final.
+            Votos deixam o grupo comparar desejo, dúvida e veto antes de mexer no roteiro final.
           </p>
           <div className="note">
             <b>Fluxo recomendado</b>
             <br />
             1. Todo mundo sugere sem editar o roteiro. 2. O grupo vota. 3. As melhores ideias sao
-            separadas para entrar na proxima versao.
+            separadas para entrar na próxima versão.
           </div>
         </div>
       </div>
@@ -4092,7 +4093,7 @@ function IdeasView({
             <b>Nenhuma ideia ainda</b>
             <br />
             Comece com aquilo que sempre aparece no grupo: restaurantes, passeios imperdiveis,
-            planos de chuva ou coisas que alguem quer muito evitar.
+            planos de chuva ou coisas que alguém quer muito evitar.
           </div>
         ) : (
           <div className="idea-list">
@@ -4139,7 +4140,7 @@ function IdeaCard({
   const [error, setError] = useState("");
   const myVote = votes.find((vote) => vote.member_id === me.id)?.value ?? null;
   const score = votes.reduce((sum, vote) => sum + vote.value, 0);
-  const author = members.find((member) => member.id === idea.member_id)?.name ?? "alguem";
+  const author = members.find((member) => member.id === idea.member_id)?.name ?? "alguém";
   const statusLabel: Record<IdeaStatus, string> = {
     open: "aberta",
     planned: "separada",
@@ -4150,7 +4151,7 @@ function IdeaCard({
     planned: "b-ok",
     dismissed: "b-warn",
   };
-  const nameById = (id: string) => members.find((member) => member.id === id)?.name ?? "alguem";
+  const nameById = (id: string) => members.find((member) => member.id === id)?.name ?? "alguém";
 
   async function vote(value: number) {
     if (!accessToken) return;
@@ -4386,7 +4387,7 @@ function ItemRow({
   const [error, setError] = useState("");
 
   const myVote = me ? votes.find((vote) => vote.member_id === me.id)?.value ?? null : null;
-  const nameById = (id: string) => members.find((member) => member.id === id)?.name ?? "alguem";
+  const nameById = (id: string) => members.find((member) => member.id === id)?.name ?? "alguém";
   const colorById = (id: string) => members.find((member) => member.id === id)?.color ?? "#8B9AAD";
 
   async function vote(value: number) {
@@ -4569,12 +4570,12 @@ function BudgetAlert({
         body: JSON.stringify({ budget_per_person: value.trim() }),
       });
       const json = await readApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel salvar o orcamento.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar o orçamento.");
 
       setOpen(false);
       await onSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao salvar o orcamento.");
+      setError(e instanceof Error ? e.message : "Erro ao salvar o orçamento.");
     } finally {
       setSaving(false);
     }
@@ -4683,7 +4684,7 @@ function PixSettlementRow({
       </span>
       {pixKey ? (
         <button className="btn ghost sm" type="button" onClick={copyPix}>
-          {copied ? "Codigo copiado" : "Copiar Pix"}
+          {copied ? "Código copiado" : "Copiar Pix"}
         </button>
       ) : (
         <span className="tiny">{settlement.to.name} ainda nao cadastrou a chave Pix.</span>
@@ -4724,7 +4725,7 @@ function MyPixKey({
         body: JSON.stringify({ pix_key: value.trim() }),
       });
       const json = await readApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel salvar a chave.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar a chave.");
 
       setOpen(false);
       await onSaved();
@@ -4758,7 +4759,7 @@ function MyPixKey({
             autoComplete="off"
           />
           <span className="tiny">
-            Fica visivel para quem participa desta viagem. O Planvoro nao move dinheiro: o codigo
+            Fica visivel para quem participa desta viagem. O Planvoro não move dinheiro: o código
             abre o app do seu banco, que confirma tudo antes.
           </span>
           {error && <div className="err">{error}</div>}
@@ -4870,7 +4871,7 @@ function ExpensesView({
         headers: authHeaders(accessToken),
       });
       const json = await readApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel remover o gasto.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível remover o gasto.");
 
       await onSaved();
     } catch (e) {
@@ -4915,7 +4916,7 @@ function ExpensesView({
           <h2>Gastos e acertos</h2>
           <p className="sub">
             Registre pagamentos compartilhados e o Planvoro mostra quem pagou demais, quem ficou
-            devendo e como zerar tudo com o menor numero de transferencias.
+            devendo e como zerar tudo com o menor número de transferencias.
           </p>
           <div className="expense-command-grid">
             <div>
@@ -4924,14 +4925,14 @@ function ExpensesView({
               <small>{expenses.length} lancamento{expenses.length === 1 ? "" : "s"}</small>
             </div>
             <div>
-              <span className="stat-label">Voce pagou</span>
+              <span className="stat-label">Você pagou</span>
               <strong>{formatMoney(myTotals.paid)}</strong>
               <small>Saiu do seu bolso</small>
             </div>
             <div>
               <span className="stat-label">Sua parte</span>
               <strong>{formatMoney(myTotals.share)}</strong>
-              <small>O que voce consumiu no rateio</small>
+              <small>O que você consumiu no rateio</small>
             </div>
             <div className={myTotals.balance >= 0 ? "positive" : "negative"}>
               <span className="stat-label">Seu saldo</span>
@@ -4942,10 +4943,10 @@ function ExpensesView({
               </strong>
               <small>
                 {myTotals.balance > 0.009
-                  ? "Voce tem a receber"
+                  ? "Você tem a receber"
                   : myTotals.balance < -0.009
-                    ? "Voce deve ao grupo"
-                    : "Voce esta zerado"}
+                    ? "Você deve ao grupo"
+                    : "Você esta zerado"}
               </small>
             </div>
           </div>
@@ -4998,9 +4999,9 @@ function ExpensesView({
 
       <div className="grid2 expense-grid">
         <div className="card">
-          <h2>Lancar gasto</h2>
+          <h2>Lançar gasto</h2>
           <p className="sub">
-            Registre o que ja foi pago e deixe o saldo do grupo transparente sem sair do
+            Registre o que já foi pago e deixe o saldo do grupo transparente sem sair do
             planejamento.
           </p>
 
@@ -5111,7 +5112,7 @@ function ExpensesView({
                 <div>
                   <b>
                     {entry.member.name}
-                    {entry.member.id === me.id && <span className="badge b-ok">voce</span>}
+                    {entry.member.id === me.id && <span className="badge b-ok">você</span>}
                   </b>
                   <div className="tiny">
                     {formatMoney(entry.paid)} pagos · {formatMoney(entry.share)} de parte
@@ -5161,7 +5162,7 @@ function ExpensesView({
             <div className="note">
               <b>Tudo zerado</b>
               <br />
-              Pelos gastos atuais, ninguem precisa transferir nada para ninguem.
+              Pelos gastos atuais, ninguém precisa transferir nada para ninguém.
             </div>
           ) : (
             <div className="settlement-list">
@@ -5190,15 +5191,15 @@ function ExpensesView({
         </div>
 
         <div className="card expense-insights-card">
-          <span className="badge b-ok">leitura rapida</span>
+          <span className="badge b-ok">leitura rápida</span>
           <h2>Radar financeiro</h2>
           <div className="expense-insight-list">
             <div>
-              <strong>{creditors.length || "Ninguem"}</strong>
+              <strong>{creditors.length || "Ninguém"}</strong>
               <span>com saldo a receber</span>
             </div>
             <div>
-              <strong>{debtors.length || "Ninguem"}</strong>
+              <strong>{debtors.length || "Ninguém"}</strong>
               <span>com saldo a pagar</span>
             </div>
             <div>
@@ -5208,15 +5209,15 @@ function ExpensesView({
           </div>
           <p className="sub small" style={{ marginTop: 14, marginBottom: 0 }}>
             Dica: registre pagamentos reais aqui e use o Cofre para reservas/documentos. Quando a
-            reserva for paga pelo grupo, lance tambem em Gastos para entrar no acerto.
+            reserva for paga pelo grupo, lance também em Gastos para entrar no acerto.
           </p>
         </div>
       </div>
 
       <div className="card">
-        <h2>Ultimos gastos</h2>
+        <h2>Últimos gastos</h2>
         <p className="sub">
-          Cada lancamento mostra quem pagou, com quantas pessoas foi dividido e o valor por
+          Cada lançamento mostra quem pagou, com quantas pessoas foi dividido e o valor por
           pessoa.
         </p>
 
@@ -5224,7 +5225,7 @@ function ExpensesView({
           <div className="note">
             <b>Nenhum gasto ainda</b>
             <br />
-            Comece registrando transporte, hospedagem, mercado ou reservas que o grupo ja pagou.
+            Comece registrando transporte, hospedagem, mercado ou reservas que o grupo já pagou.
           </div>
         ) : (
           <div className="expense-list">
@@ -5233,7 +5234,7 @@ function ExpensesView({
               const splitCount = expense.split_member_ids.length;
               const perPerson = splitCount ? total / splitCount : total;
               const payerName =
-                members.find((member) => member.id === expense.payer_member_id)?.name ?? "alguem";
+                members.find((member) => member.id === expense.payer_member_id)?.name ?? "alguém";
 
               return (
                 <div className="row expense-row" key={expense.id}>
@@ -5323,7 +5324,7 @@ function AfterItinerary({
         body: JSON.stringify({ is_public: next }),
       });
       const json = await readApiJson<{ error?: string }>(res);
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel mudar a visibilidade.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível mudar a visibilidade.");
 
       await onChange();
     } catch (e) {
@@ -5340,7 +5341,7 @@ function AfterItinerary({
     <div className="grid2">
       {trip.is_solo && (
         <div className="card invite">
-          <h3>Vai com mais alguem?</h3>
+          <h3>Vai com mais alguém?</h3>
           <p className="sub">
             Mande esse link e cada pessoa marca o que quer fazer. A IA remonta o roteiro
             equilibrando o grupo inteiro -- quem e vegetariano, quem odeia museu, quem chega
@@ -5362,12 +5363,12 @@ function AfterItinerary({
         <h3>Compartilhar o roteiro</h3>
         {trip.is_public ? (
           <p className="sub">
-            Link publico, sem login. Qualquer pessoa consegue abrir e ver o roteiro pronto. Cofre,
+            Link público, sem login. Qualquer pessoa consegue abrir e ver o roteiro pronto. Cofre,
             gastos e checklist nunca aparecem ali.
           </p>
         ) : (
           <p className="sub">
-            Esta viagem esta privada: quem receber o link vai encontrar uma pagina nao encontrada.
+            Esta viagem está privada: quem receber o link vai encontrar uma página não encontrada.
             Publique o roteiro para poder compartilhar.
           </p>
         )}
@@ -5435,7 +5436,7 @@ function AfterItinerary({
           <h4>Repetir esta viagem</h4>
           <p className="sub">
             Copia destino, datas e roteiro para uma viagem nova e sua. Cofre, gastos e checklist
-            ficam onde estao.
+            ficam onde estão.
           </p>
           <DuplicateTrip slug={slug} label="Duplicar viagem" />
         </div>

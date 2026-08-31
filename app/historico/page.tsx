@@ -64,11 +64,11 @@ export default function HistoricoPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel carregar o historico.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível carregar o histórico.");
 
       setTrips((json.trips ?? []) as HistoryTrip[]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erro ao carregar o historico.");
+      setError(e instanceof Error ? e.message : "Erro ao carregar o histórico.");
     } finally {
       setLoading(false);
     }

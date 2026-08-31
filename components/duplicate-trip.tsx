@@ -42,7 +42,7 @@ export function DuplicateTrip({ slug, label = "Usar este roteiro" }: { slug: str
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (res.status === 429) track("limite_atingido", { acao: "duplicar_viagem" });
-        throw new Error(json.error ?? "Nao foi possivel duplicar a viagem.");
+        throw new Error(json.error ?? "Não foi possível duplicar a viagem.");
       }
 
       track("viagem_duplicada", { dias: json.copied_days ?? 0 });

@@ -22,15 +22,15 @@ export function LegalPage({
       <header>
         <h1>{title}</h1>
         <p className="sub">{summary}</p>
-        <p className="tiny">Ultima atualizacao: {formatLegalDate(LEGAL.updatedAt)}</p>
+        <p className="tiny">Última atualização: {formatLegalDate(LEGAL.updatedAt)}</p>
       </header>
 
       {LEGAL_PENDING && (
         <div className="note">
-          <b>Documento em preparacao</b>
+          <b>Documento em preparação</b>
           <br />
-          Ainda faltam a razao social, o CNPJ e o e-mail oficial de contato. Enquanto isso, este
-          texto serve como referencia do que o Planvoro faz, mas nao substitui a versao final.
+          Ainda faltam a razão social, o CNPJ e o e-mail oficial de contato. Enquanto isso, este
+          texto serve como referência do que o Planvoro faz, mas não substitui a versão final.
         </div>
       )}
 

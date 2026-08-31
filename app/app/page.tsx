@@ -428,7 +428,7 @@ function DeleteAccountCard({ accessToken }: { accessToken: string | null }) {
         body: JSON.stringify({ confirm }),
       });
       const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error ?? "Nao foi possivel apagar a conta.");
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível apagar a conta.");
 
       // A conta ja nao existe: se o cliente nao subir, a sessao local morre
       // no proximo refresh de token de qualquer forma.
