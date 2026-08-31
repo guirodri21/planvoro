@@ -80,6 +80,9 @@ export type Evento =
   | "cofre_anexo_enviado"
   | "cofre_importacao_usada"
   | "agente_pergunta_feita"
+  // amostra sem conta
+  | "amostra_pedida"
+  | "amostra_entregue"
   // saida viral
   | "roteiro_compartilhado"
   | "viagem_duplicada"

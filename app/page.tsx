@@ -10,28 +10,28 @@ export default function Home() {
         <div className="hero-grid">
           <div>
             <div className="pill">
-              <span className="dot-live" /> Central de viagem para solo e grupo
+              <span className="dot-live" /> Para viajar em grupo sem brigar
             </div>
             <h1 className="h1">
-              Tudo da viagem
+              Decidam a viagem
               <br />
-              em um só lugar.
+              juntos, de uma vez.
             </h1>
             <p className="lead">
-              O Planvoro junta roteiro, reservas, documentos, tarefas, decisões do grupo e gastos
-              numa central única. Você não compra passagem ou hotel por aqui; você guarda, entende
-              e compartilha tudo sem virar refém de WhatsApp e prints.
+              A IA monta o roteiro equilibrando o que cada um quer, e o grupo vota, comenta e
+              ajusta no mesmo lugar. Depois, tudo que vocês reservarem, gastarem e precisarem
+              conferir fica aqui — em vez de sumir em 200 mensagens no WhatsApp.
             </p>
             <div className="hero-cta">
-              <a href="/entrar?mode=signup&next=%2Fnova" className="btn lg">
-                Criar viagem grátis
+              <a href="/experimente" className="btn lg">
+                Ver um roteiro agora
               </a>
-              <a href="#produto" className="btn lg ghost">
-                Ver central da viagem
+              <a href="/entrar?mode=signup&next=%2Fnova" className="btn lg ghost">
+                Criar viagem grátis
               </a>
             </div>
             <p className="tiny" style={{ marginTop: 16 }}>
-              Grátis para começar · Sem cartão · Funciona no navegador do celular
+              Sem conta para experimentar · Roteiro completo grátis · Funciona no celular
             </p>
           </div>
 
@@ -396,6 +396,11 @@ export default function Home() {
             <h3>Grátis</h3>
             <div className="price">R$ 0</div>
             <p className="tiny">Uma viagem ativa por vez</p>
+            <div className="plan-compare">
+              Roteiro de 7 dias, com grupo inteiro:{" "}
+              <b>R$ 0 aqui</b>. Em ferramenta que só gera roteiro, o mesmo custa entre R$ 30 e
+              R$ 70 por viagem.
+            </div>
             <ul className="feat">
               <li>Roteiro por IA com verificação de lugar</li>
               <li>Grupo ilimitado, sem cobrar convidado</li>

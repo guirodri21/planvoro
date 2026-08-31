@@ -9,6 +9,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const paginasFixas: MetadataRoute.Sitemap = [
     { url: BASE, priority: 1, changeFrequency: "weekly" },
     { url: `${BASE}/nova`, priority: 0.8, changeFrequency: "monthly" },
+    { url: `${BASE}/experimente`, priority: 0.9, changeFrequency: "monthly" },
     { url: `${BASE}/termos`, priority: 0.3, changeFrequency: "yearly" },
     { url: `${BASE}/privacidade`, priority: 0.3, changeFrequency: "yearly" },
     { url: `${BASE}/contato`, priority: 0.4, changeFrequency: "yearly" },

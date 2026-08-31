@@ -23,6 +23,7 @@ export function NavLinks() {
           { href: "/#faq", label: "Dúvidas" },
         ]
       : [
+          { href: "/experimente", label: "Experimentar" },
           { href: "/#como", label: "Como funciona" },
           { href: "/#roteiro", label: "Roteiro" },
           { href: "/#precos", label: "Preços" },
