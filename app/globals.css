@@ -4776,12 +4776,30 @@ details p {
 /* Em tela de toque o dedo precisa de mais alvo que o cursor.
    44px e o minimo recomendado por Apple e Google. */
 @media (pointer: coarse) {
-  .btn.sm {
+  .btn.sm,
+  .tab-btn {
     min-height: 44px;
   }
 
-  .tab-btn {
+  /* Reagir e a acao mais repetida do Roteiro e a mais facil de errar com
+     o polegar: eram 29px de altura. */
+  .react {
     min-height: 44px;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* Marcar tarefa feita: circulo de 36px. Cresce sem virar bolha. */
+  .check-toggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* O zoom do Leaflet vem com 30px do proprio pacote. */
+  .leaflet-touch .leaflet-bar a {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
   }
 }
 
@@ -5263,6 +5281,18 @@ details p {
 }
 
 @media (max-width: 560px) {
+  /* .row e flex sem quebra e .expense-row-end nao encolhe, entao o bloco
+     de valor + Remover empurrava a linha para fora do card. Deixar a
+     linha quebrar poe o fim numa segunda linha, dentro da largura. */
+  .expense-row {
+    flex-wrap: wrap;
+  }
+
+  .expense-row > div:first-child {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
   .expense-row-end {
     width: 100%;
     justify-content: space-between;
