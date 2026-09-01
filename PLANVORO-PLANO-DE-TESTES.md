@@ -1,6 +1,6 @@
 # Planvoro — Plano de testes
 
-Atualizado em: 01/09/2026
+Atualizado em: 01/09/2026 — encerrado
 Produção: https://planvoro-app.vercel.app
 Repositório local: `C:\Users\guiro\Downloads\planvoro_1\planvoro-app`
 
@@ -14,12 +14,20 @@ Gemini, Vercel, Stripe, Resend.
 Em 26/08/2026 entraram doze entregas em produção. Este documento é o
 roteiro de teste manual delas.
 
-**Estado em 01/09/2026: 9 dos 12 testes passaram.** Os seis defeitos
-encontrados foram corrigidos e estao em producao. Cada teste abaixo traz
-o resultado no topo.
+**TODOS OS 12 TESTES PASSARAM.** Todos os defeitos encontrados foram
+corrigidos e estao em producao. Cada teste abaixo traz o resultado no topo.
 
-Faltam os testes 08, 09 e 11, que precisam de aparelho: modo aviao, tela
-de celular e uma conta descartavel.
+O que apareceu no caminho, por rodada:
+
+- Testes 01 a 10: data importada com 3h a menos, link publico levando a
+  404, gasto que nao dava para apagar, pinos do mapa quebrados.
+- Teste 12: CTA oferecendo beta desligada, e formulario aberto em tela
+  trancada — a pessoa preenchia tudo para so entao levar 402.
+- Regressao apos o refactor: moeda em dois formatos na mesma tela,
+  "items" em vez de "itens", data com toda palavra em maiuscula. Os tres
+  ja existiam antes; o refactor so os deixou visiveis.
+- Teste 09: rolagem lateral nos Gastos, e tres alvos de toque abaixo de
+  44px.
 
 ## O que já foi verificado (não refazer)
 
@@ -171,6 +179,8 @@ Conferido direto na produção e no banco, sem depender de clique:
 
 ## Teste 08 — Sem sinal
 
+> **PASSOU em 01/09.** Com o modo aviao ligado, a faixa de sem conexao aparece e o conteudo ja visitado continua acessivel.
+
 **Risco:** médio
 **Prova:** consultar o localizador no aeroporto sem rede.
 
@@ -186,6 +196,8 @@ Conferido direto na produção e no banco, sem depender de clique:
 ---
 
 ## Teste 09 — Celular
+
+> **PASSOU em 01/09, com tres correcoes.** Medido em viewport de 374px. A aba Gastos era a unica que arrastava para o lado, por causa do botao Remover adicionado na vespera. Reacoes do Roteiro (29px), circulo do Checklist (36px) e zoom do mapa (30px) ficaram em 44px. Zoom ao focar campo ja estava correto: os 30 campos das dez abas estao em 16px ou mais.
 
 **Risco:** médio
 **Prova:** o acabamento mobile foi auditado no CSS, não visto numa tela. Maior chance de ter sobrado algo torto.
@@ -220,6 +232,8 @@ Conferido direto na produção e no banco, sem depender de clique:
 ---
 
 ## Teste 11 — Exclusão de conta
+
+> **PASSOU em 01/09.** Ciclo completo com conta descartavel, feito por script usando as mesmas rotas de um usuario. Depois da exclusao: usuario, viagem, membros, item do Cofre, linha de anexo, objeto no Storage e registro de uso de IA, todos em zero.
 
 **Risco:** destrutivo. Usar uma conta descartável.
 **Prova:** a obrigação da LGPD, e que os anexos somem do Storage junto com a conta.
@@ -286,6 +300,17 @@ erro na tela, copiar o texto exato — a mensagem diz de qual rota veio.
 - Problema visual: print vale mais que descrição.
 - Erro de rede: abrir o console com F12 e copiar a linha em vermelho.
 - Os logs de produção e o banco podem ser lidos pelo assistente; não precisa investigar.
+
+## Descobertas que valem para o lançamento
+
+- **Confirmacao de e-mail e obrigatoria** e o envio padrao do Supabase
+  bate limite com pouquissimas tentativas. Numa divulgacao com dezenas de
+  cadastros, as pessoas simplesmente nao conseguem entrar, e sem erro
+  visivel. Configurar SMTP proprio com o Resend antes de divulgar.
+- **Protecao contra senha vazada e paga** no Supabase. No plano gratuito
+  ficou tamanho minimo de 10 caracteres com letra e numero, exigido tanto
+  na tela quanto no servidor. E mais fraco: "senha12345" passa e esta em
+  toda lista de vazamento.
 
 ## Pendências que não são teste
 

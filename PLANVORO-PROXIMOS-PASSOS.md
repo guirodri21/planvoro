@@ -1,6 +1,6 @@
 # Planvoro - Geral da SaaS e proximos passos
 
-Atualizado em: 26/08/2026 (segunda revisao do dia)
+Atualizado em: 01/09/2026
 
 Este arquivo e o handoff operacional do Planvoro. Ele resume o que a SaaS e, o que ja existe no codigo, o estado atual de deploy e o que deve ser feito em seguida.
 
@@ -453,12 +453,41 @@ navegador headless no projeto e o workspace fica atras de login. Os
 problemas corrigidos foram confirmados lendo as regras; nao da para
 afirmar que nao sobrou nada.
 
-### Prioridade 1 - preencher a identificacao juridica
+### Concluido em 01/09/2026
 
-Arquivo: `lib/legal.ts`.
+- Os 12 testes manuais passaram. Detalhe em `PLANVORO-PLANO-DE-TESTES.md`.
+- `lib/legal.ts` preenchido: Guilherme Paixao Rodrigues, pessoa fisica,
+  contato paixaodevtech@gmail.com. As paginas legais nao se declaram mais
+  em preparacao.
+- Amostra de roteiro sem conta em `/experimente`, com cache por destino,
+  limite por IP e teto diario.
+- Posicionamento refeito para atacar o grupo, que e o que o concorrente
+  mais visivel nao faz.
+- Workspace quebrado em `_lib` e `_components`: page.tsx caiu de 5.536
+  para 1.615 linhas.
 
-Faltam razao social, CNPJ, cidade, foro, e-mail de suporte e e-mail de
-privacidade. Enquanto estiverem em branco, as tres paginas legais mostram
+### Duas coisas descobertas testando, que travam o lancamento
+
+1. **Confirmacao de e-mail obrigatoria + limite de envio do Supabase.**
+   O envio padrao bate o teto com pouquissimas tentativas. Numa
+   divulgacao, as pessoas nao conseguem criar conta e voce nao fica
+   sabendo, porque nao gera erro visivel. Configurar SMTP do Resend em
+   Authentication → SMTP Settings.
+
+2. **Protecao contra senha vazada e paga.** No gratuito ficou o minimo de
+   10 caracteres com letra e numero, exigido na tela e no servidor. E
+   mais fraco, e vale saber disso.
+
+### ~~Prioridade 1 - preencher a identificacao juridica~~ (feito)
+
+Arquivo: `lib/legal.ts`. Preenchido em 01/09.
+
+CPF, cidade e foro ficaram de fora por escolha: identificar o controlador
+nao exige publicar documento, e foro proprio contra consumidor costuma
+ser tratado como clausula abusiva.
+
+Texto original, para referencia: faltavam razao social, CNPJ, cidade,
+foro, e-mail de suporte e e-mail de privacidade. Enquanto estiverem em branco, as tres paginas legais mostram
 um aviso de "documento em preparacao" em vez de posar de versao final sem
 dizer quem e o controlador, que e o que a LGPD exige.
 
