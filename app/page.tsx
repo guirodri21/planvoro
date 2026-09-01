@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { betaAccessDescription, betaAccessLabel } from "@/lib/beta";
+import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
 
 export default function Home() {
   return (
@@ -379,20 +379,36 @@ export default function Home() {
       {/* PRECOS */}
       <section id="precos">
         <div style={{ textAlign: "center", maxWidth: 620, margin: "0 auto 40px" }}>
-          <p className="eyebrow">{betaAccessLabel}</p>
-          <h2 className="h2">
-            Teste tudo agora.
-            <br />
-            Sem pagar nada.
-          </h2>
-          <p className="lead" style={{ marginLeft: "auto", marginRight: "auto" }}>
-            {betaAccessDescription} Queremos validar com grupos reais antes de ligar cobrança.
-          </p>
+          <p className="eyebrow">{betaAccessEnabled ? betaAccessLabel : "Preços"}</p>
+          {betaAccessEnabled ? (
+            <>
+              <h2 className="h2">
+                Teste tudo agora.
+                <br />
+                Sem pagar nada.
+              </h2>
+              <p className="lead" style={{ marginLeft: "auto", marginRight: "auto" }}>
+                {betaAccessDescription} Queremos validar com grupos reais antes de ligar cobrança.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="h2">
+                Pague uma vez.
+                <br />
+                Ou nunca.
+              </h2>
+              <p className="lead" style={{ marginLeft: "auto", marginRight: "auto" }}>
+                Sem mensalidade. O roteiro e o grupo são grátis para sempre; você só paga quando
+                quiser guardar reservas, dividir gastos e usar o Planvoro durante a viagem.
+              </p>
+            </>
+          )}
         </div>
 
         <div className="grid3" style={{ alignItems: "stretch" }}>
           <div className="plan hi">
-            <span className="plan-badge">BETA ATIVA</span>
+            <span className="plan-badge">{betaAccessEnabled ? "BETA ATIVA" : "COMECE AQUI"}</span>
             <h3>Grátis</h3>
             <div className="price">R$ 0</div>
             <p className="tiny">Uma viagem ativa por vez</p>
@@ -448,7 +464,7 @@ export default function Home() {
               <li>Sem mensalidade</li>
             </ul>
             <a href="/entrar?mode=signup&next=%2Fapp" className="btn ghost" style={{ marginTop: 20 }}>
-              Entrar na beta
+              {betaAccessEnabled ? "Entrar na beta" : "Assinar o Pro"}
             </a>
           </div>
         </div>
