@@ -14,9 +14,12 @@ Gemini, Vercel, Stripe, Resend.
 Em 26/08/2026 entraram doze entregas em produção. Este documento é o
 roteiro de teste manual delas.
 
-**Estado em 01/09/2026: 8 dos 12 testes passaram.** Os quatro defeitos
-encontrados foram corrigidos e reconfirmados. Cada teste abaixo traz o
-resultado no topo.
+**Estado em 01/09/2026: 9 dos 12 testes passaram.** Os seis defeitos
+encontrados foram corrigidos e estao em producao. Cada teste abaixo traz
+o resultado no topo.
+
+Faltam os testes 08, 09 e 11, que precisam de aparelho: modo aviao, tela
+de celular e uma conta descartavel.
 
 ## O que já foi verificado (não refazer)
 
@@ -231,21 +234,47 @@ Conferido direto na produção e no banco, sem depender de clique:
 
 ---
 
-## Teste 12 — Gate do Passe (BLOQUEADO)
+## Teste 12 — Gate do Passe
+
+> **PASSOU em 01/09.** Onze de onze pontos. Rendeu dois defeitos, ja
+> corrigidos: o botao do card do Passe ainda dizia "Usar beta gratis" com
+> a beta desligada, e Cofre, Gastos e Checklist mostravam o formulario
+> inteiro numa viagem trancada — a pessoa preenchia tudo para so entao
+> levar 402.
 
 **Prova:** que Cofre, gastos e checklist trancam sem o Passe, e que ler e apagar continuam liberados mesmo trancado.
-**Bloqueio duplo:** a beta ligada libera tudo por definição, E a conta de
-teste tem assinatura Pro ativa desde 01/09 (do teste 03), que cobre todas
-as viagens que ela organiza. Os dois precisam sair antes. Exige desligar `NEXT_PUBLIC_PLANVORO_BETA_ACCESS` na Vercel, o que tira a beta do ar para todos. Deixar para quando for encerrar a beta.
 
-1. Remover a assinatura Pro da conta de teste
-2. Desligar a beta na Vercel e publicar
-2. Numa viagem sem Passe, ver o aviso de trancado
-3. Tentar salvar no Cofre: precisa recusar com explicação (HTTP 402)
-4. Abrir e apagar item existente: precisa continuar funcionando
-5. Com um convidado, conferir que ele não vê botão de pagar
+Para repetir, e preciso desfazer o bloqueio duplo:
 
-**Esperado:** criar e editar bloqueiam; ler e apagar não. O convidado nunca recebe pedido de pagamento.
+1. Marcar a assinatura Pro como `canceled` em `user_subscriptions`
+   (nao apagar: e registro de pagamento)
+2. `vercel env add NEXT_PUBLIC_PLANVORO_BETA_ACCESS production --value "false" --no-sensitive`
+   — a flag `--no-sensitive` e obrigatoria: variavel `NEXT_PUBLIC_` nao
+   aceita visibilidade secreta e o comando falha sem ela
+3. Publicar
+
+O que foi verificado, todos aprovados:
+
+- Aviso "Cofre, gastos e checklist estao trancados" aparece
+- Criar item no Cofre: 402
+- Editar item do Cofre: 402
+- Abrir item existente: funciona
+- Apagar item do Cofre: 200
+- Lancar gasto: 402 · Remover gasto: 200
+- Criar e marcar tarefa: 402 · Apagar tarefa: 200
+- Roteiro, agenda, mapa, grupo, preferencias, ideias e votacao: livres
+- Organizador ve "Liberar esta viagem"
+- Landing sem o selo "BETA ATIVA", precos dizendo "Pague uma vez. Ou nunca."
+
+**Convidado nao ve botao de pagar:** verificado por leitura de codigo, nao
+por observacao. Os cinco pontos do produto que oferecem pagamento exigem
+`is_organizer`, e o ramo alternativo diz "Voce nao precisa pagar nada".
+Janela anonima NAO testa isso: `/v/[slug]` e privado e exige login, entao
+o que aparece e o muro de autenticacao. O teste real exige uma segunda
+conta aceitando o convite.
+
+**Estado restaurado em 01/09:** beta religada e assinatura de volta para
+`active`. Nao deixe o site em modo pago depois de testar.
 
 ---
 
@@ -260,10 +289,11 @@ erro na tela, copiar o texto exato — a mensagem diz de qual rota veio.
 
 ## Pendências que não são teste
 
-- Preencher `lib/legal.ts`: razão social, CNPJ, cidade, foro e e-mails. Enquanto estiver vazio, as páginas legais se declaram "em preparação".
+- ~~Preencher `lib/legal.ts`~~ — feito em 01/09. Controlador: Guilherme Paixão Rodrigues, pessoa física; contato paixaodevtech@gmail.com. CPF, cidade e foro ficaram fora por escolha.
 - Ligar a proteção contra senha vazada no Supabase (Authentication → Providers → Email).
 - Avaliar conta Stripe Brasil: hoje é conta US com moeda padrão em dólar e `charges_enabled: false`.
-- Enviar os commits locais para o GitHub:
+- Limpar, quando não precisar mais: membro "Bruno (teste)" e gasto "Jantar no Pelourinho" na viagem `salvador-bahia-ek44f`, criados para o teste 02.
+- Enviar os commits locais para o GitHub, quando houver:
 
 ```bash
 cd C:\Users\guiro\Downloads\planvoro_1\planvoro-app
