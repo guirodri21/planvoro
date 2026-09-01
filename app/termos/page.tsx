@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
-import { LEGAL, legalCompany, legalSupportEmail } from "@/lib/legal";
+import { LEGAL, legalCompany, legalDocument, legalSupportEmail } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Termos de uso · Planvoro",
@@ -16,8 +16,8 @@ export default function TermosPage() {
       <h2>1. Quem somos</h2>
       <p>
         O Planvoro é operado por {legalCompany}
-        {LEGAL.cnpj ? `, inscrita no CNPJ ${LEGAL.cnpj}` : ""}
-        {LEGAL.city ? `, com sede em ${LEGAL.city}` : ""}. Contato:{" "}
+        {legalDocument ? `, ${legalDocument}` : ""}
+        {LEGAL.city ? `, em ${LEGAL.city}` : ""}. Contato:{" "}
         <a href={`mailto:${legalSupportEmail}`}>{legalSupportEmail}</a>.
       </p>
 

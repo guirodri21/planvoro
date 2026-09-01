@@ -29,8 +29,9 @@ export function LegalPage({
         <div className="note">
           <b>Documento em preparação</b>
           <br />
-          Ainda faltam a razão social, o CNPJ e o e-mail oficial de contato. Enquanto isso, este
-          texto serve como referência do que o Planvoro faz, mas não substitui a versão final.
+          Ainda faltam o nome de quem opera o serviço e o e-mail oficial de contato. Enquanto
+          isso, este texto serve como referência do que o Planvoro faz, mas não substitui a versão
+          final.
         </div>
       )}
 

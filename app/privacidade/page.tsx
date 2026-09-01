@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/legal-page";
-import { LEGAL, legalCompany, legalPrivacyEmail } from "@/lib/legal";
+import { legalCompany, legalDocument, legalPrivacyEmail } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "Política de privacidade · Planvoro",
@@ -16,7 +16,7 @@ export default function PrivacidadePage() {
       <h2>1. Controlador</h2>
       <p>
         {legalCompany}
-        {LEGAL.cnpj ? ` (CNPJ ${LEGAL.cnpj})` : ""} é a controladora dos dados tratados no Planvoro.
+        {legalDocument ? ` (${legalDocument})` : ""} é quem controla os dados tratados no Planvoro.
         Para qualquer assunto de privacidade, incluindo os direitos previstos na LGPD, escreva para{" "}
         <a href={`mailto:${legalPrivacyEmail}`}>{legalPrivacyEmail}</a>.
       </p>

@@ -1,35 +1,53 @@
 /**
  * Identificacao juridica e contatos.
  *
- * PREENCHER ANTES DE ABRIR AO PUBLICO. A LGPD (art. 41) exige indicar o
- * controlador e um canal de contato do encarregado; os Termos precisam
- * dizer com quem o usuario esta contratando. Enquanto estiver com os
- * valores abaixo, as paginas mostram um aviso de rascunho.
+ * PREENCHER ANTES DE ABRIR AO PUBLICO. A LGPD exige indicar quem controla
+ * os dados e um canal de contato; enquanto `controllerName` ou
+ * `supportEmail` estiverem vazios, as paginas legais se declaram em
+ * preparacao em vez de posar de versao final.
+ *
+ * O Planvoro pode ser operado por pessoa fisica ou por empresa. Nos dois
+ * casos o que a lei pede e o mesmo: saber com quem o usuario esta
+ * tratando e como falar com essa pessoa.
+ *
+ * Sobre o documento: deixar `document` vazio e a escolha recomendada.
+ * Identificar o controlador nao exige publicar CPF, e CPF exposto em
+ * pagina publica e materia-prima para fraude de identidade. Se um pedido
+ * formal exigir, informe direto a quem pediu.
  */
 
 export const LEGAL = {
-  /** Razao social. Ex: "Planvoro Tecnologia LTDA". */
-  companyName: "",
-  /** CNPJ formatado. Ex: "00.000.000/0001-00". */
-  cnpj: "",
-  /** Cidade/UF da sede. Ex: "Sao Paulo/SP". */
+  /** Nome completo, se pessoa fisica. Razao social, se empresa. */
+  controllerName: "",
+
+  /** Opcional. Ver a observacao acima antes de preencher. */
+  document: "",
+  /** Rotulo do documento acima: "CPF" ou "CNPJ". */
+  documentLabel: "CNPJ" as "CPF" | "CNPJ",
+
+  /** Cidade/UF. Ex: "Salvador/BA". */
   city: "",
-  /** Foro eleito para disputas. Normalmente a comarca da sede. */
+  /** Foro eleito. Normalmente a comarca da cidade acima. */
   jurisdiction: "",
 
   /** Canal geral de suporte. */
   supportEmail: "",
-  /** Canal do encarregado de dados (LGPD). Pode ser o mesmo do suporte. */
+  /** Canal de privacidade (LGPD). Pode ser o mesmo do suporte. */
   privacyEmail: "",
 
   /** Ultima revisao dos documentos, em ISO. */
-  updatedAt: "2026-08-26",
+  updatedAt: "2026-09-01",
 } as const;
 
-export const LEGAL_PENDING = !LEGAL.companyName || !LEGAL.supportEmail;
+export const LEGAL_PENDING = !LEGAL.controllerName || !LEGAL.supportEmail;
 
-/** Nome a exibir enquanto a razao social nao foi preenchida. */
-export const legalCompany = LEGAL.companyName || "Planvoro";
+/** Nome a exibir enquanto o controlador nao foi identificado. */
+export const legalCompany = LEGAL.controllerName || "Planvoro";
+
+/** "CPF 000.000.000-00" ou string vazia quando nao ha documento publicado. */
+export const legalDocument = LEGAL.document
+  ? `${LEGAL.documentLabel} ${LEGAL.document}`
+  : "";
 
 export const legalSupportEmail = LEGAL.supportEmail || "contato@planvoro.com.br";
 
