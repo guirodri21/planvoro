@@ -445,7 +445,7 @@ export default function Home() {
               <li>Vale até 90 dias depois da volta</li>
             </ul>
             <a href="/entrar?mode=signup&next=%2Fnova" className="btn ghost" style={{ marginTop: 20 }}>
-              Usar beta grátis
+              {betaAccessEnabled ? "Usar beta grátis" : "Liberar uma viagem"}
             </a>
           </div>
 

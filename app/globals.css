@@ -5375,3 +5375,10 @@ details p {
     width: 100%;
   }
 }
+
+.locked-form {
+  border-color: rgba(245, 158, 11, 0.4);
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}

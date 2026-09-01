@@ -620,6 +620,8 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               vaultItems={vault_items}
               preferences={preferences}
               members={members}
+              me={me}
+              locked={locked}
               onChange={load}
             />
           )}
@@ -716,6 +718,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               attachments={vault_attachments}
               members={members}
               me={me}
+              locked={locked}
               onChange={load}
             />
           )}
@@ -745,6 +748,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               me={me}
               slug={slug}
               trip={trip}
+              locked={locked}
               onSaved={load}
             />
           )}
@@ -1557,6 +1561,8 @@ function TripChecklistView({
   vaultItems,
   preferences,
   members,
+  me,
+  locked,
   onChange,
 }: {
   accessToken: string | null;
@@ -1566,6 +1572,8 @@ function TripChecklistView({
   vaultItems: TripVaultItem[];
   preferences: Preference[];
   members: Member[];
+  me: Member;
+  locked: boolean;
   onChange: () => Promise<void> | void;
 }) {
   const [form, setForm] = useState({
@@ -1717,6 +1725,23 @@ function TripChecklistView({
 
   return (
     <div className="checklist-layout">
+      {locked ? (
+        <div className="card checklist-control locked-form">
+          <span className="badge b-warn">recursos do Passe</span>
+          <h2>O checklist precisa do Passe</h2>
+          <p className="sub">
+            Criar e marcar tarefa fazem parte do Passe desta viagem. O que já está na lista
+            continua visível, e você pode remover à vontade.
+          </p>
+          {me.is_organizer ? (
+            <a className="btn full" href={`/app?liberar=${slug}`}>
+              Liberar esta viagem
+            </a>
+          ) : (
+            <p className="tiny">Você não precisa pagar nada: só quem organiza libera.</p>
+          )}
+        </div>
+      ) : (
       <div className="card checklist-control">
         <span className="badge b-ok">planejamento vivo</span>
         <h2>Checklist da viagem</h2>
@@ -1786,6 +1811,7 @@ function TripChecklistView({
           {saving ? "Salvando tarefa..." : "Adicionar tarefa"}
         </button>
       </div>
+      )}
 
       <div className="checklist-stack">
         {suggestions.length > 0 && (
@@ -2034,6 +2060,7 @@ function TravelVaultView({
   attachments,
   members,
   me,
+  locked,
   onChange,
 }: {
   accessToken: string | null;
@@ -2043,6 +2070,7 @@ function TravelVaultView({
   attachments: TripVaultAttachment[];
   members: Member[];
   me: Member;
+  locked: boolean;
   onChange: () => Promise<void> | void;
 }) {
   const emptyForm = {
@@ -2402,10 +2430,37 @@ function TravelVaultView({
 
   const memberName = (memberId: string | null) =>
     members.find((member) => member.id === memberId)?.name ?? "grupo";
-  const canManage = (item: TripVaultItem) => me.is_organizer || item.member_id === me.id;
+  /** Quem pode mexer no item. Trancado, ninguem edita — mas remover
+   *  continua liberado, entao a checagem de remocao e separada. */
+  const canManage = (item: TripVaultItem) =>
+    !locked && (me.is_organizer || item.member_id === me.id);
+  const canRemove = (item: TripVaultItem) => me.is_organizer || item.member_id === me.id;
 
   return (
     <div className="vault-layout">
+      {locked ? (
+        <div className="card vault-form-card locked-form">
+          <span className="badge b-warn">recursos do Passe</span>
+          <h2>Guardar no Cofre precisa do Passe</h2>
+          <p className="sub">
+            Cadastrar reserva, editar item e anexar arquivo fazem parte do Passe desta viagem.
+            Quem organiza pode liberar para o grupo todo.
+          </p>
+          <div className="note">
+            <b>O que já está aqui continua seu</b>
+            <br />
+            Os itens salvos seguem visíveis, e você pode abrir, baixar e remover à vontade. Nada
+            fica preso.
+          </div>
+          {me.is_organizer ? (
+            <a className="btn full" href={`/app?liberar=${slug}`}>
+              Liberar esta viagem
+            </a>
+          ) : (
+            <p className="tiny">Você não precisa pagar nada: só quem organiza libera.</p>
+          )}
+        </div>
+      ) : (
       <div className="card vault-form-card">
         <div className="vault-form-head">
           <span className="badge b-ok">{editingId ? "editando item" : "central da viagem"}</span>
@@ -2691,10 +2746,11 @@ function TravelVaultView({
             : saving
               ? "Salvando..."
               : editingId
-                ? "Salvar alteracoes"
+                ? "Salvar alterações"
                 : "Guardar no Cofre"}
         </button>
       </div>
+      )}
 
       <div className="vault-list">
         <div className="vault-smart-grid">
@@ -2849,6 +2905,7 @@ function TravelVaultView({
                 itemId={item.id}
                 attachments={attachmentsByItem.get(item.id) ?? []}
                 canManage={canManage(item)}
+                canRemove={canRemove(item)}
                 onChange={onChange}
               />
 
@@ -2870,7 +2927,7 @@ function TravelVaultView({
                   <button
                     className="btn ghost sm"
                     onClick={() => removeItem(item.id)}
-                    disabled={workingId === item.id || !canManage(item)}
+                    disabled={workingId === item.id || !canRemove(item)}
                   >
                     {workingId === item.id ? "Removendo..." : "Remover"}
                   </button>
@@ -2917,6 +2974,7 @@ function VaultAttachmentsBlock({
   itemId,
   attachments,
   canManage,
+  canRemove,
   onChange,
 }: {
   accessToken: string | null;
@@ -2924,6 +2982,7 @@ function VaultAttachmentsBlock({
   itemId: string;
   attachments: TripVaultAttachment[];
   canManage: boolean;
+  canRemove: boolean;
   onChange: () => Promise<void> | void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -3059,7 +3118,7 @@ function VaultAttachmentsBlock({
                 >
                   Baixar
                 </button>
-                {canManage && (
+                {canRemove && (
                   <button
                     className="btn ghost sm"
                     type="button"
@@ -4804,6 +4863,7 @@ function ExpensesView({
   me,
   slug,
   trip,
+  locked,
   onSaved,
 }: {
   accessToken: string | null;
@@ -4812,6 +4872,7 @@ function ExpensesView({
   me: Member;
   slug: string;
   trip: Trip;
+  locked: boolean;
   onSaved: () => Promise<void> | void;
 }) {
   const tripName = trip.destination;
@@ -5009,6 +5070,23 @@ function ExpensesView({
       </div>
 
       <div className="grid2 expense-grid">
+        {locked ? (
+          <div className="card locked-form">
+            <span className="badge b-warn">recursos do Passe</span>
+            <h2>Dividir gastos precisa do Passe</h2>
+            <p className="sub">
+              Lançar despesa e acertar as contas fazem parte do Passe desta viagem. O que já foi
+              lançado continua visível, e você pode remover à vontade.
+            </p>
+            {me.is_organizer ? (
+              <a className="btn full" href={`/app?liberar=${slug}`}>
+                Liberar esta viagem
+              </a>
+            ) : (
+              <p className="tiny">Você não precisa pagar nada: só quem organiza libera.</p>
+            )}
+          </div>
+        ) : (
         <div className="card">
           <h2>Lançar gasto</h2>
           <p className="sub">
@@ -5099,6 +5177,7 @@ function ExpensesView({
             {saving ? "Salvando..." : "Registrar gasto"}
           </button>
         </div>
+        )}
 
         <div className="card">
           <div className="expense-panel-head">
