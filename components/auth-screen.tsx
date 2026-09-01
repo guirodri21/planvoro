@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { browserSupabaseReady, supabaseBrowser } from "@/lib/supabase-browser";
 import { useAuth } from "./auth-provider";
 
+/** Espelha o minimo configurado no Supabase. Mudar la exige mudar aqui. */
+const SENHA_MINIMA = 10;
+
 export type AuthMode = "signin" | "signup" | "forgot" | "reset";
 
 export function AuthScreen({
@@ -68,12 +71,37 @@ export function AuthScreen({
     );
   }
 
+  /**
+   * Exigencia de senha.
+   *
+   * Precisa espelhar o que estiver configurado em Authentication →
+   * Providers → Email no Supabase. Sem isso a pessoa so descobre a regra
+   * depois de enviar, e o erro vem em ingles direto do Supabase.
+   *
+   * A checagem contra senha vazada, que seria a defesa mais forte, e paga
+   * no Supabase. Tamanho e variedade sao o que da para exigir de graca.
+   */
+  function problemaNaSenha(valor: string) {
+    if (valor.length < SENHA_MINIMA) {
+      return `A senha precisa de pelo menos ${SENHA_MINIMA} caracteres.`;
+    }
+    if (!/[a-zA-Z]/.test(valor) || !/[0-9]/.test(valor)) {
+      return "A senha precisa misturar letras e números.";
+    }
+    return null;
+  }
+
   async function submit() {
     setSubmitting(true);
     setError("");
     setMessage("");
 
     try {
+      if (mode === "signup" || mode === "reset") {
+        const problema = problemaNaSenha(password);
+        if (problema) throw new Error(problema);
+      }
+
       const client = supabaseBrowser();
       if (!client) {
         throw new Error(
@@ -244,7 +272,13 @@ export function AuthScreen({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder={mode === "reset" ? "Sua nova senha" : "Sua senha"}
+              autoComplete={mode === "signin" ? "current-password" : "new-password"}
             />
+            {mode !== "signin" && (
+              <span className="tiny">
+                Pelo menos {SENHA_MINIMA} caracteres, misturando letras e números.
+              </span>
+            )}
           </>
         )}
 
