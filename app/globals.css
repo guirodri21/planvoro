@@ -2703,9 +2703,14 @@ details p {
   margin-bottom: 16px;
 }
 
+/* capitalize sobe TODA palavra e produz "Quinta-Feira, 01 De Out.".
+   Em português só a primeira letra da frase é maiúscula. */
 .agenda-day-head h3 {
   margin-top: 5px;
-  text-transform: capitalize;
+}
+
+.agenda-day-head h3::first-letter {
+  text-transform: uppercase;
 }
 
 .agenda-entry-list {

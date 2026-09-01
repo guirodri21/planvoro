@@ -52,6 +52,39 @@ export function formatMoney(value: number) {
   return moneyFormatter.format(Number.isFinite(value) ? value : 0);
 }
 
+/**
+ * Valor em qualquer moeda.
+ *
+ * O Cofre aceita reserva em euro, dolar ou o que a pessoa digitar, entao
+ * nao da para usar formatMoney, que fixa BRL. Moeda desconhecida cai no
+ * formato "EUR 1.234,56" em vez de quebrar: e melhor mostrar o numero
+ * legivel com o codigo ao lado do que nao mostrar nada.
+ */
+export function formatCurrency(value: number, currency: string) {
+  const amount = Number.isFinite(value) ? value : 0;
+  const code = (currency || "BRL").trim().toUpperCase();
+
+  try {
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: code }).format(amount);
+  } catch {
+    return `${code} ${new Intl.NumberFormat("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)}`;
+  }
+}
+
+/**
+ * Plural de "item".
+ *
+ * O jeito usual — `item${n === 1 ? "" : "s"}` — produz "items", que e
+ * ingles. Em portugues o plural muda a raiz: item vira itens. Errar isso
+ * na tela e pequeno, mas denuncia que ninguem leu o proprio produto.
+ */
+export function pluralItens(count: number) {
+  return count === 1 ? "item" : "itens";
+}
+
 export function formatScore(value: number) {
   return value >= 0 ? `+${value}` : String(value);
 }

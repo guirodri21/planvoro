@@ -18,7 +18,7 @@ import type {
   TripVaultItem,
 } from "@/lib/types";
 import { authJsonHeaders, readApiJson } from "../_lib/api";
-import { formatMoney } from "../_lib/format";
+import { formatMoney, pluralItens } from "../_lib/format";
 import { AGENT_PROMPTS, type AgentReply } from "../_lib/workspace-types";
 
 export function TravelAgentView({
@@ -196,7 +196,7 @@ export function TravelAgentView({
           </div>
           <div>
             <span className="stat-label">Cofre</span>
-            <strong>{vaultItems.length ? `${vaultItems.length} item${vaultItems.length === 1 ? "" : "s"}` : "vazio"}</strong>
+            <strong>{vaultItems.length ? `${vaultItems.length} ${pluralItens(vaultItems.length)}` : "vazio"}</strong>
           </div>
           <div>
             <span className="stat-label">Checklist</span>

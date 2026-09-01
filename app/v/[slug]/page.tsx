@@ -43,6 +43,7 @@ import {
   formatMoney,
   formatTripDate,
   isOutsideTripDates,
+  pluralItens,
 } from "./_lib/format";
 import {
   type GenerateResponse,
@@ -630,7 +631,7 @@ function TripExecutiveSummary({
       tab: "checklist" as WorkspaceTab,
     },
     attentionVault > 0 && {
-      title: `${attentionVault} item${attentionVault === 1 ? "" : "s"} do Cofre para conferir`,
+      title: `${attentionVault} ${pluralItens(attentionVault)} do Cofre para conferir`,
       body: "Revise códigos, links, datas ou pagamentos marcados com atenção.",
       tab: "cofre" as WorkspaceTab,
     },
@@ -654,7 +655,7 @@ function TripExecutiveSummary({
   const wins = [
     itinerary && `${routeDays} dia${routeDays === 1 ? "" : "s"} de roteiro com ${routeItems} parada${routeItems === 1 ? "" : "s"}`,
     preferences.length > 0 && `${preferences.length}/${members.length} preferencia${members.length === 1 ? "" : "s"} recebida${preferences.length === 1 ? "" : "s"}`,
-    activeVaultItems.length > 0 && `${activeVaultItems.length} item${activeVaultItems.length === 1 ? "" : "s"} no Cofre`,
+    activeVaultItems.length > 0 && `${activeVaultItems.length} ${pluralItens(activeVaultItems.length)} no Cofre`,
     doneChecklist > 0 && `${doneChecklist} tarefa${doneChecklist === 1 ? "" : "s"} concluida${doneChecklist === 1 ? "" : "s"}`,
     plannedIdeas > 0 && `${plannedIdeas} ideia${plannedIdeas === 1 ? "" : "s"} aprovada${plannedIdeas === 1 ? "" : "s"}`,
     (totalExpenses > 0 || paidVaultTotal > 0) &&

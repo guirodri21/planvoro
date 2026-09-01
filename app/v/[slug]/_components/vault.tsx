@@ -26,7 +26,9 @@ import {
 } from "@/lib/vault-attachments";
 import { authHeaders, authJsonHeaders, readApiJson } from "../_lib/api";
 import {
+  formatCurrency,
   formatMoney,
+  pluralItens,
   formatVaultDate,
   formatVaultRange,
   toDateTimeLocalValue,
@@ -325,7 +327,7 @@ export function TravelVaultView({
     },
     attentionCount > 0 && {
       tone: "warn",
-      title: `${attentionCount} item${attentionCount === 1 ? "" : "s"} para conferir`,
+      title: `${attentionCount} ${pluralItens(attentionCount)} para conferir`,
       body: "Revise itens marcados como atenção antes de fechar o roteiro.",
     },
     reservedNotPaidCount > 0 && {
@@ -1024,7 +1026,7 @@ export function TravelVaultView({
                 <div>
                   <span>Valor</span>
                   <strong>
-                    {item.amount == null ? "não informado" : `${item.currency} ${Number(item.amount).toFixed(2)}`}
+                    {item.amount == null ? "não informado" : formatCurrency(Number(item.amount), item.currency)}
                   </strong>
                 </div>
               </div>

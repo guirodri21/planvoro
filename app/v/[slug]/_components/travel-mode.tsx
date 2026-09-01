@@ -13,7 +13,9 @@ import { buildTravelTimeline } from "../_lib/timeline";
 import {
   checklistCategoryLabel,
   dateKeyFromDate,
+  formatCurrency,
   isOutsideTripDates,
+  pluralItens,
   formatAgendaDay,
   formatMoney,
   formatVaultDate,
@@ -166,7 +168,7 @@ export function TravelModeView({
                 {focusEntry.amount != null && (
                   <span>
                     {focusEntry.currency
-                      ? `${focusEntry.currency} ${Number(focusEntry.amount).toFixed(2)}`
+                      ? formatCurrency(Number(focusEntry.amount), focusEntry.currency ?? "BRL")
                       : formatMoney(Number(focusEntry.amount))}
                   </span>
                 )}
@@ -289,11 +291,11 @@ export function TripAgendaView({
     !itinerary && "Roteiro ainda não foi gerado.",
     activeVaultItems.length > 0 &&
       undatedVault.length > 0 &&
-      `${undatedVault.length} item${undatedVault.length === 1 ? "" : "s"} do Cofre sem data ou horario.`,
+      `${undatedVault.length} ${pluralItens(undatedVault.length)} do Cofre sem data ou horario.`,
     outsideTripDates > 0 &&
-      `${outsideTripDates} item${outsideTripDates === 1 ? "" : "s"} com data fora do periodo da viagem.`,
+      `${outsideTripDates} ${pluralItens(outsideTripDates)} com data fora do periodo da viagem.`,
     attentionVault > 0 &&
-      `${attentionVault} item${attentionVault === 1 ? "" : "s"} marcado${attentionVault === 1 ? "" : "s"} para conferir.`,
+      `${attentionVault} ${pluralItens(attentionVault)} marcado${attentionVault === 1 ? "" : "s"} para conferir.`,
     entries.length > 0 && routeEntryCount === 0 && "A Agenda ainda depende so do Cofre; gere o roteiro para ver os passeios.",
   ].filter(Boolean) as string[];
 
@@ -398,7 +400,7 @@ export function TripAgendaView({
                             {entry.amount != null && (
                               <span>
                                 {"currency" in entry
-                                  ? `${entry.currency} ${Number(entry.amount).toFixed(2)}`
+                                  ? formatCurrency(Number(entry.amount), entry.currency ?? "BRL")
                                   : formatMoney(Number(entry.amount))}
                               </span>
                             )}
