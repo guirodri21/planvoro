@@ -18,12 +18,12 @@
 
 export const LEGAL = {
   /** Nome completo, se pessoa fisica. Razao social, se empresa. */
-  controllerName: "",
+  controllerName: "Guilherme Paixão Rodrigues",
 
   /** Opcional. Ver a observacao acima antes de preencher. */
   document: "",
   /** Rotulo do documento acima: "CPF" ou "CNPJ". */
-  documentLabel: "CNPJ" as "CPF" | "CNPJ",
+  documentLabel: "CPF" as "CPF" | "CNPJ",
 
   /** Cidade/UF. Ex: "Salvador/BA". */
   city: "",
@@ -31,9 +31,9 @@ export const LEGAL = {
   jurisdiction: "",
 
   /** Canal geral de suporte. */
-  supportEmail: "",
+  supportEmail: "paixaodevtech@gmail.com",
   /** Canal de privacidade (LGPD). Pode ser o mesmo do suporte. */
-  privacyEmail: "",
+  privacyEmail: "paixaodevtech@gmail.com",
 
   /** Ultima revisao dos documentos, em ISO. */
   updatedAt: "2026-09-01",
