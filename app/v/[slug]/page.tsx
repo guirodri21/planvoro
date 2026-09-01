@@ -41,7 +41,7 @@ import {
 } from "@/lib/vault-attachments";
 import { track } from "@/lib/analytics";
 import { budgetTone, summarizeBudget } from "@/lib/budget";
-import { buildPixPayload, detectPixKey, pixKeyLabel } from "@/lib/pix";
+import { PIX_DEFAULT_CITY, buildPixPayload, detectPixKey, pixKeyLabel } from "@/lib/pix";
 import { whatsappShareUrl } from "@/lib/share";
 import { userDisplayName } from "@/lib/user-name";
 
@@ -4663,6 +4663,7 @@ function PixSettlementRow({
       key: pixKey,
       amount: settlement.amount,
       receiverName: settlement.to.name,
+      city: settlement.to.pix_city,
       reference: tripName,
     });
     if (!payload) return;
@@ -4707,6 +4708,7 @@ function MyPixKey({
 }) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(me.pix_key ?? "");
+  const [city, setCity] = useState(me.pix_city ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -4722,7 +4724,7 @@ function MyPixKey({
       const res = await fetch(`/api/trips/${slug}/pix`, {
         method: "PUT",
         headers: authJsonHeaders(accessToken),
-        body: JSON.stringify({ pix_key: value.trim() }),
+        body: JSON.stringify({ pix_key: value.trim(), pix_city: city.trim() }),
       });
       const json = await readApiJson<{ error?: string }>(res);
       if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar a chave.");
@@ -4758,9 +4760,17 @@ function MyPixKey({
             placeholder="CPF, e-mail, telefone ou chave aleatoria"
             autoComplete="off"
           />
+          <label>Sua cidade</label>
+          <input
+            value={city}
+            onChange={(event) => setCity(event.target.value)}
+            placeholder={`Salvador, Recife... (padrão: ${PIX_DEFAULT_CITY})`}
+            autoComplete="address-level2"
+          />
           <span className="tiny">
-            Fica visivel para quem participa desta viagem. O Planvoro não move dinheiro: o código
-            abre o app do seu banco, que confirma tudo antes.
+            Fica visível para quem participa desta viagem. O Planvoro não move dinheiro: o código
+            abre o app do seu banco, que confirma tudo antes. A cidade é campo obrigatório do
+            padrão Pix e alguns bancos mostram na tela.
           </span>
           {error && <div className="err">{error}</div>}
           <div className="pix-key-actions">
@@ -4770,6 +4780,7 @@ function MyPixKey({
               onClick={() => {
                 setOpen(false);
                 setValue(me.pix_key ?? "");
+                setCity(me.pix_city ?? "");
                 setError("");
               }}
               disabled={saving}

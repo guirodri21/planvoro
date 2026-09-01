@@ -1,6 +1,6 @@
 # Planvoro — Plano de testes
 
-Atualizado em: 26/08/2026
+Atualizado em: 01/09/2026
 Produção: https://planvoro-app.vercel.app
 Repositório local: `C:\Users\guiro\Downloads\planvoro_1\planvoro-app`
 
@@ -11,9 +11,12 @@ grupo, reservas, documentos, checklist, agente e gastos num só workspace.
 Next.js 15 + React 19 + TypeScript, Supabase (Auth, Postgres, Storage),
 Gemini, Vercel, Stripe, Resend.
 
-Em 26/08/2026 entraram doze entregas em produção, validadas apenas por
-`npx tsc --noEmit` e `npm run build`. Nada foi exercitado por uma pessoa.
-Este documento é o roteiro para isso.
+Em 26/08/2026 entraram doze entregas em produção. Este documento é o
+roteiro de teste manual delas.
+
+**Estado em 01/09/2026: 8 dos 12 testes passaram.** Os quatro defeitos
+encontrados foram corrigidos e reconfirmados. Cada teste abaixo traz o
+resultado no topo.
 
 ## O que já foi verificado (não refazer)
 
@@ -36,10 +39,10 @@ Conferido direto na produção e no banco, sem depender de clique:
 
 ## Teste 01 — Cofre: anexo e remoção
 
+> **PASSOU em 27/08.** Upload, exibicao inline, download, remocao de anexo e remocao do item. Banco e Storage ficaram em sincronia, sem objeto orfao.
+
 **Risco:** alto
 **Prova:** upload, bucket privado, link assinado e a limpeza do Storage ao apagar.
-**Estado:** parcialmente feito. O upload já foi confirmado. Faltam os passos 5 a 7.
-
 1. Aba Cofre, preencher só o Nome do item
 2. Bloco Anexos → Escolher arquivos → um PDF ou print
 3. Guardar no Cofre; o card nasce com o anexo
@@ -55,9 +58,11 @@ Conferido direto na produção e no banco, sem depender de clique:
 
 ## Teste 02 — Acerto por Pix
 
+> **PASSOU em 01/09.** BR Code lido pelo app do banco, com valor e recebedor corretos. CRC conferido contra o vetor oficial da especificacao antes do teste.
+
 **Risco:** alto
 **Prova:** o BR Code (EMV MPM) precisa ser aceito pelo app de um banco real.
-**Requisito:** viagem com duas pessoas ou mais. Em viagem solo não existe acerto.
+**Requisito:** viagem com duas pessoas ou mais. Ha um membro "Bruno (teste)" e um gasto "Jantar no Pelourinho" na viagem salvador-bahia-ek44f montados para isso; remover quando nao precisar mais.
 
 1. Aba Gastos → Cadastrar chave Pix → salvar
 2. Lançar um gasto com **outra pessoa** como pagante
@@ -73,11 +78,13 @@ Conferido direto na produção e no banco, sem depender de clique:
 
 ## Teste 03 — Checkout da Stripe
 
+> **PASSOU em 01/09.** Assinatura Pro anual paga com o cartao de teste. Webhook validou a assinatura e gravou status active com validade de um ano. Dois eventos distintos foram tratados: checkout.session.completed e customer.subscription.created.
+
 **Risco:** alto
 **Prova:** se o `STRIPE_WEBHOOK_SECRET` da Vercel bate com o da Stripe. Se não bater, o cliente paga e o app não fica sabendo.
 **Nota:** a conta está em modo de teste. Nenhum dinheiro real se move.
 
-1. Entrar em `/app` com nutrionefilial@gmail.com
+1. Entrar em `/app` com a conta cadastrada em `PLANVORO_BILLING_TESTERS`
 2. O painel mostra o Pro anual, não "Acesso beta ativo"
 3. Numa viagem sua, clicar em liberar
 4. Pagar com o cartão 4242 4242 4242 4242, validade futura, CVC qualquer
@@ -89,6 +96,8 @@ Conferido direto na produção e no banco, sem depender de clique:
 ---
 
 ## Teste 04 — Importar PDF e print
+
+> **PASSOU em 27/08.** Extraiu fornecedor, codigo, datas e valor de um print real. Instrucao escondida na imagem foi ignorada, e campo ausente veio vazio em vez de inventado.
 
 **Risco:** médio
 **Prova:** a IA lendo arquivo em vez de texto colado; o limite diário; e a defesa contra instrução escondida na imagem.
@@ -105,6 +114,8 @@ Conferido direto na produção e no banco, sem depender de clique:
 
 ## Teste 05 — Alerta de orçamento
 
+> **PASSOU em 27/08.** Teto por pessoa multiplicado pelo grupo, limiares em 60, 85 e 100 por cento. Confirmado que o Cofre nao entra na conta.
+
 **Risco:** médio
 **Prova:** que o teto por pessoa vira teto do grupo e que os limiares disparam onde devem.
 
@@ -120,6 +131,8 @@ Conferido direto na produção e no banco, sem depender de clique:
 
 ## Teste 06 — Mapa e ordem do dia
 
+> **PASSOU em 27/08.** Pinos numerados e linha entre as paradas. Os icones quebrados da primeira versao foram corrigidos.
+
 **Risco:** médio
 **Prova:** se a verificação de lugar está salvando coordenadas. Sem isso o mapa fica vazio e o problema é anterior ao mapa.
 
@@ -134,6 +147,8 @@ Conferido direto na produção e no banco, sem depender de clique:
 ---
 
 ## Teste 07 — Compartilhar, PDF e duplicar
+
+> **PASSOU em 27/08.** Publicar e despublicar respondendo 200 e 404. A copia veio sem Cofre, sem gastos e privada.
 
 **Risco:** médio
 **Prova:** o laço viral inteiro.
@@ -185,9 +200,11 @@ Conferido direto na produção e no banco, sem depender de clique:
 
 ## Teste 10 — Histórico
 
+> **PASSOU em 27/08.** Totais agregados corretos, com o filtro de viagem terminada funcionando.
+
 **Risco:** baixo
 **Prova:** os totais agregados e o filtro de viagem terminada.
-**Nota:** hoje as seis viagens estão ativas, então o histórico aparece vazio. Para testar, mudar a data de fim de uma viagem para o passado.
+**Nota:** as viagens ativas nao aparecem aqui. Para testar de novo, mudar a data de fim de uma viagem para o passado.
 
 1. Abrir `/historico`
 2. Conferir viagens, dias viajados, destinos e gasto total
@@ -217,9 +234,12 @@ Conferido direto na produção e no banco, sem depender de clique:
 ## Teste 12 — Gate do Passe (BLOQUEADO)
 
 **Prova:** que Cofre, gastos e checklist trancam sem o Passe, e que ler e apagar continuam liberados mesmo trancado.
-**Bloqueio:** não dá para testar com a beta ligada, que libera tudo por definição. Exige desligar `NEXT_PUBLIC_PLANVORO_BETA_ACCESS` na Vercel, o que tira a beta do ar para todos. Deixar para quando for encerrar a beta.
+**Bloqueio duplo:** a beta ligada libera tudo por definição, E a conta de
+teste tem assinatura Pro ativa desde 01/09 (do teste 03), que cobre todas
+as viagens que ela organiza. Os dois precisam sair antes. Exige desligar `NEXT_PUBLIC_PLANVORO_BETA_ACCESS` na Vercel, o que tira a beta do ar para todos. Deixar para quando for encerrar a beta.
 
-1. Desligar a beta na Vercel e publicar
+1. Remover a assinatura Pro da conta de teste
+2. Desligar a beta na Vercel e publicar
 2. Numa viagem sem Passe, ver o aviso de trancado
 3. Tentar salvar no Cofre: precisa recusar com explicação (HTTP 402)
 4. Abrir e apagar item existente: precisa continuar funcionando

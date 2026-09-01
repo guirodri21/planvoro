@@ -5,6 +5,7 @@ import { isLikelyPixKey } from "@/lib/pix";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const MAX_PIX_KEY = 140;
+const MAX_PIX_CITY = 40;
 
 /**
  * Chave Pix de quem esta logado, nesta viagem.
@@ -18,6 +19,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ slug: string }>
     const { slug } = await ctx.params;
     const body = await req.json().catch(() => ({}));
     const raw = String(body.pix_key ?? "").trim();
+    const city = String(body.pix_city ?? "").trim().slice(0, MAX_PIX_CITY);
 
     if (raw.length > MAX_PIX_KEY) {
       return NextResponse.json({ error: "Chave Pix muito longa." }, { status: 400 });
@@ -42,9 +44,9 @@ export async function PUT(req: Request, ctx: { params: Promise<{ slug: string }>
 
     const { data, error } = await db
       .from("members")
-      .update({ pix_key: raw || null })
+      .update({ pix_key: raw || null, pix_city: city || null })
       .eq("id", membership.memberId)
-      .select("id, pix_key")
+      .select("id, pix_key, pix_city")
       .single();
     if (error) throw error;
 

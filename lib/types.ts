@@ -21,6 +21,8 @@ export type Member = {
   color: string;
   /** Chave Pix para receber o acerto. Exibida ao grupo, nunca validada. */
   pix_key?: string | null;
+  /** Cidade do recebedor, campo obrigatorio do BR Code. */
+  pix_city?: string | null;
 };
 
 export type Preference = {

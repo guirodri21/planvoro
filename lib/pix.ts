@@ -86,6 +86,16 @@ export function isLikelyPixKey(raw: string) {
 }
 
 /**
+ * Cidade quando ninguem informou.
+ *
+ * O campo 60 e obrigatorio na especificacao, entao nao da para omitir.
+ * Antes ia fixo como "SAO PAULO", o que e mentira para a maioria das
+ * pessoas e aparece na tela de parte dos bancos. "BRASIL" e verdade para
+ * todo mundo e ocupa o campo sem afirmar nada errado.
+ */
+export const PIX_DEFAULT_CITY = "BRASIL";
+
+/**
  * Monta o codigo copia e cola.
  *
  * `amount` vai com duas casas e ponto. Um valor invalido nao vira zero:
@@ -96,13 +106,13 @@ export function buildPixPayload({
   key,
   amount,
   receiverName,
-  city = "SAO PAULO",
+  city,
   reference,
 }: {
   key: string;
   amount?: number | null;
   receiverName: string;
-  city?: string;
+  city?: string | null;
   reference?: string;
 }) {
   const cleanKey = detectPixKey(key).key;
@@ -124,7 +134,7 @@ export function buildPixPayload({
     (hasAmount ? field("54", amount.toFixed(2)) : "") +
     field("58", "BR") +
     field("59", sanitize(receiverName || "RECEBEDOR", 25) || "RECEBEDOR") +
-    field("60", sanitize(city || "SAO PAULO", 15) || "SAO PAULO") +
+    field("60", sanitize(city || PIX_DEFAULT_CITY, 15) || PIX_DEFAULT_CITY) +
     field("62", field("05", txid));
 
   const semCrc = `${payload}6304`;
