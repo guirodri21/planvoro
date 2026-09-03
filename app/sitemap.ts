@@ -1,18 +1,18 @@
 import type { MetadataRoute } from "next";
 import { supabaseAdmin } from "@/lib/supabase";
+import { SITE_URL } from "@/lib/site";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";
 
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const paginasFixas: MetadataRoute.Sitemap = [
-    { url: BASE, priority: 1, changeFrequency: "weekly" },
-    { url: `${BASE}/nova`, priority: 0.8, changeFrequency: "monthly" },
-    { url: `${BASE}/experimente`, priority: 0.9, changeFrequency: "monthly" },
-    { url: `${BASE}/termos`, priority: 0.3, changeFrequency: "yearly" },
-    { url: `${BASE}/privacidade`, priority: 0.3, changeFrequency: "yearly" },
-    { url: `${BASE}/contato`, priority: 0.4, changeFrequency: "yearly" },
+    { url: SITE_URL, priority: 1, changeFrequency: "weekly" },
+    { url: `${SITE_URL}/nova`, priority: 0.8, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/experimente`, priority: 0.9, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/termos`, priority: 0.3, changeFrequency: "yearly" },
+    { url: `${SITE_URL}/privacidade`, priority: 0.3, changeFrequency: "yearly" },
+    { url: `${SITE_URL}/contato`, priority: 0.4, changeFrequency: "yearly" },
   ];
 
   try {
@@ -25,7 +25,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .limit(5000);
 
     const roteiros: MetadataRoute.Sitemap = (data ?? []).map((t) => ({
-      url: `${BASE}/r/${t.slug}`,
+      url: `${SITE_URL}/r/${t.slug}`,
       lastModified: new Date(t.created_at),
       priority: 0.6,
       changeFrequency: "monthly" as const,

@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -12,6 +12,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/v/", "/api/"],
       },
     ],
-    sitemap: `${BASE}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

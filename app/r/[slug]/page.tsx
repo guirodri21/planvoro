@@ -4,8 +4,8 @@ import { DuplicateTrip } from "@/components/duplicate-trip";
 import { RoteiroShare } from "@/components/roteiro-share";
 import { formatBR, getPublicTrip, tripDays } from "@/lib/public";
 import { buildItinerarySummary } from "@/lib/share";
+import { SITE_URL } from "@/lib/site";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";
 
 export const revalidate = 3600;
 
@@ -42,7 +42,7 @@ export default async function RoteiroPublico({
 
   const { trip, itinerary } = data;
   const dias = tripDays(trip);
-  const shareUrl = `${BASE}/r/${slug}`;
+  const shareUrl = `${SITE_URL}/r/${slug}`;
   const summary = buildItinerarySummary(trip, itinerary, shareUrl);
 
   const total =

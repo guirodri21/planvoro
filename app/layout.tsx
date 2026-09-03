@@ -9,8 +9,8 @@ import { OfflineBanner } from "@/components/offline-banner";
 import { ServiceWorkerRegistrar } from "@/components/service-worker";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
+import { SITE_URL } from "@/lib/site";
 
-const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://planvoro-app.vercel.app";
 const sans = Inter_Tight({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -48,7 +48,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  metadataBase: new URL(BASE),
+  metadataBase: new URL(SITE_URL),
   applicationName: "Planvoro",
   title: {
     default: "Planvoro — planejador de viagem com IA para grupos",
@@ -64,13 +64,13 @@ export const metadata: Metadata = {
     "dividir gastos viagem",
   ],
   alternates: {
-    canonical: BASE,
+    canonical: SITE_URL,
   },
   openGraph: {
     title: "Planvoro — planejador de viagem com IA para grupos",
     description:
       "Crie roteiros, convide o grupo, vote nas ideias e organize gastos em um só workspace de viagem.",
-    url: BASE,
+    url: SITE_URL,
     siteName: "Planvoro",
     locale: "pt_BR",
     type: "website",
@@ -92,7 +92,7 @@ const structuredData = {
   name: "Planvoro",
   applicationCategory: "TravelApplication",
   operatingSystem: "Web",
-  url: BASE,
+  url: SITE_URL,
   description:
     "SaaS web brasileiro para planejar viagens sozinho ou em grupo com IA, roteiro, votação, gastos e convite por link.",
   offers: [
