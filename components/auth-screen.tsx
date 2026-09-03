@@ -379,7 +379,7 @@ function traduzErro(bruto: string) {
 
             <button
               type="button"
-              className="google-auth-btn"
+              className="google-auth-btn destaque"
               onClick={signInWithGoogle}
               disabled={submitting || !browserSupabaseReady()}
             >
@@ -387,8 +387,16 @@ function traduzErro(bruto: string) {
               {submitting ? "Abrindo Google..." : "Continuar com Google"}
             </button>
 
+            {/* Vale dizer o porque: pelo Google nao ha e-mail de
+                confirmacao, entao a pessoa entra na hora. E o caminho que
+                menos perde gente, e o unico que nao depende do envio de
+                e-mail funcionar. */}
+            <p className="tiny auth-google-hint">
+              Entra na hora, sem confirmar e-mail.
+            </p>
+
             <div className="auth-divider">
-              <span>ou entre com e-mail</span>
+              <span>ou use e-mail e senha</span>
             </div>
           </>
         )}

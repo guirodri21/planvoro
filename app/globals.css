@@ -5451,3 +5451,26 @@ details p {
     min-height: 44px;
   }
 }
+
+/* Google como caminho principal: é o que entra na hora e não depende
+   do envio de e-mail, que é o gargalo conhecido do cadastro. */
+.google-auth-btn.destaque {
+  min-height: 54px;
+  font-size: 15px;
+  border-color: rgba(14, 156, 107, 0.4);
+  box-shadow: 0 14px 30px -22px rgba(14, 156, 107, 0.55);
+}
+
+.google-auth-btn.destaque:hover:not(:disabled) {
+  border-color: rgba(14, 156, 107, 0.6);
+}
+
+.auth-google-hint {
+  margin: 8px 0 0;
+  text-align: center;
+  opacity: 0.75;
+}
+
+.auth-divider {
+  opacity: 0.7;
+}
