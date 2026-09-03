@@ -5474,3 +5474,31 @@ details p {
 .auth-divider {
   opacity: 0.7;
 }
+
+/* Aviso de "estou esperando voce confirmar no celular".
+   O ponto pulsando e o unico sinal de que a aba continua viva; sem ele a
+   tela parece congelada e a pessoa fecha antes da confirmacao chegar. */
+.note.aguardando {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.note.aguardando .pulso {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: var(--accent, #2f6bff);
+  animation: pulso-espera 1.6s ease-in-out infinite;
+}
+
+@keyframes pulso-espera {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .note.aguardando .pulso { animation: none; }
+}

@@ -29,6 +29,66 @@ export function AuthScreen({
   /** E-mail que acabou de se cadastrar e ainda precisa confirmar. */
   const [aguardandoConfirmacao, setAguardandoConfirmacao] = useState("");
   const [reenvioEm, setReenvioEm] = useState(0);
+  /** Enquanto true, esta tela tenta entrar sozinha a cada poucos segundos. */
+  const [vigiando, setVigiando] = useState(false);
+
+  /**
+   * Confirmou no celular, entra no computador.
+   *
+   * Depois do cadastro esta tela ainda tem e-mail e senha na memoria,
+   * entao da para tentar entrar de tempos em tempos. Enquanto o e-mail
+   * nao foi confirmado o Supabase recusa; no instante em que a pessoa
+   * clica no link — em qualquer aparelho — a tentativa passa e esta aba
+   * entra sozinha.
+   *
+   * O intervalo cresce com o tempo porque o Supabase limita tentativas de
+   * login, e insistir de 5 em 5 segundos por dez minutos derruba a
+   * proxima tentativa legitima. Depois de dez minutos para de vez: quem
+   * demorou tanto provavelmente fechou a aba, e o botao manual continua
+   * ali.
+   */
+  useEffect(() => {
+    if (!vigiando || !aguardandoConfirmacao || !password) return;
+
+    let ativo = true;
+    let tentativas = 0;
+
+    async function espiar() {
+      if (!ativo) return;
+
+      tentativas += 1;
+      if (tentativas > 80) {
+        setVigiando(false);
+        return;
+      }
+
+      const client = supabaseBrowser();
+      if (client) {
+        const { data } = await client.auth.signInWithPassword({
+          email: aguardandoConfirmacao,
+          password,
+        });
+
+        if (data.session && ativo) {
+          setVigiando(false);
+          router.replace(nextPath);
+          router.refresh();
+          return;
+        }
+      }
+
+      // 5s no primeiro minuto, 15s depois: a maioria confirma logo, e
+      // quem demora nao precisa de resposta em segundos.
+      const espera = tentativas < 12 ? 5000 : 15000;
+      if (ativo) window.setTimeout(espiar, espera);
+    }
+
+    const inicio = window.setTimeout(espiar, 5000);
+    return () => {
+      ativo = false;
+      window.clearTimeout(inicio);
+    };
+  }, [aguardandoConfirmacao, nextPath, password, router, vigiando]);
 
   useEffect(() => {
     if (reenvioEm <= 0) return;
@@ -183,6 +243,7 @@ function traduzErro(bruto: string) {
           // ponto onde a pessoa mais desiste, porque nao sabe o que fazer.
           setAguardandoConfirmacao(email);
           setReenvioEm(60);
+          setVigiando(true);
         }
       } else if (mode === "forgot") {
         const redirectTo = new URL("/entrar", window.location.origin);
@@ -295,6 +356,17 @@ function traduzErro(bruto: string) {
             para ativar sua conta.
           </p>
 
+          {vigiando && (
+            <div className="note aguardando">
+              <span className="pulso" aria-hidden="true" />
+              <span>
+                <b>Pode confirmar pelo celular.</b>
+                <br />
+                Deixe esta aba aberta: assim que você clicar no link, ela entra sozinha.
+              </span>
+            </div>
+          )}
+
           <div className="note">
             <b>Não chegou?</b>
             <br />
@@ -323,6 +395,7 @@ function traduzErro(bruto: string) {
               type="button"
               className="linklike"
               onClick={() => {
+                setVigiando(false);
                 setAguardandoConfirmacao("");
                 setMode("signup");
                 setError("");
@@ -335,6 +408,7 @@ function traduzErro(bruto: string) {
               type="button"
               className="linklike"
               onClick={() => {
+                setVigiando(false);
                 setAguardandoConfirmacao("");
                 setMode("signin");
                 setError("");
