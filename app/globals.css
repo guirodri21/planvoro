@@ -5502,3 +5502,24 @@ details p {
 @media (prefers-reduced-motion: reduce) {
   .note.aguardando .pulso { animation: none; }
 }
+
+/* Selo colado no botao principal da home.
+   O botao ficou sozinho, entao as objecoes que o segundo botao respondia
+   sem querer ("preciso me cadastrar?", "demora?") precisam estar visiveis
+   antes do clique, nao depois. */
+.cta-selo {
+  align-self: center;
+  font-size: 13px;
+  color: var(--muted, #7a8296);
+}
+
+@media (max-width: 640px) {
+  .hero-cta .btn.lg {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cta-selo {
+    align-self: flex-start;
+  }
+}

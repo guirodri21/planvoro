@@ -10,28 +10,37 @@ export default function Home() {
         <div className="hero-grid">
           <div>
             <div className="pill">
-              <span className="dot-live" /> Para viajar em grupo sem brigar
+              <span className="dot-live" /> Roteiro pronto sem criar conta
             </div>
             <h1 className="h1">
-              Decidam a viagem
+              O roteiro sai em 1 minuto.
               <br />
-              juntos, de uma vez.
+              A viagem fica organizada até o fim.
             </h1>
             <p className="lead">
-              A IA monta o roteiro equilibrando o que cada um quer, e o grupo vota, comenta e
-              ajusta no mesmo lugar. Depois, tudo que vocês reservarem, gastarem e precisarem
-              conferir fica aqui — em vez de sumir em 200 mensagens no WhatsApp.
+              Diga para onde vai e a IA monta o roteiro dia a dia, com horários, custo e
+              deslocamento realista entre os lugares. Depois, as reservas, os documentos, os
+              gastos e o grupo ficam no mesmo lugar — em vez de sumirem em 200 mensagens no
+              WhatsApp.
             </p>
+
+            {/* Um botao so.
+                Antes eram dois do mesmo tamanho, e o segundo pedia cadastro.
+                Quem chega aqui ainda nao confia o bastante para se cadastrar,
+                mas ver um roteiro de verdade custa zero — e e a unica coisa
+                que nenhum concorrente entrega antes do login. */}
             <div className="hero-cta">
               <a href="/experimente" className="btn lg">
                 Ver um roteiro agora
               </a>
-              <a href="/entrar?mode=signup&next=%2Fnova" className="btn lg ghost">
-                Criar viagem grátis
-              </a>
+              <span className="cta-selo">sem conta · 1 minuto · grátis</span>
             </div>
-            <p className="tiny" style={{ marginTop: 16 }}>
-              Sem conta para experimentar · Roteiro completo grátis · Funciona no celular
+            <p className="tiny" style={{ marginTop: 14 }}>
+              Ou{" "}
+              <a href="/entrar?mode=signup&next=%2Fnova" className="linklike">
+                criar minha viagem de verdade
+              </a>{" "}
+              — também grátis, e funciona no celular.
             </p>
           </div>
 
@@ -113,8 +122,9 @@ export default function Home() {
         <p className="eyebrow">Dois jeitos de usar</p>
         <h2 className="h2">Comece sozinho. Chame a galera depois.</h2>
         <p className="lead">
-          Quase ninguém acorda decidindo organizar uma viagem em grupo. Você começa pesquisando
-          sozinho — e só depois chama o pessoal. O Planvoro funciona nessa ordem.
+          Ninguém acorda decidindo organizar uma viagem em grupo. Você começa pesquisando
+          sozinho, e só quando a ideia ganha corpo é que chama o pessoal. O Planvoro funciona
+          nessa ordem — e é por isso que o roteiro vem antes de qualquer convite.
         </p>
 
         <div className="grid2" style={{ marginTop: 36 }}>

@@ -51,11 +51,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   applicationName: "Planvoro",
   title: {
-    default: "Planvoro — planejador de viagem com IA para grupos",
+    default: "Planvoro — roteiro de viagem com IA, pronto em 1 minuto",
     template: "%s — Planvoro",
   },
   description:
-    "Planeje viagens sozinho ou em grupo com IA: roteiro dia a dia, preferências, votação, gastos e convite por link no navegador.",
+    "Monte seu roteiro dia a dia com IA sem criar conta. Depois guarde reservas, documentos, checklist e gastos da viagem no mesmo lugar.",
   keywords: [
     "planejador de viagem",
     "roteiro de viagem com IA",
@@ -67,9 +67,9 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: "Planvoro — planejador de viagem com IA para grupos",
+    title: "Planvoro — roteiro de viagem com IA, pronto em 1 minuto",
     description:
-      "Crie roteiros, convide o grupo, vote nas ideias e organize gastos em um só workspace de viagem.",
+      "Roteiro com IA em 1 minuto, sem conta. Depois, reservas, documentos, grupo e gastos no mesmo lugar.",
     url: SITE_URL,
     siteName: "Planvoro",
     locale: "pt_BR",
@@ -77,7 +77,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Planvoro — planejador de viagem com IA para grupos",
+    title: "Planvoro — roteiro de viagem com IA, pronto em 1 minuto",
     description:
       "Roteiro com IA, votação, gastos e convite por link para organizar viagens sem bagunça no WhatsApp.",
   },
