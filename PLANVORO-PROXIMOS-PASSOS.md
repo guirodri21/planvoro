@@ -4,7 +4,7 @@ Atualizado em: 01/09/2026
 
 Este arquivo e o handoff operacional do Planvoro. Ele resume o que a SaaS e, o que ja existe no codigo, o estado atual de deploy e o que deve ser feito em seguida.
 
-Importante: nao colocar secrets, chaves privadas, service role, Stripe secret, Resend key ou Gemini key neste arquivo.
+Importante: nao colocar secrets, chaves privadas, service role, chave da AbacatePay, Resend key ou Gemini key neste arquivo.
 
 ## 1. Visao geral
 
@@ -92,33 +92,31 @@ Comando correto de push:
 git push origin HEAD:claude/consegye-ver-planvoro-ysh8r9
 ```
 
-Producao Vercel:
+Producao:
 
 ```text
-https://planvoro-app.vercel.app
+https://planvoro.com.br
 ```
 
-Deploy atual confirmado:
+O dominio foi comprado no registro.br em 03/09/2026 e aponta para a
+Vercel. O `www` responde tambem — ele exige estar adicionado ao projeto na
+Vercel, nao so ter CNAME no DNS, senao o certificado cobre apenas o apex e
+o navegador acusa site inseguro.
+
+A URL `planvoro-app.vercel.app` continua valendo e nao deve ser removida:
+ha links de confirmacao de e-mail ja enviados que apontam para ela.
+
+Ultimos commits:
 
 ```text
-Status: READY
+defc52e chore: remover a Stripe do banco, das variaveis e da documentacao
+1868a20 fix(auth): o link de esqueci a senha agora chega na tela de nova senha
+d54b40a feat(billing): trocar Stripe por AbacatePay, com Pix como caminho principal
+3d9b91f feat(home): a primeira tela promete o roteiro, que e o que a pessoa veio buscar
+8284ab2 refactor: um lugar so para o endereco do site, antes da troca de dominio
+3979ee7 feat(auth): confirmou no celular, entra no computador automaticamente
+30cec09 feat(planvoro): destacar a entrada pelo google
 ```
-
-Ultimos commits relevantes:
-
-```text
-2c4d44b fix(planvoro): acabamento mobile do workspace
-f099758 feat(planvoro): termos, privacidade, contato e exclusao de conta
-f0780e3 feat(planvoro): observabilidade nas rotas criticas
-6df5562 feat(planvoro): limitar uso da ia na beta
-094ca19 fix(planvoro): abrir anexo do cofre sem forcar download
-ab8a54b feat(planvoro): anexar arquivos ja no cadastro do cofre
-a78b86e feat(planvoro): importar reservas para o cofre
-```
-
-Atencao: os seis commits acima de `a78b86e` estao apenas no repositorio
-local. Producao ja tem tudo, porque o deploy Vercel envia os arquivos da
-maquina, mas o GitHub esta atras. Rodar o push antes de continuar.
 
 ## 5. Stack
 
@@ -146,7 +144,7 @@ IA:
 Outros:
 
 - Vercel para deploy.
-- Stripe para checkout/assinatura, ainda em modo beta gratis.
+- AbacatePay para checkout (Pix e cartao), ainda em modo beta gratis.
 - Resend para convites por e-mail.
 - PostHog opcional para analytics.
 - OpenStreetMap/Nominatim por padrao para verificacao de lugares.
@@ -176,10 +174,10 @@ Recomendadas/opcionais:
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `RESEND_REPLY_TO`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `STRIPE_PRICE_TRIP_PASS`
-- `STRIPE_PRICE_PRO_ANNUAL`
+- `ABACATEPAY_API_KEY`
+- `ABACATEPAY_WEBHOOK_SECRET`
+- `ABACATEPAY_PRODUCT_TRIP_PASS`
+- `ABACATEPAY_PRODUCT_PRO_ANNUAL`
 - `NEXT_PUBLIC_POSTHOG_KEY`
 - `NEXT_PUBLIC_POSTHOG_HOST`
 - `ANTHROPIC_API_KEY`
@@ -190,8 +188,8 @@ Recomendadas/opcionais:
 Nunca expor no navegador:
 
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
+- `ABACATEPAY_API_KEY`
+- `ABACATEPAY_WEBHOOK_SECRET`
 - `RESEND_API_KEY`
 - `GEMINI_API_KEY`
 - `ANTHROPIC_API_KEY`
@@ -265,7 +263,7 @@ Observabilidade:
 
 - `lib/logger.ts` escreve uma linha JSON por evento, filtravel nos logs da Vercel.
 - Roteiro, agente e importacao logam sucesso, falha e limite atingido.
-- Webhook Stripe e convite por e-mail logam sucesso e falha.
+- Webhook de pagamento e convite por e-mail logam sucesso e falha.
 - Log nunca leva conteudo de usuario nem segredo.
 - Eventos PostHog ligados: viagem criada, roteiro gerado/falhou, item do Cofre salvo, anexo enviado, importacao usada, pergunta ao agente e limite atingido.
 - `NEXT_PUBLIC_POSTHOG_KEY` confirmada na Vercel em producao.
@@ -280,10 +278,10 @@ Legal e conta:
 
 Pagamentos:
 
-- Rotas de checkout Stripe.
-- Rotas de portal Stripe.
-- Webhook Stripe.
-- Precos planejados: por viagem e Pro anual.
+- Rota de checkout da AbacatePay.
+- Webhook de confirmacao de pagamento.
+- Precos: Passe de viagem R$ 29 e Pro R$ 79 por ano.
+- O Pro e pagamento unico que vale um ano, sem renovacao automatica.
 - Enquanto beta gratis estiver ligada, checkout pago fica bloqueado.
 
 ## 8. Arquivos principais
@@ -364,8 +362,8 @@ Cliente Supabase Auth no navegador.
 lib/billing.ts
 Planos e precos.
 
-lib/stripe.ts
-Cliente Stripe.
+lib/abacatepay.ts
+Cliente da AbacatePay: checkout, cliente e validacao de webhook.
 
 lib/resend.ts
 Cliente Resend.
@@ -486,6 +484,17 @@ CPF, cidade e foro ficaram de fora por escolha: identificar o controlador
 nao exige publicar documento, e foro proprio contra consumidor costuma
 ser tratado como clausula abusiva.
 
+Revisao de 03/09: surgiu um CNPJ, e isso muda metade dessa decisao.
+
+- `document`: passa a valer preencher. A regra anterior protegia CPF, que
+  exposto em pagina publica vira materia-prima para fraude de identidade.
+  CNPJ e registro publico, e publica-lo e o que faz o site parecer empresa
+  e nao projeto de fim de semana. Trocar tambem `documentLabel` para
+  "CNPJ".
+- `city`: preencher, so identificacao.
+- `jurisdiction`: continua vazio, e de proposito. Eleger foro contra
+  consumidor e o que o CDC trata como abusivo — ter CNPJ nao muda isso.
+
 Texto original, para referencia: faltavam razao social, CNPJ, cidade,
 foro, e-mail de suporte e e-mail de privacidade. Enquanto estiverem em branco, as tres paginas legais mostram
 um aviso de "documento em preparacao" em vez de posar de versao final sem
@@ -494,27 +503,41 @@ dizer quem e o controlador, que e o que a LGPD exige.
 Os textos sao bons rascunhos, escritos para o que o produto faz. Nao
 substituem revisao de advogado antes de cobrar de alguem.
 
-### Prioridade 2 - Stripe de verdade
+### Prioridade 2 - ligar a AbacatePay
 
-O que ja existe:
+A Stripe foi abandonada: nao liberou a conta brasileira, primeiro com CPF
+e depois com o processo travado em analise. A troca saiu barata porque o
+modelo de preco — um pagamento avulso e um anual, sem mensalidade —
+dispensa recorrencia, que era a unica coisa que prendia o projeto a ela.
 
-- Rotas de checkout, portal e webhook.
-- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e as publishable ja estao
-  na Vercel em producao.
+O que ja existe, em codigo e no banco:
 
-O que falta:
+- `lib/abacatepay.ts`: checkout, cliente e validacao de webhook.
+- Rotas de checkout e webhook reescritas.
+- Tabela `billing_checkouts`, que guarda o pedido antes de mandar a pessoa
+  pagar. O id dela e a unica coisa que viaja ate o provedor e volta no
+  webhook, entao nenhum identificador interno passa por terceiro.
+- Colunas neutras (`provider`, `provider_checkout_id`) no lugar das
+  `stripe_*`, que foram removidas.
 
-- Criar produtos e precos no painel da Stripe.
-- Definir o modelo: por viagem, Pro anual, quanto custa cada um.
-- Testar em modo teste com cartao de teste, sem dinheiro real.
-- Validar o webhook `checkout.session.completed`.
-- Persistir status de plano de forma confiavel.
-- Decidir o que a beta gratis libera e o que passa a ser pago.
+O que falta, tudo em painel:
 
-Cuidado encontrado: `STRIPE_SECRET_KEY` esta marcada como Non-sensitive
-na Vercel. Nao vaza para o navegador, porque nao tem prefixo
-`NEXT_PUBLIC_`, mas qualquer pessoa com acesso ao projeto le o valor.
-Trocar para sensitive ao mexer no Stripe.
+- Criar a chave de API. Toda conta comeca em Dev mode, com pagamento
+  simulado: da para validar o fluxo inteiro antes da aprovacao do CNPJ.
+- Criar dois produtos, ambos **sem ciclo de recorrencia**: Passe R$ 29 e
+  Pro R$ 79.
+- Cadastrar o webhook com o segredo na query string.
+- Testar ponta a ponta: checkout abre, pagamento simulado, webhook chega,
+  acesso libera.
+
+Duas coisas para nao esquecer:
+
+1. A chave de Dev precisa virar chave de producao **antes** de a beta ser
+   desligada. Na ordem contraria, o cliente compra e nada e cobrado.
+2. A chave HMAC que assina os webhooks da AbacatePay esta publicada na
+   documentacao deles, ou seja, qualquer um forja uma assinatura valida.
+   Quem autentica de verdade e o segredo na query string. Por isso o
+   webhook exige os dois, e nenhum dos dois e redundante.
 
 ### Prioridade 3 - validar o mobile no aparelho
 
@@ -608,30 +631,53 @@ Uma entrega so deve ser considerada pronta quando:
 
 ## 13. Proxima tarefa recomendada para o Claude
 
-Testar o que foi entregue, em producao, com conta real. Nada do que
-entrou em 26/08 foi exercitado por uma pessoa: anexos, limites, exclusao
-de conta e mobile foram validados so por tipagem e build.
+Revisado em 03/09/2026. O roteiro anterior — testar anexos, limites,
+exclusao de conta e mobile — foi executado com conta real e passou. O que
+sobrou nao e codigo: e configuracao em painel de terceiro e decisao de
+negocio.
 
-Roteiro de teste:
+### Bloqueia o lancamento
 
-1. Criar viagem e gerar um roteiro curto.
-2. Cadastrar item no Cofre com anexo escolhido ja no formulario.
-3. Abrir o anexo (tem que exibir, nao baixar) e depois baixar.
-4. Remover o anexo, e depois remover o item inteiro.
-5. Conferir no painel do Supabase que o objeto sumiu do bucket.
-6. Colar uma confirmacao real no importador.
-7. Perguntar algo ao agente.
-8. Abrir o workspace no celular e percorrer as abas.
-9. Apagar uma conta de teste e conferir que as viagens dela sumiram.
+1. **SMTP do Resend no Supabase.** Sem isso o convite por e-mail nao
+   entrega para ninguem alem do dono da conta Resend. O dominio
+   `planvoro.com.br` ja esta verificado no Resend; falta apontar o
+   Supabase para `smtp.resend.com`, porta 465, usuario `resend`, senha =
+   `RESEND_API_KEY`. Depois de ligar, subir o limite em Authentication >
+   Rate Limits: ele vem em 2 e-mails por hora, e quem esquece descobre na
+   terceira conta criada.
 
-Depois: preencher `lib/legal.ts` e partir para o Stripe.
+2. **Preencher `lib/legal.ts`.** Faltam `city`, `jurisdiction` e
+   `document`. Com CNPJ a recomendacao inverte em relacao ao que estava
+   escrito no proprio arquivo: CNPJ e registro publico e deve ser
+   publicado. A regra antiga valia para CPF, que exposto em pagina publica
+   vira materia-prima para fraude de identidade.
 
-Prompt sugerido:
+3. **Chave da AbacatePay.** Toda conta comeca em Dev mode, onde os
+   pagamentos sao simulados — da para validar o fluxo inteiro antes da
+   aprovacao do CNPJ. Faltam a chave, os dois produtos (sem ciclo) e o
+   webhook.
+
+### Ordem que nao pode ser invertida
+
+Trocar a chave da AbacatePay de Dev para producao **antes** de
+`NEXT_PUBLIC_PLANVORO_BETA_ACCESS` virar `false`. Na ordem contraria, o
+cliente completa a compra e nada e cobrado.
+
+### Nao testado por uma pessoa
+
+- Login entre aparelhos: confirmar o e-mail no celular deve fazer a aba do
+  computador entrar sozinha.
+- Redefinicao de senha ponta a ponta. O teste que importa e o ultimo:
+  depois de trocar, a senha antiga tem que parar de funcionar. Da para
+  passar em todos os outros passos e ainda nao ter redefinido nada — era
+  exatamente o estado ate 03/09.
+
+### Prompt sugerido
 
 ```text
 Continuar o Planvoro em C:\Users\guiro\Downloads\planvoro_1\planvoro-app.
 Leia primeiro PLANVORO-PROXIMOS-PASSOS.md.
 Rodar o push dos commits locais antes de comecar.
-Depois seguir a Prioridade 1 (lib/legal.ts) ou a 2 (Stripe), conforme o usuario decidir.
-Nao expor secrets. Rodar npx tsc --noEmit e npm run build antes de considerar pronto.
+Nao expor secrets. Rodar npx tsc --noEmit e npm run build antes de
+considerar pronto.
 ```
