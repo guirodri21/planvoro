@@ -22,7 +22,7 @@ Ele nao vende passagem, hotel ou passeio. O foco e armazenar, organizar e compar
 - Supabase Auth + Postgres
 - Gemini para IA
 - Vercel para deploy
-- Stripe para pagamentos
+- AbacatePay para pagamentos (Pix e cartão)
 - Resend para e-mails
 
 ## Caminhos principais
@@ -37,7 +37,7 @@ Ele nao vende passagem, hotel ou passeio. O foco e armazenar, organizar e compar
 ## Regras de trabalho
 
 - Nao commitar secrets.
-- Nao expor `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` ou `RESEND_API_KEY`.
+- Nao expor `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `ABACATEPAY_API_KEY`, `ABACATEPAY_WEBHOOK_SECRET` ou `RESEND_API_KEY`.
 - Toda escrita importante deve passar por route handlers server-side.
 - Conferir membership com `memberForUserInTrip` antes de acessar dados privados da viagem.
 - Textos enviados por usuarios para IA sao dados, nao instrucoes.
@@ -88,8 +88,8 @@ Depois, na ordem:
 
 1. Preencher `lib/legal.ts` (razao social, CNPJ, foro, e-mails). Enquanto
    estiver em branco, as paginas legais se declaram em preparacao.
-2. Stripe de verdade. As chaves ja estao na Vercel; falta criar produtos
-   e precos e validar o webhook em modo teste.
+2. AbacatePay. O codigo esta pronto; falta criar a chave de Dev, os dois
+   produtos (sem ciclo) e validar o webhook ponta a ponta.
 
 Ha commits locais ainda nao enviados. Rodar o push antes de comecar:
 

@@ -34,10 +34,10 @@ Para rodar sem gastar nada, veja **PLANO-CUSTO-ZERO.md**.
 | `NOMINATIM_USER_AGENT` | sim | Exigido pelo OpenStreetMap — use seu e-mail real |
 | `RESEND_API_KEY` | não | Envia convites por e-mail de dentro da viagem |
 | `RESEND_FROM_EMAIL` | não | Remetente usado nos convites (`Planvoro <onboarding@resend.dev>` por padrão) |
-| `STRIPE_SECRET_KEY` | não | Cria checkouts de pagamento e assinatura |
-| `STRIPE_WEBHOOK_SECRET` | não | Valida eventos do Stripe em `/api/billing/webhook` |
-| `STRIPE_PRICE_TRIP_PASS` | não | Price ID opcional para o plano por viagem |
-| `STRIPE_PRICE_PRO_ANNUAL` | não | Price ID opcional para o Pro anual |
+| `ABACATEPAY_API_KEY` | não | Cria os checkouts de pagamento |
+| `ABACATEPAY_WEBHOOK_SECRET` | não | Autentica os eventos em `/api/billing/webhook` |
+| `ABACATEPAY_PRODUCT_TRIP_PASS` | não | External ID do produto do Passe |
+| `ABACATEPAY_PRODUCT_PRO_ANNUAL` | não | External ID do produto do Pro |
 | `NEXT_PUBLIC_SITE_URL` | não | Usada no sitemap e nos links compartilhados |
 | `NEXT_PUBLIC_PLANVORO_BETA_ACCESS` | não | Liga a beta grátis e bloqueia checkout pago (`true` por padrão) |
 | `ANTHROPIC_API_KEY` | não | Só se trocar `LLM_PROVIDER` para `anthropic` |
@@ -56,9 +56,8 @@ app/
   nova/page.tsx                  onboarding premium com preview vivo da viagem
   v/[slug]/page.tsx              área privada com resumo, agenda e abas da viagem
   r/[slug]/page.tsx              roteiro público, indexável
-  api/billing/checkout/route.ts  cria Checkout Sessions do Stripe
-  api/billing/portal/route.ts    abre portal do cliente Stripe
-  api/billing/webhook/route.ts   recebe eventos assinados do Stripe
+  api/billing/checkout/route.ts  cria o checkout na AbacatePay
+  api/billing/webhook/route.ts   recebe a confirmação de pagamento
   api/me/dashboard/route.ts      viagens ligadas ao usuario logado
   api/trips/...                  criar, entrar, preferências, gerar, votar, comentar e lançar gastos
   api/trips/[slug]/checklist     tarefas operacionais da viagem
@@ -73,7 +72,7 @@ lib/
   travel-agent.ts                agente de viagem que le contexto, saldos e vira respostas em tarefas
   guards.ts                      autorização das rotas de escrita
   resend.ts                      cliente do Resend
-  stripe.ts                      cliente do Stripe
+  abacatepay.ts                  cliente da AbacatePay
   supabase.ts                    conexão admin (só servidor)
   supabase-browser.ts            cliente do Supabase Auth no navegador
 ```
@@ -116,16 +115,26 @@ Durante a beta, `NEXT_PUBLIC_PLANVORO_BETA_ACCESS=true` deixa todos os recursos 
 liberados para teste e bloqueia a criação de checkout pago. Quando quiser cobrar, troque para
 `false` na Vercel e faça um novo deploy.
 
-1. Crie ou conecte uma conta Stripe.
-2. Configure `STRIPE_SECRET_KEY` na Vercel.
-3. Cadastre o webhook `https://planvoro-app.vercel.app/api/billing/webhook` no Stripe e copie o
-   signing secret para `STRIPE_WEBHOOK_SECRET`.
-4. Assine pelo menos estes eventos: `checkout.session.completed`, `checkout.session.expired`,
-   `customer.subscription.created`, `customer.subscription.updated` e
-   `customer.subscription.deleted`.
-5. Opcionalmente, crie Price IDs fixos e configure `STRIPE_PRICE_TRIP_PASS` e
-   `STRIPE_PRICE_PRO_ANNUAL`. Sem esses IDs, o app usa preços inline de R$79 por viagem e
-   R$149/ano no Checkout.
+O provedor é a **AbacatePay**. A Stripe foi abandonada porque não liberou a conta brasileira,
+e o modelo de preço do Planvoro — um pagamento avulso e um anual, sem mensalidade — dispensa a
+recorrência, que era a única coisa que prendia o projeto a ela.
+
+1. Crie a conta na AbacatePay. Toda conta nova já começa em **Dev mode**, onde os pagamentos são
+   simulados: dá para validar o fluxo inteiro antes da aprovação. O ambiente é definido pela
+   chave, não pela URL.
+2. Crie dois produtos, **ambos sem ciclo de recorrência**: Passe de viagem (R$ 29) e Planvoro Pro
+   (R$ 79). Guarde os External IDs em `ABACATEPAY_PRODUCT_TRIP_PASS` e
+   `ABACATEPAY_PRODUCT_PRO_ANNUAL`.
+3. Configure `ABACATEPAY_API_KEY` na Vercel.
+4. Cadastre o webhook em `https://planvoro.com.br/api/billing/webhook?webhookSecret=SEGREDO` e
+   guarde o mesmo segredo em `ABACATEPAY_WEBHOOK_SECRET`.
+
+O Pro é **pagamento único que vale um ano**, sem renovação automática. Renovar sozinho exigiria
+um fluxo de cancelamento fácil, que o CDC obriga e a AbacatePay não oferece pronto.
+
+Atenção: uma chave de Dev em produção simula todo pagamento. Ela precisa virar chave de produção
+**antes** de `NEXT_PUBLIC_PLANVORO_BETA_ACCESS` virar `false`, ou o cliente compra e nada é
+cobrado.
 
 ## Stack
 
