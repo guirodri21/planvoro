@@ -39,6 +39,15 @@ export async function POST(req: Request) {
 
     const origin = billingOrigin(req);
     const stripe = stripeClient();
+
+    async function stripeCustomerAindaExiste(id: string) {
+      try {
+        const cliente = await stripe.customers.retrieve(id);
+        return "deleted" in cliente && cliente.deleted ? null : id;
+      } catch {
+        return null;
+      }
+    }
     const metadata: Record<string, string> = {
       plan,
       user_id: user.id,
@@ -53,7 +62,20 @@ export async function POST(req: Request) {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    const customerId = stripeId(subscription?.stripe_customer_id);
+    const savedCustomerId = stripeId(subscription?.stripe_customer_id);
+
+    /**
+     * Reusar o cliente da Stripe so vale se ele ainda existir la.
+     *
+     * Cliente apagado no painel deixa o id gravado aqui apontando para o
+     * nada, e o checkout passa a responder "No such customer" para sempre
+     * — a pessoa nunca mais consegue assinar, e o erro nao diz o que fazer.
+     * Conferir antes custa uma chamada e transforma um beco sem saida em
+     * um cliente novo.
+     */
+    const customerId = savedCustomerId
+      ? await stripeCustomerAindaExiste(savedCustomerId)
+      : null;
 
     if (plan === "pro_annual") {
       if (["active", "trialing"].includes(subscription?.status ?? "")) {
@@ -88,6 +110,13 @@ export async function POST(req: Request) {
       metadata.trip_slug = slug;
       successUrl = `${origin}/v/${slug}?billing=success`;
       cancelUrl = `${origin}/v/${slug}?billing=cancel`;
+    }
+
+    if (savedCustomerId && !customerId) {
+      await db
+        .from("user_subscriptions")
+        .update({ stripe_customer_id: null, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id);
     }
 
     const session = await stripe.checkout.sessions.create({
