@@ -26,6 +26,15 @@ export function AuthScreen({
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  /** E-mail que acabou de se cadastrar e ainda precisa confirmar. */
+  const [aguardandoConfirmacao, setAguardandoConfirmacao] = useState("");
+  const [reenvioEm, setReenvioEm] = useState(0);
+
+  useEffect(() => {
+    if (reenvioEm <= 0) return;
+    const timer = window.setTimeout(() => setReenvioEm((n) => n - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [reenvioEm]);
 
   useEffect(() => {
     if (!loading && user && mode !== "reset") {
@@ -91,6 +100,45 @@ export function AuthScreen({
     return null;
   }
 
+/**
+ * Traduz o que o Supabase devolve.
+ *
+ * As mensagens vem em ingles e falam da implementacao, nao do que a
+ * pessoa deve fazer. "Invalid login credentials" numa tela de login em
+ * portugues denuncia que ninguem leu o proprio produto — e nao ajuda a
+ * pessoa a entrar.
+ */
+function traduzErro(bruto: string) {
+  const texto = bruto.toLowerCase();
+
+  if (texto.includes("invalid login credentials")) {
+    return "E-mail ou senha não conferem. Confira e tente de novo.";
+  }
+  if (texto.includes("email not confirmed")) {
+    return "Falta confirmar seu e-mail. Procure a mensagem que enviamos, inclusive no spam.";
+  }
+  if (texto.includes("user already registered") || texto.includes("already been registered")) {
+    return "Já existe conta com esse e-mail. Entre, ou use \"Esqueci minha senha\".";
+  }
+  if (texto.includes("email rate limit") || texto.includes("over_email_send_rate_limit")) {
+    return "Muitos e-mails enviados em pouco tempo. Espere alguns minutos e tente de novo.";
+  }
+  if (texto.includes("for security purposes") || texto.includes("rate limit")) {
+    return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
+  }
+  if (texto.includes("password should be") || texto.includes("weak password")) {
+    return "Essa senha é fraca demais. Use mais caracteres, misturando letras e números.";
+  }
+  if (texto.includes("unable to validate email") || texto.includes("invalid format")) {
+    return "Esse e-mail não parece válido.";
+  }
+  if (texto.includes("failed to fetch") || texto.includes("networkerror")) {
+    return "Não consegui falar com o servidor. Confira sua conexão e tente de novo.";
+  }
+
+  return bruto;
+}
+
   async function submit() {
     setSubmitting(true);
     setError("");
@@ -110,11 +158,18 @@ export function AuthScreen({
       }
 
       if (mode === "signup") {
+        // Sem emailRedirectTo, o link de confirmacao joga a pessoa na home
+        // e ela perde o caminho que estava seguindo — normalmente um
+        // convite para uma viagem especifica.
+        const confirmacaoVolta = new URL("/entrar", window.location.origin);
+        confirmacaoVolta.searchParams.set("next", nextPath);
+
         const { data, error: signUpError } = await client.auth.signUp({
           email,
           password,
           options: {
             data: { name },
+            emailRedirectTo: confirmacaoVolta.toString(),
           },
         });
         if (signUpError) throw signUpError;
@@ -123,9 +178,11 @@ export function AuthScreen({
           router.replace(nextPath);
           router.refresh();
         } else {
-          setMessage(
-            "Conta criada. Se a confirmação por e-mail estiver ligada no Supabase, confirme seu e-mail e depois entre."
-          );
+          // Sem sessao significa que o Supabase exige confirmar o e-mail.
+          // Isso merece uma tela, nao um aviso embaixo do formulario: e o
+          // ponto onde a pessoa mais desiste, porque nao sabe o que fazer.
+          setAguardandoConfirmacao(email);
+          setReenvioEm(60);
         }
       } else if (mode === "forgot") {
         const redirectTo = new URL("/entrar", window.location.origin);
@@ -158,10 +215,40 @@ export function AuthScreen({
         router.refresh();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Não foi possível autenticar.");
+      setError(e instanceof Error ? traduzErro(e.message) : "Não foi possível autenticar.");
     }
 
     setSubmitting(false);
+  }
+
+  async function reenviarConfirmacao() {
+    if (reenvioEm > 0 || submitting) return;
+
+    setSubmitting(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const client = supabaseBrowser();
+      if (!client) throw new Error("Login indisponível agora.");
+
+      const confirmacaoVolta = new URL("/entrar", window.location.origin);
+      confirmacaoVolta.searchParams.set("next", nextPath);
+
+      const { error: resendError } = await client.auth.resend({
+        type: "signup",
+        email: aguardandoConfirmacao,
+        options: { emailRedirectTo: confirmacaoVolta.toString() },
+      });
+      if (resendError) throw resendError;
+
+      setMessage("Enviamos de novo. Pode levar alguns minutos para chegar.");
+      setReenvioEm(60);
+    } catch (e) {
+      setError(e instanceof Error ? traduzErro(e.message) : "Não consegui reenviar agora.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   async function signInWithGoogle() {
@@ -193,8 +280,73 @@ export function AuthScreen({
       if (googleError) throw googleError;
     } catch (e) {
       setSubmitting(false);
-      setError(e instanceof Error ? e.message : "Não foi possível entrar com Google.");
+      setError(e instanceof Error ? traduzErro(e.message) : "Não foi possível entrar com Google.");
     }
+  }
+
+  if (aguardandoConfirmacao) {
+    return (
+      <div className="auth-shell">
+        <div className="card auth-card">
+          <p className="eyebrow">Falta um passo</p>
+          <h1 style={{ marginBottom: 8 }}>Confirme seu e-mail</h1>
+          <p className="sub">
+            Enviamos um link para <b>{aguardandoConfirmacao}</b>. Abra a mensagem e clique nele
+            para ativar sua conta.
+          </p>
+
+          <div className="note">
+            <b>Não chegou?</b>
+            <br />
+            Procure na caixa de spam ou promoções — é onde costuma cair. O e-mail pode levar
+            alguns minutos.
+          </div>
+
+          {error && <div className="err">{error}</div>}
+          {message && <div className="note">{message}</div>}
+
+          <button
+            className="btn full"
+            type="button"
+            onClick={reenviarConfirmacao}
+            disabled={submitting || reenvioEm > 0}
+          >
+            {submitting
+              ? "Enviando..."
+              : reenvioEm > 0
+                ? `Reenviar em ${reenvioEm}s`
+                : "Reenviar o e-mail"}
+          </button>
+
+          <div className="auth-alt">
+            <button
+              type="button"
+              className="linklike"
+              onClick={() => {
+                setAguardandoConfirmacao("");
+                setMode("signup");
+                setError("");
+                setMessage("");
+              }}
+            >
+              Errei o e-mail, quero corrigir
+            </button>
+            <button
+              type="button"
+              className="linklike"
+              onClick={() => {
+                setAguardandoConfirmacao("");
+                setMode("signin");
+                setError("");
+                setMessage("");
+              }}
+            >
+              Já confirmei, quero entrar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

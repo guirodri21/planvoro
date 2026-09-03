@@ -5417,3 +5417,37 @@ details p {
   gap: 12px;
   align-content: start;
 }
+
+/* Tela de confirmação de e-mail */
+.auth-card .note {
+  margin: 14px 0;
+}
+
+.auth-alt {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  align-items: center;
+}
+
+.linklike {
+  background: none;
+  border: none;
+  padding: 4px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text-soft);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.linklike:hover {
+  color: var(--text);
+}
+
+@media (pointer: coarse) {
+  .linklike {
+    min-height: 44px;
+  }
+}
