@@ -1,185 +1,170 @@
 import { NextResponse } from "next/server";
+import { assinaturaConfere, webhookSecretConfere } from "@/lib/abacatepay";
+import { tripAccessExpiresAt } from "@/lib/billing";
 import { logError, logInfo, startTimer } from "@/lib/logger";
-import type Stripe from "stripe";
-import { timestampFromSeconds } from "@/lib/billing";
-import { stripeClient, stripeWebhookSecret } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 
-function stripeId(value: string | { id?: string } | null | undefined) {
-  return typeof value === "string" ? value : value?.id ?? null;
+type Pedido = {
+  id: string;
+  plan: string;
+  user_id: string;
+  trip_id: string | null;
+  status: string;
+};
+
+/** Um ano a partir de agora, para a assinatura anual. */
+function umAnoAdiante() {
+  const fim = new Date();
+  fim.setFullYear(fim.getFullYear() + 1);
+  return fim.toISOString();
 }
 
-/** O passe vale ate 90 dias depois do fim da viagem: acerto de contas,
- *  comprovante e recibo continuam sendo consultados depois da volta. */
-const TRIP_PASS_GRACE_DAYS = 90;
-
-function tripAccessExpiresAt(endDate?: string | null) {
-  const now = new Date();
-  const fallback = new Date(now);
-  fallback.setDate(fallback.getDate() + TRIP_PASS_GRACE_DAYS);
-
-  if (!endDate) return fallback.toISOString();
-
-  const expires = new Date(`${endDate}T23:59:59.000Z`);
-  expires.setDate(expires.getDate() + TRIP_PASS_GRACE_DAYS);
-  return (expires > fallback ? expires : fallback).toISOString();
-}
-
-/**
- * O preco nao vem no corpo do evento: `line_items` so existe se pedido de
- * volta a Stripe. Antes isto lia `metadata.stripe_price_id`, que ninguem
- * escrevia, e gravava nulo sempre.
- */
-async function priceIdForSession(sessionId: string) {
-  try {
-    const stripe = stripeClient();
-    const items = await stripe.checkout.sessions.listLineItems(sessionId, { limit: 1 });
-    return items.data[0]?.price?.id ?? null;
-  } catch {
-    // Preco e dado de relatorio: nao vale derrubar a confirmacao do
-    // pagamento por causa dele.
-    return null;
-  }
-}
-
-async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+async function liberarAcesso(pedido: Pedido, checkoutId: string | null, valor: number | null) {
   const db = supabaseAdmin();
-  const plan = session.metadata?.plan;
-  const userId = session.metadata?.user_id;
-  const customerId = stripeId(session.customer);
+  const agora = new Date().toISOString();
 
-  if (plan === "trip_pass") {
-    const tripId = session.metadata?.trip_id;
-    if (!tripId) return;
-
-    const { data: trip } = await db.from("trips").select("end_date").eq("id", tripId).maybeSingle();
+  if (pedido.plan === "trip_pass" && pedido.trip_id) {
+    const { data: trip } = await db
+      .from("trips")
+      .select("end_date")
+      .eq("id", pedido.trip_id)
+      .maybeSingle();
 
     await db
       .from("trip_entitlements")
       .update({
         status: "paid",
-        stripe_customer_id: customerId,
-        stripe_payment_intent_id: stripeId(session.payment_intent),
-        stripe_price_id: await priceIdForSession(session.id),
-        amount_total: session.amount_total,
-        currency: session.currency,
-        paid_at: new Date().toISOString(),
+        provider: "abacatepay",
+        provider_checkout_id: checkoutId,
+        amount_total: valor,
+        currency: "brl",
+        paid_at: agora,
         access_expires_at: tripAccessExpiresAt(trip?.end_date),
-        updated_at: new Date().toISOString(),
+        updated_at: agora,
       })
-      .eq("stripe_checkout_session_id", session.id);
+      .eq("trip_id", pedido.trip_id)
+      .eq("status", "checkout_pending");
   }
 
-  if (plan === "pro_annual" && userId) {
+  if (pedido.plan === "pro_annual") {
     await db.from("user_subscriptions").upsert(
       {
-        user_id: userId,
+        user_id: pedido.user_id,
         status: "active",
-        stripe_customer_id: customerId,
-        stripe_subscription_id: stripeId(session.subscription),
-        updated_at: new Date().toISOString(),
+        provider: "abacatepay",
+        provider_subscription_id: checkoutId,
+        current_period_end: umAnoAdiante(),
+        cancel_at_period_end: false,
+        updated_at: agora,
       },
       { onConflict: "user_id" }
     );
   }
-}
 
-async function handleCheckoutExpired(session: Stripe.Checkout.Session) {
-  if (session.metadata?.plan !== "trip_pass") return;
-
-  const db = supabaseAdmin();
   await db
-    .from("trip_entitlements")
-    .update({ status: "expired", updated_at: new Date().toISOString() })
-    .eq("stripe_checkout_session_id", session.id)
-    .eq("status", "checkout_pending");
-}
-
-async function handleSubscription(subscription: Stripe.Subscription) {
-  const db = supabaseAdmin();
-  let userId = subscription.metadata?.user_id ?? null;
-
-  if (!userId) {
-    const { data } = await db
-      .from("user_subscriptions")
-      .select("user_id")
-      .eq("stripe_subscription_id", subscription.id)
-      .maybeSingle();
-    userId = data?.user_id ?? null;
-  }
-
-  if (!userId) return;
-
-  const firstItem = subscription.items.data[0];
-
-  await db.from("user_subscriptions").upsert(
-    {
-      user_id: userId,
-      status: subscription.status,
-      stripe_customer_id: stripeId(subscription.customer),
-      stripe_subscription_id: subscription.id,
-      stripe_price_id: firstItem?.price?.id ?? null,
-      current_period_end: timestampFromSeconds(firstItem?.current_period_end),
-      cancel_at_period_end: subscription.cancel_at_period_end,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" }
-  );
+    .from("billing_checkouts")
+    .update({ status: "paid", paid_at: agora, provider_checkout_id: checkoutId })
+    .eq("id", pedido.id);
 }
 
 export async function POST(req: Request) {
   const elapsed = startTimer();
-  let eventType = "unknown";
+  let evento = "unknown";
 
   try {
-    const signature = req.headers.get("stripe-signature");
-    if (!signature) {
-      return NextResponse.json({ error: "Webhook sem assinatura." }, { status: 400 });
+    const url = new URL(req.url);
+    const raw = await req.text();
+
+    /**
+     * Duas conferencias, com pesos bem diferentes.
+     *
+     * O segredo da query string e so nosso, e e o que de fato autentica a
+     * chamada. A assinatura HMAC usa uma chave publicada na documentacao
+     * da AbacatePay, entao qualquer pessoa consegue forjar uma valida —
+     * ela serve para detectar corpo corrompido no caminho, nao remetente
+     * falso. Por isso as duas sao exigidas, e nunca uma no lugar da outra.
+     */
+    if (!webhookSecretConfere(url.searchParams.get("webhookSecret"))) {
+      return NextResponse.json({ error: "Webhook nao autorizado." }, { status: 401 });
     }
 
-    const stripe = stripeClient();
-    const event = stripe.webhooks.constructEvent(
-      await req.text(),
-      signature,
-      stripeWebhookSecret()
-    );
+    if (!assinaturaConfere(raw, req.headers.get("x-webhook-signature"))) {
+      return NextResponse.json({ error: "Assinatura invalida." }, { status: 401 });
+    }
 
-    eventType = event.type;
+    /**
+     * Leitura solta de proposito.
+     *
+     * A propria AbacatePay recomenda nao validar o payload inteiro: um
+     * campo novo do lado deles nao pode derrubar a confirmacao de um
+     * pagamento que ja aconteceu.
+     */
+    const payload = JSON.parse(raw) as {
+      event?: string;
+      data?: {
+        checkout?: { id?: string; externalId?: string; paidAmount?: number; amount?: number };
+      };
+    };
 
-    switch (event.type) {
-      case "checkout.session.completed":
-        await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
-        break;
-      case "checkout.session.expired":
-        await handleCheckoutExpired(event.data.object as Stripe.Checkout.Session);
-        break;
-      case "customer.subscription.created":
-      case "customer.subscription.updated":
-      case "customer.subscription.deleted":
-        await handleSubscription(event.data.object as Stripe.Subscription);
-        break;
-      default:
-        break;
+    evento = payload.event ?? "unknown";
+
+    if (evento !== "checkout.completed" && evento !== "transparent.completed") {
+      return NextResponse.json({ received: true });
+    }
+
+    const checkout = payload.data?.checkout;
+    const externalId = checkout?.externalId;
+    if (!externalId) {
+      return NextResponse.json({ received: true });
+    }
+
+    const db = supabaseAdmin();
+    const { data: pedido } = await db
+      .from("billing_checkouts")
+      .select("id, plan, user_id, trip_id, status")
+      .eq("id", externalId)
+      .maybeSingle<Pedido>();
+
+    if (!pedido) {
+      // Cobranca que nao nasceu aqui. Responder 200 encerra a retentativa
+      // do provedor; um 4xx faria ele insistir por dias sem chance de mudar.
+      logInfo({
+        event: "abacate_webhook_sem_pedido",
+        route: "billing/webhook",
+        abacateEvent: evento,
+        durationMs: elapsed(),
+      });
+      return NextResponse.json({ received: true });
+    }
+
+    // Idempotencia: o provedor reenvia o mesmo evento ate receber 200, e
+    // liberar duas vezes reescreveria a validade do acesso ja concedido.
+    if (pedido.status !== "paid") {
+      await liberarAcesso(
+        pedido,
+        checkout?.id ?? null,
+        checkout?.paidAmount ?? checkout?.amount ?? null
+      );
     }
 
     logInfo({
-      event: "stripe_webhook_handled",
+      event: "abacate_webhook_handled",
       route: "billing/webhook",
-      stripeEvent: eventType,
+      abacateEvent: evento,
       durationMs: elapsed(),
     });
 
     return NextResponse.json({ received: true });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro no webhook do Stripe.";
+    const msg = e instanceof Error ? e.message : "Erro no webhook da AbacatePay.";
     logError({
-      event: "stripe_webhook_failed",
+      event: "abacate_webhook_failed",
       route: "billing/webhook",
-      stripeEvent: eventType,
+      abacateEvent: evento,
       durationMs: elapsed(),
       error: e,
     });
-    const status = msg.includes("STRIPE_") ? 503 : 400;
+    const status = msg.includes("ABACATEPAY_") ? 503 : 400;
     return NextResponse.json({ error: msg }, { status });
   }
 }

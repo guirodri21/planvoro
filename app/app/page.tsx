@@ -44,11 +44,12 @@ type DashboardResponse = {
   trips: DashboardTrip[];
   account_billing: {
     is_pro_active: boolean;
+    pro_expires_at: string | null;
     can_checkout: boolean;
     subscription: {
       status: string;
-      stripe_customer_id: string | null;
-      stripe_subscription_id: string | null;
+      provider: string | null;
+      provider_subscription_id: string | null;
       current_period_end: string | null;
       cancel_at_period_end: boolean;
     } | null;
@@ -200,25 +201,6 @@ export default function AppPage() {
     }
   }
 
-  async function openBillingPortal() {
-    if (!session?.access_token) return;
-
-    setBillingAction("portal");
-    setBillingError("");
-
-    try {
-      const res = await fetch("/api/billing/portal", {
-        method: "POST",
-        headers: authJsonHeaders(session.access_token),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Não foi possível abrir o portal.");
-      window.location.href = json.url;
-    } catch (e) {
-      setBillingError(e instanceof Error ? e.message : "Não foi possível abrir o portal.");
-      setBillingAction("");
-    }
-  }
 
   if (authLoading) {
     return <div className="card muted">Carregando sua conta...</div>;
@@ -271,8 +253,8 @@ export default function AppPage() {
           </h2>
           <p className="sub">
             {betaAccessEnabled
-              ? `${betaAccessDescription} O Stripe continua pronto para quando a gente decidir cobrar.`
-              : "Use grátis para começar. Quando a viagem ficar séria, libere um grupo por R$79 ou assine o Pro anual por R$149."}
+              ? `${betaAccessDescription} A cobrança já está pronta para quando a gente ligar.`
+              : "Use grátis para começar. Quando a viagem ficar séria, libere um grupo por R$ 29 ou pegue o Pro por R$ 79 ao ano."}
           </p>
         </div>
         <div className="billing-actions">
@@ -286,14 +268,12 @@ export default function AppPage() {
           ) : accountBilling?.is_pro_active ? (
             <>
               <span className="badge b-ok">Pro ativo</span>
-              <button
-                className="btn ghost"
-                type="button"
-                onClick={openBillingPortal}
-                disabled={billingAction === "portal"}
-              >
-                {billingAction === "portal" ? "Abrindo..." : "Gerenciar assinatura"}
-              </button>
+              {accountBilling?.pro_expires_at && (
+                <span className="tiny">
+                  Vale até {new Date(accountBilling.pro_expires_at).toLocaleDateString("pt-BR")}. Não
+                  renova sozinho.
+                </span>
+              )}
             </>
           ) : (
             <button
@@ -302,7 +282,7 @@ export default function AppPage() {
               onClick={() => startCheckout("pro_annual")}
               disabled={billingAction === "pro_annual"}
             >
-              {billingAction === "pro_annual" ? "Abrindo checkout..." : "Assinar Pro anual"}
+              {billingAction === "pro_annual" ? "Abrindo checkout..." : "Pegar o Pro por 1 ano"}
             </button>
           )}
         </div>

@@ -1,31 +1,21 @@
-import type Stripe from "stripe";
+import type { BillingPlan } from "@/lib/abacatepay";
 
-export type BillingPlan = "trip_pass" | "pro_annual";
+export type { BillingPlan };
 
 export const BILLING_COPY: Record<
   BillingPlan,
-  {
-    label: string;
-    description: string;
-    amount: number;
-    priceEnv: string;
-    alternatePriceEnv?: string;
-  }
+  { label: string; description: string; amount: number }
 > = {
   trip_pass: {
     label: "Passe de viagem",
     description:
       "Libera uma viagem inteira para o grupo todo. So o organizador paga. Vale ate 90 dias depois da volta.",
     amount: 2900,
-    priceEnv: "STRIPE_PRICE_TRIP_PASS",
-    alternatePriceEnv: "STRIPE_TRIP_PASS_PRICE_ID",
   },
   pro_annual: {
     label: "Planvoro Pro anual",
     description: "Viagens ilimitadas por um ano, com importacao de reservas e historico completo.",
     amount: 7900,
-    priceEnv: "STRIPE_PRICE_PRO_ANNUAL",
-    alternatePriceEnv: "STRIPE_PRO_ANNUAL_PRICE_ID",
   },
 };
 
@@ -33,34 +23,13 @@ export function billingOrigin(req: Request) {
   return new URL(req.url).origin;
 }
 
-export function checkoutMode(plan: BillingPlan): Stripe.Checkout.SessionCreateParams.Mode {
-  return plan === "pro_annual" ? "subscription" : "payment";
-}
-
-export function lineItemForPlan(plan: BillingPlan): Stripe.Checkout.SessionCreateParams.LineItem {
-  const copy = BILLING_COPY[plan];
-  const priceId =
-    process.env[copy.priceEnv] ??
-    (copy.alternatePriceEnv ? process.env[copy.alternatePriceEnv] : undefined);
-
-  if (priceId) {
-    return { price: priceId, quantity: 1 };
-  }
-
-  return {
-    quantity: 1,
-    price_data: {
-      currency: "brl",
-      unit_amount: copy.amount,
-      product_data: {
-        name: copy.label,
-        description: copy.description,
-      },
-      ...(plan === "pro_annual" ? { recurring: { interval: "year" as const } } : {}),
-    },
-  };
-}
-
+/**
+ * Assinatura vale enquanto o periodo pago nao terminou.
+ *
+ * O provedor avisa quando a assinatura e cancelada, mas nao manda nada no
+ * dia em que o periodo simplesmente expira. Sem a comparacao de data, uma
+ * assinatura vencida em janeiro continuaria "ativa" para sempre.
+ */
 export function isProStatusActive(status?: string | null, currentPeriodEnd?: string | null) {
   if (!status || !["active", "trialing"].includes(status)) return false;
   if (!currentPeriodEnd) return true;
@@ -73,6 +42,25 @@ export function isTripEntitlementActive(status?: string | null, accessExpiresAt?
   return new Date(accessExpiresAt).getTime() > Date.now();
 }
 
-export function timestampFromSeconds(value?: number | null) {
-  return value ? new Date(value * 1000).toISOString() : null;
+/**
+ * O passe vale ate 90 dias depois do fim da viagem.
+ *
+ * Acerto de contas, comprovante e recibo continuam sendo consultados
+ * depois da volta. Cortar o acesso no dia do desembarque transformaria o
+ * Cofre em resgate justo na hora em que ele mais e aberto.
+ */
+const TRIP_PASS_GRACE_DAYS = 90;
+
+export function tripAccessExpiresAt(endDate?: string | null) {
+  const fallback = new Date();
+  fallback.setDate(fallback.getDate() + TRIP_PASS_GRACE_DAYS);
+
+  if (!endDate) return fallback.toISOString();
+
+  const expires = new Date(`${endDate}T23:59:59.000Z`);
+  expires.setDate(expires.getDate() + TRIP_PASS_GRACE_DAYS);
+
+  // Viagem que ja acabou nao pode gerar acesso curto ou vencido: quem
+  // pagou hoje tem os 90 dias contados a partir de hoje.
+  return (expires > fallback ? expires : fallback).toISOString();
 }

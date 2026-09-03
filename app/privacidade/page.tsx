@@ -71,8 +71,8 @@ export default function PrivacidadePage() {
           <b>Resend</b> — envio de convites por e-mail.
         </li>
         <li>
-          <b>Stripe</b> — pagamentos, quando houver cobrança. Dados de cartão vão direto para a
-          Stripe e não passam pelos nossos servidores.
+          <b>AbacatePay</b> — pagamentos, quando houver cobrança. Dados de cartão e Pix vão
+          direto para a AbacatePay e não passam pelos nossos servidores.
         </li>
         <li>
           <b>PostHog</b> — analytics de uso, quando configurado.

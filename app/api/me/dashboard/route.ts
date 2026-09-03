@@ -29,8 +29,8 @@ type TripRow = {
 
 type SubscriptionRow = {
   status: string;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
+  provider: string | null;
+  provider_subscription_id: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
 };
@@ -88,7 +88,7 @@ export async function GET(req: Request) {
     const tripIds = [...new Set(memberRows.map((member) => member.trip_id))];
     const { data: subscription, error: subscriptionError } = await db
       .from("user_subscriptions")
-      .select("status, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end")
+      .select("status, provider, provider_subscription_id, current_period_end, cancel_at_period_end")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -100,6 +100,9 @@ export async function GET(req: Request) {
         subscription?.status ?? null,
         subscription?.current_period_end ?? null
       ),
+      // Sem renovacao automatica, a data de fim e a informacao que a
+      // pessoa precisa ver — nao ha assinatura para gerenciar.
+      pro_expires_at: subscription?.current_period_end ?? null,
       // A lista de testadores so existe no servidor, entao o painel nao tem
       // como decidir sozinho se mostra o botao de pagar.
       can_checkout: !betaBlocksCheckoutFor(user.email),

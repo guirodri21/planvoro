@@ -14,8 +14,7 @@
     "posthog-js": "^1.419.4",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "resend": "^6.21.0",
-    "stripe": "^22.5.0"
+    "resend": "^6.21.0"
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.22",

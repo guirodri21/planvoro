@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
-import type Stripe from "stripe";
+import { criarCheckout, criarCliente, type BillingPlan } from "@/lib/abacatepay";
 import { getUserFromRequest } from "@/lib/auth";
 import { betaBlocksCheckoutFor } from "@/lib/beta";
-import { billingOrigin, checkoutMode, lineItemForPlan, type BillingPlan } from "@/lib/billing";
+import { billingOrigin } from "@/lib/billing";
 import { memberForUserInTrip } from "@/lib/guards";
-import { stripeClient } from "@/lib/stripe";
 import { supabaseAdmin } from "@/lib/supabase";
 
 const PLANS: BillingPlan[] = ["trip_pass", "pro_annual"];
-
-function stripeId(value: string | { id?: string } | null | undefined) {
-  return typeof value === "string" ? value : value?.id ?? null;
-}
 
 export async function POST(req: Request) {
   try {
@@ -23,10 +18,7 @@ export async function POST(req: Request) {
 
     if (betaBlocksCheckoutFor(user.email)) {
       return NextResponse.json(
-        {
-          error:
-            "A beta gratis esta ativa. Voce ja pode testar o Planvoro sem pagar agora.",
-        },
+        { error: "A beta gratis esta ativa. Voce ja pode testar o Planvoro sem pagar agora." },
         { status: 409 }
       );
     }
@@ -38,44 +30,14 @@ export async function POST(req: Request) {
     }
 
     const origin = billingOrigin(req);
-    const stripe = stripeClient();
-
-    async function stripeCustomerAindaExiste(id: string) {
-      try {
-        const cliente = await stripe.customers.retrieve(id);
-        return "deleted" in cliente && cliente.deleted ? null : id;
-      } catch {
-        return null;
-      }
-    }
-    const metadata: Record<string, string> = {
-      plan,
-      user_id: user.id,
-    };
     let tripId: string | null = null;
-    let successUrl = `${origin}/app?billing=success`;
-    let cancelUrl = `${origin}/app?billing=cancel`;
+    let voltarPara = `${origin}/app`;
 
     const { data: subscription } = await db
       .from("user_subscriptions")
-      .select("status, stripe_customer_id, current_period_end")
+      .select("status, provider_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
-
-    const savedCustomerId = stripeId(subscription?.stripe_customer_id);
-
-    /**
-     * Reusar o cliente da Stripe so vale se ele ainda existir la.
-     *
-     * Cliente apagado no painel deixa o id gravado aqui apontando para o
-     * nada, e o checkout passa a responder "No such customer" para sempre
-     * — a pessoa nunca mais consegue assinar, e o erro nao diz o que fazer.
-     * Conferir antes custa uma chamada e transforma um beco sem saida em
-     * um cliente novo.
-     */
-    const customerId = savedCustomerId
-      ? await stripeCustomerAindaExiste(savedCustomerId)
-      : null;
 
     if (plan === "pro_annual") {
       if (["active", "trialing"].includes(subscription?.status ?? "")) {
@@ -92,7 +54,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
       }
       if (!membership.isOrganizer) {
-        return NextResponse.json({ error: "So o organizador pode liberar a viagem." }, { status: 403 });
+        return NextResponse.json(
+          { error: "So o organizador pode liberar a viagem." },
+          { status: 403 }
+        );
       }
 
       const { data: paid } = await db
@@ -106,46 +71,43 @@ export async function POST(req: Request) {
       }
 
       tripId = membership.tripId;
-      metadata.trip_id = tripId;
-      metadata.trip_slug = slug;
-      successUrl = `${origin}/v/${slug}?billing=success`;
-      cancelUrl = `${origin}/v/${slug}?billing=cancel`;
+      voltarPara = `${origin}/v/${slug}`;
     }
 
-    if (savedCustomerId && !customerId) {
-      await db
-        .from("user_subscriptions")
-        .update({ stripe_customer_id: null, updated_at: new Date().toISOString() })
-        .eq("user_id", user.id);
-    }
+    /**
+     * A linha nasce antes do checkout.
+     *
+     * O id dela e a unica coisa que viaja ate a AbacatePay e volta no
+     * webhook (`externalId`). Mandar user_id e trip_id por ali seria mais
+     * curto, mas colocaria identificadores internos numa carga que passa
+     * por terceiro — e obrigaria a confiar no que voltasse. Assim o
+     * webhook so traz um ponteiro, e quem responde o que ele libera e o
+     * nosso banco.
+     */
+    const { data: pedido, error: erroPedido } = await db
+      .from("billing_checkouts")
+      .insert({ plan, user_id: user.id, trip_id: tripId, provider: "abacatepay" })
+      .select("id")
+      .single();
 
-    const session = await stripe.checkout.sessions.create({
-      mode: checkoutMode(plan),
-      customer: customerId ?? undefined,
-      customer_email: customerId ? undefined : user.email ?? undefined,
-      client_reference_id: plan === "trip_pass" ? tripId ?? user.id : user.id,
-      line_items: [lineItemForPlan(plan)],
-      allow_promotion_codes: true,
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-      metadata,
-      subscription_data:
-        plan === "pro_annual"
-          ? {
-              metadata,
-            }
-          : undefined,
-      payment_intent_data:
-        plan === "trip_pass"
-          ? {
-              metadata,
-            }
-          : undefined,
+    if (erroPedido || !pedido) throw erroPedido ?? new Error("Nao consegui registrar o pedido.");
+
+    const customerId =
+      subscription?.provider_customer_id ??
+      (user.email ? await criarCliente(user.email, null) : null);
+
+    const checkout = await criarCheckout({
+      plan,
+      externalId: pedido.id,
+      completionUrl: `${voltarPara}?billing=success`,
+      returnUrl: `${voltarPara}?billing=cancel`,
+      customerId,
     });
 
-    if (!session.url) {
-      throw new Error("O Stripe nao retornou uma URL de checkout.");
-    }
+    await db
+      .from("billing_checkouts")
+      .update({ provider_checkout_id: checkout.id, amount: checkout.amount })
+      .eq("id", pedido.id);
 
     if (plan === "trip_pass" && tripId) {
       const { error } = await db.from("trip_entitlements").insert({
@@ -153,16 +115,18 @@ export async function POST(req: Request) {
         purchaser_user_id: user.id,
         plan: "trip_pass",
         status: "checkout_pending",
-        stripe_checkout_session_id: session.id,
-        stripe_customer_id: stripeId(session.customer),
+        provider: "abacatepay",
+        provider_checkout_id: checkout.id,
       });
       if (error) throw error;
     }
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: checkout.url });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao iniciar pagamento.";
-    const status = msg.includes("STRIPE_SECRET_KEY") ? 503 : 500;
+    // Falta de configuracao e problema nosso, nao do cliente: 503 deixa
+    // isso claro no monitoramento em vez de virar mais um 500 generico.
+    const status = msg.includes("ABACATEPAY_") ? 503 : 500;
     return NextResponse.json({ error: msg }, { status });
   }
 }
