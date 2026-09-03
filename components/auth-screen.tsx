@@ -31,6 +31,10 @@ export function AuthScreen({
   const [reenvioEm, setReenvioEm] = useState(0);
   /** Enquanto true, esta tela tenta entrar sozinha a cada poucos segundos. */
   const [vigiando, setVigiando] = useState(false);
+  /** O link de recuperacao ainda vale? So faz sentido no modo "reset". */
+  const [linkRecuperacao, setLinkRecuperacao] = useState<"checando" | "valido" | "expirado">(
+    "checando"
+  );
 
   /**
    * Confirmou no celular, entra no computador.
@@ -96,6 +100,24 @@ export function AuthScreen({
     return () => window.clearTimeout(timer);
   }, [reenvioEm]);
 
+  /**
+   * Link de recuperacao vale, ou ja morreu?
+   *
+   * Clicar no link cria a sessao antes de chegar aqui, entao "tem sessao"
+   * e o sinal de que o link foi aceito. Sem esta checagem o formulario
+   * aparece igual para quem chegou com link vencido, e a pessoa so
+   * descobre depois de escolher a senha e apertar o botao — perdendo o
+   * texto que ela acabou de digitar junto com a tentativa.
+   *
+   * Espera `loading` terminar porque o cliente ainda esta lendo o token
+   * que veio no fragmento da URL; perguntar antes disso responderia
+   * "expirado" para todo link valido.
+   */
+  useEffect(() => {
+    if (mode !== "reset" || loading) return;
+    setLinkRecuperacao(user ? "valido" : "expirado");
+  }, [loading, mode, user]);
+
   useEffect(() => {
     if (!loading && user && mode !== "reset") {
       router.replace(nextPath);
@@ -116,6 +138,51 @@ export function AuthScreen({
     forgot: "Informe seu e-mail e enviaremos um link seguro para redefinir sua senha.",
     reset: "Escolha uma nova senha para voltar ao seu dashboard do Planvoro.",
   };
+
+  if (mode === "reset" && linkRecuperacao !== "valido") {
+    return (
+      <div className="auth-shell">
+        <div className="card auth-card">
+          <p className="eyebrow">Redefinir senha</p>
+          {linkRecuperacao === "checando" ? (
+            <>
+              <h1>Conferindo seu link</h1>
+              <div className="session-loader" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+            </>
+          ) : (
+            <>
+              <h1 style={{ marginBottom: 8 }}>Esse link não vale mais</h1>
+              <p className="sub">
+                Links de redefinição expiram depois de um tempo e valem uma vez só. Sua senha
+                atual continua funcionando normalmente.
+              </p>
+              <button
+                className="btn full"
+                type="button"
+                onClick={() => {
+                  setMode("forgot");
+                  setLinkRecuperacao("valido");
+                  setError("");
+                  setMessage("");
+                }}
+              >
+                Pedir um link novo
+              </button>
+              <div className="auth-alt">
+                <button type="button" className="linklike" onClick={() => router.replace("/entrar")}>
+                  Voltar para a entrada
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (mode !== "reset" && (loading || user)) {
     return (
@@ -186,6 +253,17 @@ function traduzErro(bruto: string) {
   if (texto.includes("for security purposes") || texto.includes("rate limit")) {
     return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
   }
+  if (texto.includes("should be different") || texto.includes("same_password")) {
+    return "Essa já é a sua senha atual. Escolha uma diferente.";
+  }
+  if (
+    texto.includes("auth session missing") ||
+    texto.includes("token has expired") ||
+    texto.includes("invalid or has expired") ||
+    texto.includes("otp_expired")
+  ) {
+    return "Esse link expirou ou já foi usado. Peça um novo para redefinir a senha.";
+  }
   if (texto.includes("password should be") || texto.includes("weak password")) {
     return "Essa senha é fraca demais. Use mais caracteres, misturando letras e números.";
   }
@@ -246,12 +324,17 @@ function traduzErro(bruto: string) {
           setVigiando(true);
         }
       } else if (mode === "forgot") {
-        const redirectTo = new URL("/entrar", window.location.origin);
-        redirectTo.searchParams.set("mode", "reset");
-        redirectTo.searchParams.set("next", nextPath);
-
+        /**
+         * Caminho limpo, sem parametro nenhum.
+         *
+         * O Supabase confere o destino contra a lista de Redirect URLs e,
+         * se nao casar, ignora em silencio e manda para o Site URL. Era o
+         * que acontecia: o link caia na home, ja logado, sem nunca mostrar
+         * a tela de nova senha — e a senha antiga continuava valendo.
+         * Query string e justamente o que costuma nao casar.
+         */
         const { error: resetError } = await client.auth.resetPasswordForEmail(email, {
-          redirectTo: redirectTo.toString(),
+          redirectTo: `${window.location.origin}/redefinir-senha`,
         });
         if (resetError) throw resetError;
 
