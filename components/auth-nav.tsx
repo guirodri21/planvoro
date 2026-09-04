@@ -2,12 +2,12 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "./auth-provider";
-import { userDisplayName } from "@/lib/user-name";
+import { ContaMenu } from "./conta-menu";
 
 export function AuthNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, loading, signOut } = useAuth();
+  const { user, session, loading, signOut } = useAuth();
   const nextPath = pathname === "/" ? "/app" : pathname?.startsWith("/") ? pathname : "/app";
 
   async function handleSignOut() {
@@ -35,21 +35,16 @@ export function AuthNav() {
     );
   }
 
-  // So o primeiro nome: o sobrenome nao acrescenta nada aqui e empurrava a
-  // barra ate os links quebrarem em duas linhas.
-  const firstName = userDisplayName(user).trim().split(/\s+/)[0];
-
   return (
     <div className="nav-actions">
-      <span className="nav-user" title={userDisplayName(user)}>
-        Oi, {firstName}
-      </span>
       <a href="/nova" className="btn sm">
         Criar viagem
       </a>
-      <button type="button" className="btn ghost sm" onClick={handleSignOut}>
-        Sair
-      </button>
+      <ContaMenu
+        user={user}
+        accessToken={session?.access_token ?? null}
+        onSignOut={handleSignOut}
+      />
     </div>
   );
 }

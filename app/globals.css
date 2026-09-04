@@ -6008,3 +6008,180 @@ details p {
     flex: 0 0 auto;
   }
 }
+
+/* ====================================================== MENU DE CONTA
+   "Oi, Guilherme" era rotulo morto e o "Sair" ficava solto no topo,
+   gastando espaco fixo com a acao mais rara da barra. */
+
+.conta {
+  position: relative;
+}
+
+.conta-gatilho {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px 5px 5px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-soft, #5c6478);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.conta-gatilho:hover,
+.conta-gatilho.on {
+  border-color: var(--line, #e3e6ee);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text, #131722);
+}
+
+.conta-inicial {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--accent, #0e9c6b);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.conta-nome {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.conta-seta {
+  width: 10px;
+  height: 6px;
+  opacity: 0.55;
+}
+
+.conta-gatilho.on .conta-seta {
+  transform: rotate(180deg);
+}
+
+.conta-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  width: 264px;
+  padding: 6px;
+  border: 1px solid var(--line, #e3e6ee);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 16px 40px rgba(16, 22, 40, 0.14);
+}
+
+.conta-quem {
+  padding: 12px 12px 10px;
+}
+
+.conta-quem b {
+  display: block;
+  font-size: 14px;
+}
+
+/* O e-mail e a resposta para "em qual conta eu estou". Ele pode ser longo,
+   entao corta com reticencias em vez de esticar o menu. */
+.conta-quem small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--text-faint, #7a8296);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conta-plano {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 6px 6px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: rgba(14, 156, 107, 0.08);
+}
+
+.conta-plano-nome {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b6b4b;
+}
+
+.conta-plano-detalhe {
+  font-size: 12px;
+  color: var(--text-faint, #7a8296);
+}
+
+.conta-acoes {
+  display: flex;
+  flex-direction: column;
+}
+
+.conta-acoes a,
+.conta-acoes button {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  font: inherit;
+  font-size: 13.5px;
+  text-align: left;
+  text-decoration: none;
+  color: var(--text, #131722);
+  cursor: pointer;
+}
+
+.conta-acoes a:hover,
+.conta-acoes button:hover:not(:disabled) {
+  background: rgba(16, 22, 40, 0.05);
+}
+
+.conta-acoes button:disabled {
+  color: var(--text-faint, #7a8296);
+  cursor: default;
+}
+
+.conta-sair {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line, #eef0f5);
+}
+
+.conta-sair button {
+  color: #b4342a;
+}
+
+.conta-sair button:hover {
+  background: rgba(180, 52, 42, 0.08);
+}
+
+.conta-aviso {
+  margin: 2px 6px 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  background: rgba(14, 156, 107, 0.08);
+  color: #0b6b4b;
+}
+
+@media (max-width: 520px) {
+  /* Na barra estreita o nome sai e sobra a inicial, que ainda identifica
+     a conta e nao empurra o botao de criar viagem para fora. */
+  .conta-nome {
+    display: none;
+  }
+
+  .conta-menu {
+    width: min(264px, calc(100vw - 32px));
+  }
+}
