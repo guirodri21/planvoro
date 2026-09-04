@@ -85,13 +85,22 @@ export async function POST(req: Request) {
     }
 
     const dates = sampleDates();
+    /**
+     * Configuracao propria da amostra.
+     *
+     * Sao dois dias, sem ideias do grupo e sem votacao — cabe numa fracao
+     * do orcamento de um roteiro completo. Medido em producao, a mesma
+     * chamada com a configuracao cheia levava de 29 a 42 segundos, e
+     * quem esta decidindo se cria conta nao espera isso de pe.
+     */
     const generated = await generateItinerary(
       buildSampleTrip(destination, dates),
       SAMPLE_MEMBERS,
       SAMPLE_PREFS,
       [],
       [],
-      dates
+      dates,
+      { thinkingLevel: "MINIMAL", maxOutputTokens: 2500 }
     );
 
     await writeSampleCache(db, key, destination, generated);

@@ -255,16 +255,32 @@ export function conferirDatas(generated: GeneratedItinerary, targetDates: string
   };
 }
 
+/**
+ * Ajustes por chamada.
+ *
+ * A amostra da landing e um roteiro de dois dias que alguem espera de pe,
+ * decidindo se vale criar conta. Ela nao precisa do mesmo esforco de um
+ * roteiro de quinze dias com ideias votadas pelo grupo — e cada segundo
+ * ali custa visitante.
+ */
+export type OpcoesGeracao = {
+  thinkingLevel?: string;
+  maxOutputTokens?: number;
+  timeoutMs?: number;
+};
+
 export async function generateItinerary(
   trip: Trip,
   members: Member[],
   prefs: Record<string, Preference>,
   plannedIdeas: IdeaForGeneration[] = [],
   ideaVotes: IdeaVote[] = [],
-  dates = datasEntre(trip.start_date, trip.end_date)
+  dates = datasEntre(trip.start_date, trip.end_date),
+  opcoes: OpcoesGeracao = {}
 ): Promise<GeneratedItinerary> {
   const prompt = buildPrompt(trip, members, prefs, plannedIdeas, ideaVotes, dates);
-  const generated = PROVIDER === "anthropic" ? await viaAnthropic(prompt) : await viaGemini(prompt);
+  const generated =
+    PROVIDER === "anthropic" ? await viaAnthropic(prompt) : await viaGemini(prompt, opcoes);
   return conferirDatas(generated, dates);
 }
 
@@ -301,8 +317,11 @@ const dormir = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
  * ter o seu. Sem isso, duas tentativas de 42s somariam 84s e a funcao
  * seria cortada pela Vercel antes de responder qualquer coisa.
  */
-async function viaGemini(prompt: string): Promise<GeneratedItinerary> {
-  const limite = Date.now() + GEMINI_TIMEOUT_MS;
+async function viaGemini(
+  prompt: string,
+  opcoes: OpcoesGeracao = {}
+): Promise<GeneratedItinerary> {
+  const limite = Date.now() + (opcoes.timeoutMs ?? GEMINI_TIMEOUT_MS);
   let ultimoErro: unknown = null;
 
   for (let tentativa = 1; tentativa <= 3; tentativa += 1) {
@@ -314,7 +333,7 @@ async function viaGemini(prompt: string): Promise<GeneratedItinerary> {
     // primeira — e destino que precisa de trinta segundos passou a falhar
     // por causa da retentativa que existia para salva-lo.
     try {
-      return await geminiUmaVez(prompt, sobra);
+      return await geminiUmaVez(prompt, sobra, opcoes);
     } catch (erro) {
       ultimoErro = erro;
       if (!ehFalhaPassageira(erro)) throw erro;
@@ -332,7 +351,11 @@ async function viaGemini(prompt: string): Promise<GeneratedItinerary> {
   throw ultimoErro ?? new Error("Nao consegui falar com a IA.");
 }
 
-async function geminiUmaVez(prompt: string, timeoutMs: number): Promise<GeneratedItinerary> {
+async function geminiUmaVez(
+  prompt: string,
+  timeoutMs: number,
+  opcoes: OpcoesGeracao = {}
+): Promise<GeneratedItinerary> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
     throw new Error(
@@ -350,9 +373,9 @@ async function geminiUmaVez(prompt: string, timeoutMs: number): Promise<Generate
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.55,
-          maxOutputTokens: GEMINI_MAX_OUTPUT_TOKENS,
+          maxOutputTokens: opcoes.maxOutputTokens ?? GEMINI_MAX_OUTPUT_TOKENS,
           thinkingConfig: {
-            thinkingLevel: GEMINI_THINKING_LEVEL,
+            thinkingLevel: opcoes.thinkingLevel ?? GEMINI_THINKING_LEVEL,
           },
           responseMimeType: "application/json",
           responseSchema: SCHEMA,
