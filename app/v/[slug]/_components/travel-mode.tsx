@@ -77,7 +77,7 @@ export function TravelModeView({
     ? "Acompanhe o que esta acontecendo agora, o que vem em seguida e qualquer alerta operacional."
     : isAfterTrip
       ? "Revise gastos, guarde comprovantes finais e use o histórico como memória da viagem."
-      : "Use esta tela como checklist vivo antes de embarcar: reservas, horarios, documentos e pendências.";
+      : "Use esta tela como checklist vivo antes de embarcar: reservas, horários, documentos e pendências.";
   const statusLabel = isDuringTrip
     ? "em andamento"
     : isAfterTrip
@@ -306,7 +306,7 @@ export function TripAgendaView({
           <span className="badge b-ok">linha do tempo</span>
           <h2>Agenda da viagem</h2>
           <p className="sub">
-            Roteiro, voos, hospedagens, reservas e documentos datados no mesmo lugar. O objetivo e
+            Roteiro, voos, hospedagens, reservas e documentos datados no mesmo lugar. O objetivo é
             enxergar a viagem como ela vai acontecer, dia por dia.
           </p>
         </div>
@@ -334,7 +334,7 @@ export function TripAgendaView({
             <strong>{entries.length}</strong>
           </div>
           <div>
-            <span className="stat-label">Cofre sem horario</span>
+            <span className="stat-label">Cofre sem horário</span>
             <strong>{undatedVault.length}</strong>
           </div>
           <div>

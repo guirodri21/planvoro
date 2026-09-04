@@ -95,6 +95,27 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   const [generating, setGenerating] = useState(false);
   /** A ultima falha veio da geracao? So essa da para tentar de novo daqui. */
   const [falhaNaGeracao, setFalhaNaGeracao] = useState(false);
+
+  /**
+   * Falha herdada da criacao da viagem.
+   *
+   * O /nova cria a viagem e ja pede o roteiro. Quando esse pedido falha,
+   * ele manda `?roteiro=falhou` para ca — sem isso a viagem abria muda,
+   * dizendo apenas "Roteiro ainda nao gerado", que parece um passo que
+   * falta e nao um erro que aconteceu.
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!new URLSearchParams(window.location.search).has("roteiro")) return;
+
+    setError(
+      "A primeira tentativa de gerar o roteiro não deu certo. Isso costuma ser sobrecarga momentânea do gerador — tente de novo."
+    );
+    setFalhaNaGeracao(true);
+
+    // Tira o parametro da URL para o aviso nao voltar a cada recarga.
+    window.history.replaceState({}, "", window.location.pathname);
+  }, []);
   const [progress, setProgress] = useState<GenerationProgress | null>(null);
 
   const load = useCallback(async () => {
@@ -1087,7 +1108,7 @@ function PreferencesCard({
 
   return (
     <div className="card">
-      <h2>Suas preferencias, {me.name}</h2>
+      <h2>Suas preferências, {me.name}</h2>
       <p className="sub">A IA usa isso para equilibrar o roteiro entre todo mundo do grupo.</p>
 
       <label>O que você não quer perder</label>
@@ -1104,7 +1125,7 @@ function PreferencesCard({
         ))}
       </div>
 
-      <label>Restricoes</label>
+      <label>Restrições</label>
       <div className="chips">
         {RESTRICTIONS.map((restriction) => (
           <button
@@ -1137,7 +1158,7 @@ function PreferencesCard({
       </div>
 
       <button className="btn full" onClick={save} disabled={loading || !accessToken}>
-        {loading ? "Salvando..." : saved ? "Salvo ✓" : "Salvar preferencias"}
+        {loading ? "Salvando..." : saved ? "Salvo ✓" : "Salvar preferências"}
       </button>
     </div>
   );
@@ -1322,7 +1343,7 @@ function ItemRow({
         })}
 
         <button className="react ghost" onClick={() => setOpen((value) => !value)}>
-          {comments.length > 0 ? `${comments.length} comentario${comments.length > 1 ? "s" : ""}` : "comentar"}
+          {comments.length > 0 ? `${comments.length} comentário${comments.length > 1 ? "s" : ""}` : "comentar"}
         </button>
       </div>
 

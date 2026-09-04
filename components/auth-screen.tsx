@@ -31,6 +31,18 @@ export function AuthScreen({
   const [reenvioEm, setReenvioEm] = useState(0);
   /** Enquanto true, esta tela tenta entrar sozinha a cada poucos segundos. */
   const [vigiando, setVigiando] = useState(false);
+  /** Senha atual, exigida de quem ja estava logado e nao veio pelo link. */
+  const [senhaAtual, setSenhaAtual] = useState("");
+  /**
+   * Chegou por link de recuperacao, ou ja estava logado?
+   *
+   * A diferenca decide se pedimos a senha atual. Quem clicou no link do
+   * e-mail ja provou que a caixa de entrada e dele. Quem so abriu
+   * /redefinir-senha numa aba logada nao provou nada — e sem esta
+   * distincao bastava um notebook destrancado para trocar a senha e
+   * tomar a conta.
+   */
+  const [porLink, setPorLink] = useState(false);
   /** O link de recuperacao ainda vale? So faz sentido no modo "reset". */
   const [linkRecuperacao, setLinkRecuperacao] = useState<"checando" | "valido" | "expirado">(
     "checando"
@@ -113,6 +125,25 @@ export function AuthScreen({
    * que veio no fragmento da URL; perguntar antes disso responderia
    * "expirado" para todo link valido.
    */
+  useEffect(() => {
+    if (mode !== "reset") return;
+
+    // O Supabase avisa quando a sessao nasceu de um link de recuperacao.
+    const client = supabaseBrowser();
+    const inscricao = client?.auth.onAuthStateChange((evento) => {
+      if (evento === "PASSWORD_RECOVERY") setPorLink(true);
+    });
+
+    // O evento pode ter disparado antes de este componente montar. O
+    // fragmento da URL ainda carrega "type=recovery" nesse instante, e e
+    // a segunda forma de reconhecer a mesma chegada.
+    if (typeof window !== "undefined" && window.location.hash.includes("type=recovery")) {
+      setPorLink(true);
+    }
+
+    return () => inscricao?.data.subscription.unsubscribe();
+  }, [mode]);
+
   useEffect(() => {
     if (mode !== "reset" || loading) return;
     setLinkRecuperacao(user ? "valido" : "expirado");
@@ -238,6 +269,9 @@ export function AuthScreen({
 function traduzErro(bruto: string) {
   const texto = bruto.toLowerCase();
 
+  if (texto.includes("senha atual incorreta")) {
+    return "Senha atual incorreta.";
+  }
   if (texto.includes("invalid login credentials")) {
     return "E-mail ou senha não conferem. Confira e tente de novo.";
   }
@@ -340,6 +374,30 @@ function traduzErro(bruto: string) {
 
         setMessage("Enviamos um link para redefinir sua senha. Confira sua caixa de entrada.");
       } else if (mode === "reset") {
+        /**
+         * Sem link, exige a senha atual.
+         *
+         * `updateUser` troca a senha de qualquer sessao valida, sem
+         * perguntar mais nada. Para quem chegou pelo e-mail isso esta
+         * certo — o link ja foi a prova. Para quem apenas tinha a aba
+         * aberta, nao: qualquer pessoa que passasse pelo computador
+         * trocaria a senha e ficaria com a conta, e o Cofre guarda
+         * passaporte e comprovante de reserva.
+         *
+         * Conferir e reautenticar com a senha antiga; se ela nao valer, o
+         * Supabase recusa e nada e alterado.
+         */
+        if (!porLink) {
+          if (!senhaAtual.trim()) throw new Error("Digite sua senha atual para confirmar.");
+          if (!user?.email) throw new Error("Não consegui identificar sua conta.");
+
+          const { error: erroAtual } = await client.auth.signInWithPassword({
+            email: user.email,
+            password: senhaAtual,
+          });
+          if (erroAtual) throw new Error("Senha atual incorreta.");
+        }
+
         const { error: updateError } = await client.auth.updateUser({ password });
         if (updateError) throw updateError;
 
@@ -583,6 +641,25 @@ function traduzErro(bruto: string) {
 
         {mode !== "forgot" && (
           <>
+            {/* Quem nao chegou pelo link do e-mail confirma quem e antes
+                de trocar. Ver o comentario em submit(). */}
+            {mode === "reset" && !porLink && (
+              <>
+                <label>Senha atual</label>
+                <input
+                  type="password"
+                  value={senhaAtual}
+                  onChange={(e) => setSenhaAtual(e.target.value)}
+                  placeholder="Sua senha de hoje"
+                  autoComplete="current-password"
+                />
+                <span className="tiny">
+                  Você já está logado, então confirmamos que é você antes de trocar. Se esqueceu a
+                  senha, saia e use “Esqueci minha senha”.
+                </span>
+              </>
+            )}
+
             <label>{mode === "reset" ? "Nova senha" : "Senha"}</label>
             <input
               type="password"
@@ -617,6 +694,7 @@ function traduzErro(bruto: string) {
             !browserSupabaseReady() ||
             (mode !== "reset" && !email.trim()) ||
             (mode !== "forgot" && !password.trim()) ||
+            (mode === "reset" && !porLink && !senhaAtual.trim()) ||
             (mode === "signup" && !name.trim())
           }
         >

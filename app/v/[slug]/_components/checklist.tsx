@@ -74,7 +74,7 @@ export function TripChecklistView({
     !hasVaultKind(["flight", "transport"]) && {
       title: "Guardar passagens ou transporte de chegada no Cofre",
       category: "transport" as TripChecklistCategory,
-      notes: "Salve localizador, horarios, terminal/aeroporto e link da reserva.",
+      notes: "Salve localizador, horários, terminal/aeroporto e link da reserva.",
     },
     !hasVaultKind(["lodging"]) && {
       title: "Guardar hospedagem no Cofre",

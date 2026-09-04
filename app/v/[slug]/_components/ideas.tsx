@@ -107,7 +107,7 @@ export function IdeasView({
         <div className="card stat-card">
           <span className="stat-label">Mais quente</span>
           <strong className="stat-value">{topIdea ? formatScore(scoreFor(topIdea.id)) : "0"}</strong>
-          <span className="tiny">{topIdea ? topIdea.title : "Nenhuma votacao ainda"}</span>
+          <span className="tiny">{topIdea ? topIdea.title : "Nenhuma votação ainda"}</span>
         </div>
       </div>
 
@@ -155,7 +155,7 @@ export function IdeasView({
             rows={4}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Por que vale entrar, horarios bons, link, restricoes..."
+            placeholder="Por que vale entrar, horários bons, link, restrições..."
           />
 
           {error && <div className="err">{error}</div>}
@@ -185,7 +185,7 @@ export function IdeasView({
 
       <div className="card">
         <h2>Quadro de ideias</h2>
-        <p className="sub">Ordenado por status, votos e criacao mais recente.</p>
+        <p className="sub">Ordenado por status, votos e criação mais recente.</p>
 
         {orderedIdeas.length === 0 ? (
           <div className="note">

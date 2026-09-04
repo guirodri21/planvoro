@@ -315,16 +315,30 @@ function NovaViagemForm() {
       });
 
       setPhase("generating");
-      await fetch(`/api/trips/${slug}/generate`, {
+
+      /**
+       * A viagem ja existe; o roteiro pode falhar.
+       *
+       * Antes isto era `.catch(() => null)` e o status nunca era olhado:
+       * a geracao respondia 500, a navegacao seguia igual, e o workspace
+       * abria dizendo "Roteiro ainda nao gerado" — como se fosse um passo
+       * pendente e nao uma falha. A pessoa esperava sem saber do que.
+       *
+       * Nao da para desfazer a viagem por causa disso (as preferencias ja
+       * foram salvas), entao o caminho e avisar do outro lado.
+       */
+      const geracaoOk = await fetch(`/api/trips/${slug}/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-      }).catch(() => null);
+      })
+        .then((res) => res.ok)
+        .catch(() => false);
 
       setPhase("opening");
-      router.push(`/v/${slug}`);
+      router.push(geracaoOk ? `/v/${slug}` : `/v/${slug}?roteiro=falhou`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Algo deu errado ao criar a viagem.");
       setPhase("idle");

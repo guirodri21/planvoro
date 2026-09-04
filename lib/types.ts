@@ -241,7 +241,7 @@ export const TRIP_CHECKLIST_CATEGORIES: Array<{
   { value: "packing", label: "Mala" },
   { value: "group", label: "Grupo" },
   { value: "transport", label: "Transporte" },
-  { value: "health", label: "Saude" },
+  { value: "health", label: "Saúde" },
   { value: "planning", label: "Planejamento" },
   { value: "other", label: "Outro" },
 ];

@@ -270,7 +270,7 @@ export function TravelAgentView({
           <>
             <div className="agent-answer-head">
               <div>
-                <span className="badge b-ok">resposta acionavel</span>
+                <span className="badge b-ok">resposta acionável</span>
                 <h3>Resposta do agente</h3>
               </div>
               <div className="agent-answer-actions">

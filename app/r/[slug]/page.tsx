@@ -67,7 +67,7 @@ export default async function RoteiroPublico({
         <RoteiroShare summary={summary} url={shareUrl} />
 
         <p className="tiny print-only">
-          Roteiro gerado por IA no Planvoro. Confira precos, horarios e regras oficiais na fonte
+          Roteiro gerado por IA no Planvoro. Confira preços, horários e regras oficiais na fonte
           antes de reservar. {shareUrl}
         </p>
       </div>

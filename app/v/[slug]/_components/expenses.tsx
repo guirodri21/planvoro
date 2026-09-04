@@ -17,6 +17,7 @@ import {
   type ExpenseSettlement,
 } from "../_lib/expenses";
 import { formatExpenseDate, formatMoney } from "../_lib/format";
+import { Confirmar } from "@/components/confirmar";
 
 /**
  * Alerta de orcamento.
@@ -324,6 +325,8 @@ export function ExpensesView({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [removingId, setRemovingId] = useState("");
+  /** Gasto aguardando confirmacao. Vazio quando nao ha dialogo aberto. */
+  const [confirmarRemocao, setConfirmarRemocao] = useState("");
 
   useEffect(() => {
     setPayerId((current) => (current ? current : me.id));
@@ -375,6 +378,7 @@ export function ExpensesView({
   async function removeExpense(expenseId: string) {
     if (!accessToken || removingId) return;
 
+    setConfirmarRemocao("");
     setRemovingId(expenseId);
     setError("");
 
@@ -429,13 +433,13 @@ export function ExpensesView({
           <h2>Gastos e acertos</h2>
           <p className="sub">
             Registre pagamentos compartilhados e o Planvoro mostra quem pagou demais, quem ficou
-            devendo e como zerar tudo com o menor número de transferencias.
+            devendo e como zerar tudo com o menor número de transferências.
           </p>
           <div className="expense-command-grid">
             <div>
               <span className="stat-label">Total registrado</span>
               <strong>{formatMoney(totalSpent)}</strong>
-              <small>{expenses.length} lancamento{expenses.length === 1 ? "" : "s"}</small>
+              <small>{expenses.length} lançamento{expenses.length === 1 ? "" : "s"}</small>
             </div>
             <div>
               <span className="stat-label">Você pagou</span>
@@ -459,7 +463,7 @@ export function ExpensesView({
                   ? "Você tem a receber"
                   : myTotals.balance < -0.009
                     ? "Você deve ao grupo"
-                    : "Você esta zerado"}
+                    : "Você está zerado"}
               </small>
             </div>
           </div>
@@ -535,7 +539,7 @@ export function ExpensesView({
             planejamento.
           </p>
 
-          <label>Descricao</label>
+          <label>Descrição</label>
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -783,7 +787,7 @@ export function ExpensesView({
                       <button
                         className="btn ghost sm"
                         type="button"
-                        onClick={() => removeExpense(expense.id)}
+                        onClick={() => setConfirmarRemocao(expense.id)}
                         disabled={removingId === expense.id}
                         aria-label={`Remover ${expense.description}`}
                       >
@@ -797,6 +801,25 @@ export function ExpensesView({
           </div>
         )}
       </div>
+
+      {/*
+        Gasto tambem some sem volta, e some da divisao de todo mundo: o
+        acerto do grupo inteiro muda de valor. O Cofre ja perguntava antes
+        de remover; aqui nao perguntava nada, e um toque errado no celular
+        apagava um lancamento em silencio.
+      */}
+      {confirmarRemocao && (
+        <Confirmar
+          titulo="Remover este gasto?"
+          descricao={`"${
+            expenses.find((item) => item.id === confirmarRemocao)?.description ?? "Este lançamento"
+          }" sai da lista e a divisão do grupo é recalculada sem ele. Não dá para desfazer.`}
+          acao="Remover gasto"
+          trabalhando={removingId === confirmarRemocao}
+          onConfirmar={() => removeExpense(confirmarRemocao)}
+          onCancelar={() => setConfirmarRemocao("")}
+        />
+      )}
     </>
   );
 }
