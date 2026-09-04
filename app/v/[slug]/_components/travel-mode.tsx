@@ -86,7 +86,7 @@ export function TravelModeView({
         ? `faltam ${daysToTrip} dias`
         : daysToTrip === 1
           ? "amanha"
-          : "comeca hoje";
+          : "começa hoje";
   const focusEntry = currentEntry ?? nextEntry;
   const firstChecklist = overdueChecklist[0] ?? dueTodayChecklist[0] ?? openChecklist[0] ?? null;
   const alerts = [
@@ -107,7 +107,7 @@ export function TravelModeView({
     })),
     ...undatedVault.slice(0, 2).map((item) => ({
       title: item.title,
-      body: "No Cofre, mas sem data ou horario",
+      body: "No Cofre, mas sem data ou horário",
       action: onGoToVault,
     })),
   ].slice(0, 6);
@@ -182,7 +182,7 @@ export function TravelModeView({
             </>
           ) : (
             <>
-              <h3>Nenhum compromisso com horario ainda</h3>
+              <h3>Nenhum compromisso com horário ainda</h3>
               <p className="sub">
                 Adicione horários no Cofre ou gere um roteiro para esta tela virar o copiloto do dia.
               </p>
@@ -291,7 +291,7 @@ export function TripAgendaView({
     !itinerary && "Roteiro ainda não foi gerado.",
     activeVaultItems.length > 0 &&
       undatedVault.length > 0 &&
-      `${undatedVault.length} ${pluralItens(undatedVault.length)} do Cofre sem data ou horario.`,
+      `${undatedVault.length} ${pluralItens(undatedVault.length)} do Cofre sem data ou horário.`,
     outsideTripDates > 0 &&
       `${outsideTripDates} ${pluralItens(outsideTripDates)} com data fora do periodo da viagem.`,
     attentionVault > 0 &&
@@ -556,7 +556,7 @@ export function TripMapView({ itinerary }: { itinerary: Itinerary | null }) {
               onClick={() => setDayIndex((i) => Math.min(mappable.length - 1, i + 1))}
               disabled={safeIndex >= mappable.length - 1}
             >
-              Proximo
+              Próximo
             </button>
           </div>
         </div>

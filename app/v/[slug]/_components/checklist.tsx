@@ -92,9 +92,9 @@ export function TripChecklistView({
       notes: "Verifique passaporte, visto, vacinas, autorizações e comprovantes necessarios.",
     },
     preferences.length < members.length && {
-      title: "Chamar quem ainda não preencheu preferencias",
+      title: "Chamar quem ainda não preencheu preferências",
       category: "group" as TripChecklistCategory,
-      notes: `${members.length - preferences.length} pessoa(s) ainda faltam preencher preferencias.`,
+      notes: `${members.length - preferences.length} pessoa(s) ainda faltam preencher preferências.`,
     },
     vaultItems.some((item) => item.status === "attention") && {
       title: "Resolver itens marcados como precisa conferir",

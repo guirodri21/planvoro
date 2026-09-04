@@ -483,7 +483,7 @@ export function ExpensesView({
           <span className="stat-label">Estado do acerto</span>
           <strong>
             {settlementPlan.length
-              ? `${settlementPlan.length} transferencia${settlementPlan.length === 1 ? "" : "s"} sugerida${settlementPlan.length === 1 ? "" : "s"}`
+              ? `${settlementPlan.length} transferência${settlementPlan.length === 1 ? "" : "s"} sugerida${settlementPlan.length === 1 ? "" : "s"}`
               : expenses.length
                 ? "Tudo equilibrado"
                 : "Ainda sem gastos"}

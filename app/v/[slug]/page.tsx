@@ -268,7 +268,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
       {!user ? (
         <AuthRequiredCard
           title="Entre para acessar a viagem"
-          description="Agora o Planvoro usa conta para ligar você aos votos, comentarios, preferencias e gastos dessa viagem."
+          description="Agora o Planvoro usa conta para ligar você aos votos, comentários, preferências e gastos dessa viagem."
           nextPath={`/v/${slug}`}
         />
       ) : !me ? (
@@ -617,7 +617,7 @@ function TripExecutiveSummary({
       : daysToTrip === 1
         ? "amanha"
         : daysToTrip === 0
-          ? "comeca hoje"
+          ? "começa hoje"
           : "viagem iniciada";
 
   const preferenceScore = members.length ? Math.round((preferences.length / members.length) * 22) : 0;
@@ -643,7 +643,7 @@ function TripExecutiveSummary({
 
   const risks = [
     missingPreferences > 0 && {
-      title: `${missingPreferences} pessoa${missingPreferences === 1 ? "" : "s"} sem preferencias`,
+      title: `${missingPreferences} pessoa${missingPreferences === 1 ? "" : "s"} sem preferências`,
       body: "Chame o grupo antes de gerar ou regerar o roteiro.",
       tab: "grupo" as WorkspaceTab,
     },
@@ -913,7 +913,7 @@ function PlanningCard({
             rows={3}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={`Oi! O ${me.name} ja abriu a viagem no Planvoro. Entra aqui para votar e ajustar tudo com o grupo.`}
+            placeholder={`Oi! O ${me.name} já abriu a viagem no Planvoro. Entra aqui para votar e ajustar tudo com o grupo.`}
           />
           {inviteError && <div className="err">{inviteError}</div>}
           {inviteResult && (
@@ -1189,7 +1189,7 @@ function ItineraryView({
     <div className="card">
       <h2>Roteiro</h2>
       <p className="sub">
-        Versao {itinerary.version} · reaja e comente em qualquer item para o grupo decidir junto
+        Versão {itinerary.version} · reaja e comente em qualquer item para o grupo decidir junto
       </p>
       {itinerary.rationale && (
         <div className="note" style={{ marginBottom: 18 }}>

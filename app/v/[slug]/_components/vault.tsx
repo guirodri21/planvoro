@@ -543,7 +543,7 @@ export function TravelVaultView({
           setPendingFiles([]);
           await onChange();
           setError(
-            `Item salvo, mas nao consegui anexar: ${failed.join(", ")}. Tente anexar pelo card do item.`
+            `Item salvo, mas não consegui anexar: ${failed.join(", ")}. Tente anexar pelo card do item.`
           );
           return;
         }
