@@ -11,7 +11,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
     const { data: trip, error } = await db.from("trips").select("*").eq("slug", slug).maybeSingle();
     if (error) throw error;
-    if (!trip) return NextResponse.json({ error: "Viagem nao encontrada." }, { status: 404 });
+    if (!trip) return NextResponse.json({ error: "Viagem não encontrada." }, { status: 404 });
 
     const user = await getUserFromRequest(req, db);
 
@@ -184,11 +184,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
     if (!membership.isOrganizer) {
       return NextResponse.json(
-        { error: "So quem organiza pode mudar o orcamento." },
+        { error: "So quem organiza pode mudar o orçamento." },
         { status: 403 }
       );
     }
@@ -204,7 +204,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
       } else {
         const amount = Number(raw);
         if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) {
-          return NextResponse.json({ error: "Valor de orcamento invalido." }, { status: 400 });
+          return NextResponse.json({ error: "Valor de orçamento inválido." }, { status: 400 });
         }
         update.budget_per_person = Number(amount.toFixed(2));
       }

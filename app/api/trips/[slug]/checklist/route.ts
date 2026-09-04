@@ -42,12 +42,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const category = String(body.category ?? "planning").trim() as TripChecklistCategory;
     if (!CATEGORIES.has(category)) {
-      return NextResponse.json({ error: "Categoria invalida." }, { status: 400 });
+      return NextResponse.json({ error: "Categoria inválida." }, { status: 400 });
     }
 
     const status = String(body.status ?? "open").trim() as TripChecklistStatus;
     if (!STATUSES.has(status)) {
-      return NextResponse.json({ error: "Status invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Status inválido." }, { status: 400 });
     }
 
     const notes = String(body.notes ?? "").trim();
@@ -63,7 +63,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const access = await resolveTripAccess(db, membership.tripId);

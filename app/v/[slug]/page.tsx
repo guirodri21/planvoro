@@ -744,7 +744,7 @@ function TripExecutiveSummary({
       <div className="command-side">
         {/*
           So o que pede acao.
-          O painel "Ja encaminhado" ficava logo abaixo repetindo os mesmos
+          O painel "Já encaminhado" ficava logo abaixo repetindo os mesmos
           numeros como conquista — "1 item no Cofre" aparecia como pendencia
           de um lado e como vitoria do outro, na mesma tela. Progresso ja
           esta no percentual acima; aqui fica so o que ainda falta.

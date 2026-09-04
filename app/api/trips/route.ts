@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       );
     }
     if (new Date(end_date) < new Date(start_date)) {
-      return NextResponse.json({ error: "A volta nao pode ser antes da ida." }, { status: 400 });
+      return NextResponse.json({ error: "A volta não pode ser antes da ida." }, { status: 400 });
     }
 
     // Teto da beta: conta viagens em que a pessoa e organizadora, nao as

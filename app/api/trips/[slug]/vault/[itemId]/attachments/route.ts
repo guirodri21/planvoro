@@ -37,7 +37,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const access = await resolveTripAccess(db, membership.tripId);
@@ -46,7 +46,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
     }
 
     const item = await vaultItemForTrip(db, membership.tripId, itemId);
-    if (!item) return NextResponse.json({ error: "Item nao encontrado." }, { status: 404 });
+    if (!item) return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
 
     if (!membership.isOrganizer && item.member_id !== membership.memberId) {
       return NextResponse.json(
@@ -71,7 +71,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
     const mimeType = normalizeMimeType(file.type);
     if (!isAllowedVaultMime(mimeType)) {
       return NextResponse.json(
-        { error: "Formato nao aceito. Envie PDF, JPG, PNG, WEBP ou HEIC." },
+        { error: "Formato não aceito. Envie PDF, JPG, PNG, WEBP ou HEIC." },
         { status: 400 }
       );
     }
@@ -84,7 +84,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
 
     if ((count ?? 0) >= MAX_ATTACHMENTS_PER_ITEM) {
       return NextResponse.json(
-        { error: `Este item ja tem ${MAX_ATTACHMENTS_PER_ITEM} anexos.` },
+        { error: `Este item já tem ${MAX_ATTACHMENTS_PER_ITEM} anexos.` },
         { status: 400 }
       );
     }

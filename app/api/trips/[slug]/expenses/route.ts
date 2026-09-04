@@ -17,7 +17,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       return NextResponse.json({ error: "Descreva o gasto." }, { status: 400 });
     }
     if (text.length > MAX_DESCRIPTION) {
-      return NextResponse.json({ error: "Descricao muito longa." }, { status: 400 });
+      return NextResponse.json({ error: "Descrição muito longa." }, { status: 400 });
     }
 
     const payerId = String(payer_member_id ?? "").trim();
@@ -34,7 +34,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > MAX_AMOUNT) {
-      return NextResponse.json({ error: "Valor invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Valor inválido." }, { status: 400 });
     }
 
     const db = supabaseAdmin();
@@ -45,7 +45,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const access = await resolveTripAccess(db, membership.tripId);
@@ -55,7 +55,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     if (!(await memberIdsBelongToTrip(db, membership.tripId, [payerId, ...splitIds]))) {
       return NextResponse.json(
-        { error: "As pessoas selecionadas nao pertencem a esta viagem." },
+        { error: "As pessoas selecionadas não pertencem a esta viagem." },
         { status: 400 }
       );
     }

@@ -21,12 +21,12 @@ async function loadAttachment(req: Request, ctx: Ctx) {
 
   const membership = await memberForUserInTrip(db, slug, user.id);
   if (!membership) {
-    return { error: NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 }) };
+    return { error: NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 }) };
   }
 
   const item = await vaultItemForTrip(db, membership.tripId, itemId);
   if (!item) {
-    return { error: NextResponse.json({ error: "Item nao encontrado." }, { status: 404 }) };
+    return { error: NextResponse.json({ error: "Item não encontrado." }, { status: 404 }) };
   }
 
   const { data: attachment, error } = await db
@@ -39,7 +39,7 @@ async function loadAttachment(req: Request, ctx: Ctx) {
   if (error) throw error;
 
   if (!attachment) {
-    return { error: NextResponse.json({ error: "Anexo nao encontrado." }, { status: 404 }) };
+    return { error: NextResponse.json({ error: "Anexo não encontrado." }, { status: 404 }) };
   }
 
   return { db, membership, item, attachment };
@@ -68,7 +68,7 @@ export async function GET(req: Request, ctx: Ctx) {
       );
     if (error) throw error;
     if (!data?.signedUrl) {
-      return NextResponse.json({ error: "Nao foi possivel abrir este anexo." }, { status: 404 });
+      return NextResponse.json({ error: "Não foi possível abrir este anexo." }, { status: 404 });
     }
 
     return NextResponse.json({ url: data.signedUrl, expires_in: SIGNED_URL_TTL_SECONDS });

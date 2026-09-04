@@ -49,7 +49,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     logCtx.userId = user.id;
@@ -66,7 +66,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
     }
 
     const { data: trip } = await db.from("trips").select("*").eq("slug", slug).maybeSingle();
-    if (!trip) return NextResponse.json({ error: "Viagem nao encontrada." }, { status: 404 });
+    if (!trip) return NextResponse.json({ error: "Viagem não encontrada." }, { status: 404 });
 
     const [membersResult, prefRowsResult, plannedIdeasResult] = await Promise.all([
       db.from("members").select("*").eq("trip_id", trip.id),
@@ -89,7 +89,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
 
     if (prefRows.length === 0) {
       return NextResponse.json(
-        { error: "Ninguem preencheu as preferencias ainda. O roteiro em grupo depende disso." },
+        { error: "Ninguem preencheu as preferências ainda. O roteiro em grupo depende disso." },
         { status: 400 }
       );
     }
@@ -141,7 +141,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
       return NextResponse.json(
         {
           error:
-            "A IA nao devolveu nenhum dos dias pedidos para este lote. Tente novamente para continuar o roteiro.",
+            "A IA não devolveu nenhum dos dias pedidos para este lote. Tente novamente para continuar o roteiro.",
           faltando: generated.faltando ?? targetDates,
         },
         { status: 502 }

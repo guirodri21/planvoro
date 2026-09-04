@@ -51,7 +51,7 @@ function inviteText({
   lines.push("Entrar e colaborar:");
   lines.push(inviteUrl);
   lines.push("");
-  lines.push("Ver o roteiro publico:");
+  lines.push("Ver o roteiro público:");
   lines.push(publicUrl);
 
   return lines.join("\n");
@@ -111,7 +111,7 @@ function inviteHtml({
             </tr>
             <tr>
               <td style="padding:0 32px 14px;">
-                <p style="margin:0;font-size:13px;line-height:1.7;color:#5a6a80;">Se quiser ver o que ja existe antes de entrar, abra o roteiro publico:</p>
+                <p style="margin:0;font-size:13px;line-height:1.7;color:#5a6a80;">Se quiser ver o que já existe antes de entrar, abra o roteiro público:</p>
               </td>
             </tr>
             <tr>

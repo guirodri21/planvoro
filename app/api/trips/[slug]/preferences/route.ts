@@ -12,12 +12,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     const db = supabaseAdmin();
     const user = await getUserFromRequest(req, db);
     if (!user) {
-      return NextResponse.json({ error: "Entre na sua conta para salvar preferencias." }, { status: 401 });
+      return NextResponse.json({ error: "Entre na sua conta para salvar preferências." }, { status: 401 });
     }
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce ainda nao entrou nesta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você ainda não entrou nesta viagem." }, { status: 403 });
     }
 
     const { error } = await db.from("preferences").upsert(
@@ -37,7 +37,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     return NextResponse.json({ ok: true });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro ao salvar preferencias.";
+    const msg = e instanceof Error ? e.message : "Erro ao salvar preferências.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

@@ -22,14 +22,47 @@ export type BillingPlan = "trip_pass" | "pro_annual";
  */
 export function abacateApiKey() {
   const key = process.env.ABACATEPAY_API_KEY;
-  if (!key) throw new Error("ABACATEPAY_API_KEY nao configurada.");
+  if (!key) throw new Error("ABACATEPAY_API_KEY não configurada.");
   return key;
 }
 
 export function abacateWebhookSecret() {
   const secret = process.env.ABACATEPAY_WEBHOOK_SECRET;
-  if (!secret) throw new Error("ABACATEPAY_WEBHOOK_SECRET nao configurado.");
+  if (!secret) throw new Error("ABACATEPAY_WEBHOOK_SECRET não configurado.");
   return secret;
+}
+
+/** O que a API v2 aceita em `methods`. */
+const METODOS_VALIDOS = ["PIX", "CARD", "BOLETO"] as const;
+type Metodo = (typeof METODOS_VALIDOS)[number];
+
+/**
+ * Formas de pagamento oferecidas no checkout.
+ *
+ * Era `["PIX", "CARD"]` fixo no codigo, e a loja saiu do ar com
+ * `CARD is not available for this store` — cartao na AbacatePay depende de
+ * liberacao a parte, que nao da para ligar sozinho pelo painel. O produto
+ * inteiro ficou sem cobrar por uma linha que ninguem conseguia mudar sem
+ * novo deploy.
+ *
+ * Agora vem de `ABACATEPAY_METHODS`, separado por virgula. No dia em que
+ * liberarem cartao, e trocar a variavel — nada de codigo.
+ *
+ * PIX e o padrao porque e o unico que toda loja tem desde o primeiro dia,
+ * e porque num ticket de R$ 29 ele custa um terco do cartao.
+ */
+export function metodosDePagamento(): Metodo[] {
+  const bruto = process.env.ABACATEPAY_METHODS ?? "PIX";
+
+  const escolhidos = bruto
+    .split(",")
+    .map((item) => item.trim().toUpperCase())
+    .filter((item): item is Metodo => (METODOS_VALIDOS as readonly string[]).includes(item));
+
+  // Variavel escrita errada nao pode virar lista vazia: a API recusa o
+  // corpo inteiro e a pessoa leva um erro no meio da compra por causa de
+  // um espaco a mais numa configuracao.
+  return escolhidos.length ? escolhidos : ["PIX"];
 }
 
 /** ID do produto na AbacatePay, criado uma vez no painel ou pela API. */
@@ -39,7 +72,7 @@ export function productIdForPlan(plan: BillingPlan) {
       ? process.env.ABACATEPAY_PRODUCT_TRIP_PASS
       : process.env.ABACATEPAY_PRODUCT_PRO_ANNUAL;
 
-  if (!id) throw new Error(`Produto da AbacatePay nao configurado para ${plan}.`);
+  if (!id) throw new Error(`Produto da AbacatePay não configurado para ${plan}.`);
   return id;
 }
 
@@ -90,7 +123,7 @@ async function abacateFetch(path: string, body: unknown) {
 export async function criarCheckout(params: CriarCheckout): Promise<CheckoutCriado> {
   const data = (await abacateFetch("/checkouts/create", {
     items: [{ id: productIdForPlan(params.plan), quantity: 1 }],
-    methods: ["PIX", "CARD"],
+    methods: metodosDePagamento(),
     externalId: params.externalId,
     completionUrl: params.completionUrl,
     returnUrl: params.returnUrl,
@@ -98,7 +131,7 @@ export async function criarCheckout(params: CriarCheckout): Promise<CheckoutCria
   })) as { id?: string; url?: string; amount?: number } | null;
 
   if (!data?.id || !data?.url) {
-    throw new Error("AbacatePay nao devolveu o link de pagamento.");
+    throw new Error("AbacatePay não devolveu o link de pagamento.");
   }
 
   return { id: data.id, url: data.url, amount: data.amount ?? null };

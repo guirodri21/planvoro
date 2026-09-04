@@ -152,7 +152,7 @@ export async function checkTripCreation(
 
   if (tier === "pro") {
     return activeTripIds.length >= PRO_ACTIVE_TRIPS
-      ? `Voce ja tem ${PRO_ACTIVE_TRIPS} viagens ativas. Fale com a gente se precisar de mais.`
+      ? `Você já tem ${PRO_ACTIVE_TRIPS} viagens ativas. Fale com a gente se precisar de mais.`
       : null;
   }
 
@@ -213,7 +213,7 @@ export async function reserveAiUsage(
   if (rule.perTripTotal !== undefined) {
     const used = await countEvents(db, { kind: params.kind, tripId: params.tripId });
     if (used >= rule.perTripTotal) {
-      return `Esta viagem ja usou as ${rule.perTripTotal} ${rule.label} disponiveis.${upgradeHint}`;
+      return `Esta viagem já usou as ${rule.perTripTotal} ${rule.label} disponiveis.${upgradeHint}`;
     }
   }
 
@@ -224,7 +224,7 @@ export async function reserveAiUsage(
       since,
     });
     if (used >= rule.perUserPerDay) {
-      return `Voce atingiu o limite de ${rule.perUserPerDay} ${rule.label} por dia. Tente de novo em algumas horas.`;
+      return `Você atingiu o limite de ${rule.perUserPerDay} ${rule.label} por dia. Tente de novo em algumas horas.`;
     }
   }
 

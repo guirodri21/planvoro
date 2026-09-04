@@ -56,7 +56,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       const mimeType = normalizeMimeType(upload.type);
       if (!isAllowedVaultMime(mimeType)) {
         return NextResponse.json(
-          { error: "Formato nao aceito. Envie PDF, JPG, PNG, WEBP ou HEIC." },
+          { error: "Formato não aceito. Envie PDF, JPG, PNG, WEBP ou HEIC." },
           { status: 400 }
         );
       }
@@ -71,7 +71,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
       if (text.length < MIN_IMPORT_TEXT) {
         return NextResponse.json(
-          { error: "Cole um texto de confirmacao com mais detalhes para importar." },
+          { error: "Cole um texto de confirmação com mais detalhes para importar." },
           { status: 400 }
         );
       }
@@ -92,7 +92,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const access = await resolveTripAccess(db, membership.tripId);
@@ -119,7 +119,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       .eq("id", membership.tripId)
       .maybeSingle();
     if (tripError) throw tripError;
-    if (!trip) return NextResponse.json({ error: "Viagem nao encontrada." }, { status: 404 });
+    if (!trip) return NextResponse.json({ error: "Viagem não encontrada." }, { status: 404 });
 
     const draft = await importVaultDraftFromText(trip as Trip, text, file);
 

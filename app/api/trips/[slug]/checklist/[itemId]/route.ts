@@ -19,7 +19,7 @@ export async function PATCH(
     const status = String(body.status ?? "").trim() as TripChecklistStatus;
 
     if (!STATUSES.has(status)) {
-      return NextResponse.json({ error: "Status invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Status inválido." }, { status: 400 });
     }
 
     const db = supabaseAdmin();
@@ -30,7 +30,7 @@ export async function PATCH(
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const access = await resolveTripAccess(db, membership.tripId);
@@ -46,7 +46,7 @@ export async function PATCH(
       .select("id, trip_id, member_id, category, title, notes, due_date, status, source, created_at, updated_at")
       .maybeSingle();
     if (error) throw error;
-    if (!data) return NextResponse.json({ error: "Tarefa nao encontrada." }, { status: 404 });
+    if (!data) return NextResponse.json({ error: "Tarefa não encontrada." }, { status: 404 });
 
     return NextResponse.json({ item: data });
   } catch (e) {
@@ -69,7 +69,7 @@ export async function DELETE(
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { traduzErro } from "@/lib/erros";
 import { browserSupabaseReady, supabaseBrowser } from "@/lib/supabase-browser";
 import { useAuth } from "./auth-provider";
 
@@ -257,59 +258,6 @@ export function AuthScreen({
     }
     return null;
   }
-
-/**
- * Traduz o que o Supabase devolve.
- *
- * As mensagens vem em ingles e falam da implementacao, nao do que a
- * pessoa deve fazer. "Invalid login credentials" numa tela de login em
- * portugues denuncia que ninguem leu o proprio produto — e nao ajuda a
- * pessoa a entrar.
- */
-function traduzErro(bruto: string) {
-  const texto = bruto.toLowerCase();
-
-  if (texto.includes("senha atual incorreta")) {
-    return "Senha atual incorreta.";
-  }
-  if (texto.includes("invalid login credentials")) {
-    return "E-mail ou senha não conferem. Confira e tente de novo.";
-  }
-  if (texto.includes("email not confirmed")) {
-    return "Falta confirmar seu e-mail. Procure a mensagem que enviamos, inclusive no spam.";
-  }
-  if (texto.includes("user already registered") || texto.includes("already been registered")) {
-    return "Já existe conta com esse e-mail. Entre, ou use \"Esqueci minha senha\".";
-  }
-  if (texto.includes("email rate limit") || texto.includes("over_email_send_rate_limit")) {
-    return "Muitos e-mails enviados em pouco tempo. Espere alguns minutos e tente de novo.";
-  }
-  if (texto.includes("for security purposes") || texto.includes("rate limit")) {
-    return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
-  }
-  if (texto.includes("should be different") || texto.includes("same_password")) {
-    return "Essa já é a sua senha atual. Escolha uma diferente.";
-  }
-  if (
-    texto.includes("auth session missing") ||
-    texto.includes("token has expired") ||
-    texto.includes("invalid or has expired") ||
-    texto.includes("otp_expired")
-  ) {
-    return "Esse link expirou ou já foi usado. Peça um novo para redefinir a senha.";
-  }
-  if (texto.includes("password should be") || texto.includes("weak password")) {
-    return "Essa senha é fraca demais. Use mais caracteres, misturando letras e números.";
-  }
-  if (texto.includes("unable to validate email") || texto.includes("invalid format")) {
-    return "Esse e-mail não parece válido.";
-  }
-  if (texto.includes("failed to fetch") || texto.includes("networkerror")) {
-    return "Não consegui falar com o servidor. Confira sua conexão e tente de novo.";
-  }
-
-  return bruto;
-}
 
   async function submit() {
     setSubmitting(true);
@@ -634,7 +582,7 @@ function traduzErro(bruto: string) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="voce@exemplo.com"
+              placeholder="você@exemplo.com"
             />
           </>
         )}

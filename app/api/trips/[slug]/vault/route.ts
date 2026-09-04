@@ -50,12 +50,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const kind = String(body.kind ?? "other").trim() as TripVaultKind;
     if (!VAULT_KINDS.has(kind)) {
-      return NextResponse.json({ error: "Tipo de item invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Tipo de item inválido." }, { status: 400 });
     }
 
     const status = String(body.status ?? "saved").trim() as TripVaultStatus;
     if (!VAULT_STATUSES.has(status)) {
-      return NextResponse.json({ error: "Status invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Status inválido." }, { status: 400 });
     }
 
     const hasAmount = body.amount !== null && body.amount !== undefined && String(body.amount).trim() !== "";
@@ -64,7 +64,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       numericAmount !== null &&
       (!Number.isFinite(numericAmount) || numericAmount < 0 || numericAmount > MAX_AMOUNT)
     ) {
-      return NextResponse.json({ error: "Valor invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Valor inválido." }, { status: 400 });
     }
 
     const db = supabaseAdmin();
@@ -75,7 +75,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const access = await resolveTripAccess(db, membership.tripId);

@@ -27,10 +27,10 @@ export async function POST(
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
     if (!(await itemBelongsToTrip(db, membership.tripId, itemId))) {
-      return NextResponse.json({ error: "Item nao encontrado nesta viagem." }, { status: 404 });
+      return NextResponse.json({ error: "Item não encontrado nesta viagem." }, { status: 404 });
     }
 
     const { data, error } = await db

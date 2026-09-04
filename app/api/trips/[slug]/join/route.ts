@@ -20,7 +20,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     }
 
     const { data: trip } = await db.from("trips").select("id").eq("slug", slug).maybeSingle();
-    if (!trip) return NextResponse.json({ error: "Viagem nao encontrada." }, { status: 404 });
+    if (!trip) return NextResponse.json({ error: "Viagem não encontrada." }, { status: 404 });
 
     const { data: existing, error: existingError } = await db
       .from("members")

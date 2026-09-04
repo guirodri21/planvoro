@@ -53,7 +53,7 @@ function money(value: number | null | undefined) {
 }
 
 function compactList(values: string[]) {
-  return values.filter(Boolean).join(", ") || "nao informado";
+  return values.filter(Boolean).join(", ") || "não informado";
 }
 
 function buildTripContext({
@@ -70,13 +70,13 @@ function buildTripContext({
   const people = members
     .map((member) => {
       const pref = prefByMember.get(member.id);
-      if (!pref) return `- ${member.name}: ainda nao preencheu preferencias.`;
+      if (!pref) return `- ${member.name}: ainda não preencheu preferências.`;
 
       return [
         `- ${member.name}`,
         `interesses: ${compactList(pref.interests)}`,
-        `restricoes: ${compactList(pref.restrictions)}`,
-        `orcamento diario: ${pref.daily_budget ?? "nao informado"}`,
+        `restrições: ${compactList(pref.restrictions)}`,
+        `orçamento diario: ${pref.daily_budget ?? "não informado"}`,
         `presenca: ${pref.present_from ?? trip.start_date} ate ${pref.present_to ?? trip.end_date}`,
       ].join(" | ");
     })
@@ -92,14 +92,14 @@ function buildTripContext({
               (item) =>
                 `${item.start_time ?? "--:--"} ${item.title} (${item.category ?? "sem categoria"}, ${money(
                   item.cost_estimate
-                )}, ${item.verified ? "verificado" : "nao verificado"})`
+                )}, ${item.verified ? "verificado" : "não verificado"})`
             )
             .join("; ");
 
           return `- ${day.day_date} ${day.title ?? ""}: ${items || "sem itens"}`;
         })
         .join("\n")
-    : "Ainda nao existe roteiro gerado.";
+    : "Ainda não existe roteiro gerado.";
 
   const ideaSummary = ideas.length
     ? ideas
@@ -107,7 +107,7 @@ function buildTripContext({
         .map(
           (idea) =>
             `- ${idea.title} | status: ${idea.status} | categoria: ${
-              idea.category ?? "nao informada"
+              idea.category ?? "não informada"
             } | custo: ${money(idea.estimated_cost)}${idea.notes ? ` | notas: ${idea.notes}` : ""}`
         )
         .join("\n")
@@ -143,10 +143,10 @@ function buildTripContext({
         .map(
           (item) =>
             `- ${item.title} | tipo: ${item.kind} | status: ${item.status} | fornecedor: ${
-              item.provider ?? "nao informado"
-            } | codigo: ${item.confirmation_code ?? "nao informado"} | quando: ${
+              item.provider ?? "não informado"
+            } | codigo: ${item.confirmation_code ?? "não informado"} | quando: ${
               item.starts_at ?? "sem data"
-            } | local: ${item.location ?? "nao informado"} | valor: ${money(item.amount)}`
+            } | local: ${item.location ?? "não informado"} | valor: ${money(item.amount)}`
         )
         .join("\n")
     : "Nenhum item salvo no Cofre.";
@@ -168,7 +168,7 @@ Destino: ${trip.destination}
 Datas: ${trip.start_date} ate ${trip.end_date}
 Pessoas: ${trip.party_size}
 Tipo: ${trip.is_solo ? "solo" : "grupo"}
-Orcamento: ${trip.budget_band ?? "nao informado"}
+Orcamento: ${trip.budget_band ?? "não informado"}
 Estilos: ${compactList(trip.styles)}
 
 PESSOAS E PREFERENCIAS
@@ -257,13 +257,13 @@ export async function answerTravelAgentQuestion(
 
   const json = await res.json();
   const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("O agente nao retornou uma resposta no formato esperado.");
+  if (!text) throw new Error("O agente não retornou uma resposta no formato esperado.");
 
   try {
     return JSON.parse(text) as TravelAgentAnswer;
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]) as TravelAgentAnswer;
-    throw new Error("O agente respondeu num formato que nao consegui ler.");
+    throw new Error("O agente respondeu num formato que não consegui ler.");
   }
 }

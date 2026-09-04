@@ -28,7 +28,7 @@ export async function DELETE(
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const { data: expense, error: expenseError } = await db
@@ -38,7 +38,7 @@ export async function DELETE(
       .eq("trip_id", membership.tripId)
       .maybeSingle();
     if (expenseError) throw expenseError;
-    if (!expense) return NextResponse.json({ error: "Gasto nao encontrado." }, { status: 404 });
+    if (!expense) return NextResponse.json({ error: "Gasto não encontrado." }, { status: 404 });
 
     if (!membership.isOrganizer && expense.payer_member_id !== membership.memberId) {
       return NextResponse.json(

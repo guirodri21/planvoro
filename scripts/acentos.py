@@ -6,10 +6,15 @@ Corrigir acento a cada relatorio de teste nao termina nunca: sao dezenas
 de arquivos e cada rodada acha tres novos. Este script olha o projeto
 inteiro de uma vez.
 
-So considera texto visivel: conteudo entre tags JSX e valores de props
-que viram texto na tela. Ignora comentario, nome de variavel, chave de
-objeto, rota e classe CSS — foi trocando `/historico` por `/historico`
-com acento que uma varredura anterior criou 404 de verdade.
+So considera texto visivel: conteudo entre tags JSX, valores de props que
+viram texto na tela, e mensagens devolvidas por rota de API. Ignora
+comentario, nome de variavel, chave de objeto, rota e classe CSS — foi
+trocando `/historico` por `/historico` com acento que uma varredura
+anterior criou 404 de verdade.
+
+Uso:
+    python scripts/acentos.py app             # relatorio
+    python scripts/acentos.py app --corrigir  # aplica
 """
 import io
 import os
@@ -18,42 +23,58 @@ import sys
 
 # Palavra errada -> certa. So palavra inteira, sem prefixo ou sufixo.
 DICIONARIO = {
-    "nao": "não", "sao": "são", "tambem": "também", "voce": "você",
-    "Voce": "Você", "ja": "já", "vao": "vão", "sera": "será",
-    "possivel": "possível", "disponivel": "disponível", "proximo": "próximo",
-    "Proximo": "Próximo", "proxima": "próxima", "Proxima": "Próxima",
+    "nao": "não", "Nao": "Não",
+    "sao": "são", "Sao": "São",
+    "tambem": "também", "Tambem": "Também",
+    "voce": "você", "Voce": "Você",
+    "ja": "já", "Ja": "Já",
+    "vao": "vão", "sera": "será",
+    "possivel": "possível", "disponivel": "disponível",
+    "proximo": "próximo", "Proximo": "Próximo",
+    "proxima": "próxima", "Proxima": "Próxima",
     "preferencias": "preferências", "Preferencias": "Preferências",
-    "preferencia": "preferência", "Versao": "Versão", "versao": "versão",
-    "Descricao": "Descrição", "descricao": "descrição",
+    "preferencia": "preferência",
+    "versao": "versão", "Versao": "Versão",
+    "descricao": "descrição", "Descricao": "Descrição",
     "lancamento": "lançamento", "lancamentos": "lançamentos",
-    "transferencias": "transferências", "transferencia": "transferência",
-    "Restricoes": "Restrições", "restricoes": "restrições",
-    "votacao": "votação", "Votacao": "Votação", "criacao": "criação",
+    "transferencia": "transferência", "transferencias": "transferências",
+    "restricoes": "restrições", "Restricoes": "Restrições",
+    "votacao": "votação", "Votacao": "Votação",
+    "criacao": "criação",
     "comentario": "comentário", "comentarios": "comentários",
-    "Saude": "Saúde", "acionavel": "acionável", "horarios": "horários",
-    "horario": "horário", "Confianca": "Confiança", "confianca": "confiança",
-    "Comeca": "Começa", "comeca": "começa", "precos": "preços",
-    "preco": "preço", "historico": "histórico", "Historico": "Histórico",
-    "codigo": "código", "codigos": "códigos", "usuario": "usuário",
-    "usuarios": "usuários", "publico": "público", "publica": "pública",
-    "Publico": "Público", "unico": "único", "unica": "única",
+    "Saude": "Saúde", "acionavel": "acionável",
+    "horario": "horário", "horarios": "horários",
+    "confianca": "confiança", "Confianca": "Confiança",
+    "comeca": "começa", "Comeca": "Começa",
+    "preco": "preço", "precos": "preços",
+    "historico": "histórico", "Historico": "Histórico",
+    "codigo": "código", "codigos": "códigos", "Codigo": "Código",
+    "usuario": "usuário", "usuarios": "usuários", "Usuario": "Usuário",
+    "publico": "público", "publica": "pública", "Publico": "Público",
+    "unico": "único", "unica": "única", "Unico": "Único",
     "automatico": "automático", "automatica": "automática",
-    "pagina": "página", "Pagina": "Página", "paginas": "páginas",
-    "aereo": "aéreo", "aerea": "aérea", "orcamento": "orçamento",
-    "Orcamento": "Orçamento", "duvida": "dúvida", "duvidas": "dúvidas",
-    "endereco": "endereço", "enderecos": "endereços",
-    "servico": "serviço", "servicos": "serviços", "opcao": "opção",
-    "opcoes": "opções", "Opcoes": "Opções", "informacao": "informação",
-    "informacoes": "informações", "confirmacao": "confirmação",
-    "sugestao": "sugestão", "sugestoes": "sugestões", "decisao": "decisão",
-    "decisoes": "decisões", "reuniao": "reunião", "atencao": "atenção",
-    "Atencao": "Atenção", "duracao": "duração", "localizacao": "localização",
-    "e-mails": "e-mails",
+    "Automatico": "Automático",
+    "pagina": "página", "paginas": "páginas", "Pagina": "Página",
+    "aereo": "aéreo", "aerea": "aérea", "Aereo": "Aéreo",
+    "orcamento": "orçamento", "Orcamento": "Orçamento",
+    "duvida": "dúvida", "duvidas": "dúvidas", "Duvida": "Dúvida",
+    "endereco": "endereço", "enderecos": "endereços", "Endereco": "Endereço",
+    "servico": "serviço", "servicos": "serviços", "Servico": "Serviço",
+    "opcao": "opção", "opcoes": "opções", "Opcao": "Opção", "Opcoes": "Opções",
+    "informacao": "informação", "informacoes": "informações",
+    "Informacao": "Informação",
+    "confirmacao": "confirmação", "Confirmacao": "Confirmação",
+    "sugestao": "sugestão", "sugestoes": "sugestões", "Sugestao": "Sugestão",
+    "decisao": "decisão", "decisoes": "decisões", "Decisao": "Decisão",
+    "atencao": "atenção", "Atencao": "Atenção",
+    "duracao": "duração", "Duracao": "Duração",
+    "localizacao": "localização", "Localizacao": "Localização",
+    "invalido": "inválido", "invalida": "inválida",
 }
 
 # Linha que e claramente codigo, nao texto de tela.
 IGNORAR_LINHA = re.compile(
-    r"^\s*(//|/\*|\*)"                       # comentario
+    r"^\s*(//|/\*|\*)"
     r"|\b(href|src|className|id|key|value|name|type|slug|path|route)\s*[:=]"
     r"|\bimport\b|\bexport\b|\brequire\("
     r"|process\.env"
@@ -66,46 +87,96 @@ VISIVEL = [
     re.compile(r'(?:placeholder|title|label|aria-label|alt)\s*=\s*\{`([^`]+)`\}'),
 ]
 
+PALAVRA = re.compile(r"\b[A-Za-z][a-z-]+\b")
+
+
+def trechos_visiveis(linha):
+    """Todos os pedacos da linha que viram texto na tela."""
+    if IGNORAR_LINHA.search(linha):
+        return []
+
+    achados = []
+    for padrao in VISIVEL:
+        achados += padrao.findall(linha)
+
+    # String solta em portugues: numa rota de API isso e a mensagem de erro
+    # que a pessoa le. A barra descarta caminho e URL.
+    for aspas in re.findall(r'"([^"]{6,})"', linha) + re.findall(r"`([^`]{6,})`", linha):
+        if " " in aspas and "/" not in aspas:
+            achados.append(aspas)
+
+    return achados
+
 
 def revisar(caminho):
     achados = []
     for numero, linha in enumerate(io.open(caminho, encoding="utf-8"), 1):
-        if IGNORAR_LINHA.search(linha):
-            continue
-
-        trechos = []
-        for padrao in VISIVEL:
-            trechos += padrao.findall(linha)
-
-        # Tambem string solta em portugues, que vira texto em quase todo caso.
-        for aspas in re.findall(r'"([^"]{6,})"', linha) + re.findall(r"`([^`]{6,})`", linha):
-            if " " in aspas and "/" not in aspas:
-                trechos.append(aspas)
-
-        for trecho in trechos:
-            for palavra in re.findall(r"\b[A-Za-z][a-z-]+\b", trecho):
+        for trecho in trechos_visiveis(linha):
+            for palavra in PALAVRA.findall(trecho):
                 if palavra in DICIONARIO:
                     achados.append((numero, palavra, DICIONARIO[palavra], trecho.strip()[:70]))
     return achados
 
 
+def corrigir(caminho):
+    """
+    Aplica as trocas, mas so dentro do texto visivel.
+
+    Trocar na linha inteira foi como uma varredura antiga quebrou rotas.
+    Aqui cada trecho e reescrito isolado e devolvido ao lugar de onde saiu.
+    """
+    linhas = io.open(caminho, encoding="utf-8").readlines()
+    mudou = 0
+
+    for i, linha in enumerate(linhas):
+        nova = linha
+        for trecho in set(trechos_visiveis(linha)):
+            corrigido = PALAVRA.sub(lambda m: DICIONARIO.get(m.group(0), m.group(0)), trecho)
+            if corrigido != trecho:
+                nova = nova.replace(trecho, corrigido)
+
+        if nova != linha:
+            linhas[i] = nova
+            mudou += 1
+
+    if mudou:
+        io.open(caminho, "w", encoding="utf-8", newline="\n").writelines(linhas)
+    return mudou
+
+
 def main():
-    raiz = sys.argv[1] if len(sys.argv) > 1 else "."
+    aplicar = "--corrigir" in sys.argv
+    caminhos = [a for a in sys.argv[1:] if not a.startswith("--")] or ["."]
     total = 0
-    for pasta, _, arquivos in os.walk(raiz):
-        if "node_modules" in pasta or ".next" in pasta:
-            continue
-        for arquivo in arquivos:
-            if not arquivo.endswith(".tsx"):
+
+    for raiz in caminhos:
+        for pasta, _, arquivos in os.walk(raiz):
+            if "node_modules" in pasta or ".next" in pasta:
                 continue
-            caminho = os.path.join(pasta, arquivo)
-            achados = revisar(caminho)
-            if not achados:
-                continue
-            print("\n" + caminho)
-            for numero, errada, certa, contexto in achados:
-                print("  %5d  %-16s -> %-16s  %s" % (numero, errada, certa, contexto))
-                total += 1
+            for arquivo in arquivos:
+                # Rota de API e .ts e devolve mensagem que a pessoa le. Ficou
+                # de fora da primeira versao, e foi por isso que "So o
+                # organizador pode liberar a viagem" sobreviveu.
+                if not arquivo.endswith((".tsx", ".ts")):
+                    continue
+
+                caminho = os.path.join(pasta, arquivo)
+
+                if aplicar:
+                    n = corrigir(caminho)
+                    if n:
+                        print("%3d linhas  %s" % (n, caminho))
+                        total += n
+                    continue
+
+                achados = revisar(caminho)
+                if not achados:
+                    continue
+                print("\n" + caminho)
+                for numero, errada, certa, contexto in achados:
+                    print("  %5d  %-16s -> %-16s  %s" % (numero, errada, certa, contexto))
+                    total += 1
+
     print("\ntotal:", total)
 
 

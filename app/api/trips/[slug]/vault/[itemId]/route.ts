@@ -56,13 +56,13 @@ function buildVaultUpdate(body: Record<string, unknown>) {
 
   if (hasOwn(body, "kind")) {
     const kind = String(body.kind ?? "other").trim() as TripVaultKind;
-    if (!VAULT_KINDS.has(kind)) return { error: "Tipo de item invalido." };
+    if (!VAULT_KINDS.has(kind)) return { error: "Tipo de item inválido." };
     update.kind = kind;
   }
 
   if (hasOwn(body, "status")) {
     const status = String(body.status ?? "saved").trim() as TripVaultStatus;
-    if (!VAULT_STATUSES.has(status)) return { error: "Status invalido." };
+    if (!VAULT_STATUSES.has(status)) return { error: "Status inválido." };
     update.status = status;
   }
 
@@ -84,7 +84,7 @@ function buildVaultUpdate(body: Record<string, unknown>) {
       numericAmount !== null &&
       (!Number.isFinite(numericAmount) || numericAmount < 0 || numericAmount > MAX_AMOUNT)
     ) {
-      return { error: "Valor invalido." };
+      return { error: "Valor inválido." };
     }
     update.amount = numericAmount === null ? null : Number(numericAmount.toFixed(2));
   }
@@ -118,7 +118,7 @@ export async function PATCH(
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const access = await resolveTripAccess(db, membership.tripId);
@@ -133,7 +133,7 @@ export async function PATCH(
       .eq("trip_id", membership.tripId)
       .maybeSingle();
     if (itemError) throw itemError;
-    if (!item) return NextResponse.json({ error: "Item nao encontrado." }, { status: 404 });
+    if (!item) return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
 
     if (!membership.isOrganizer && item.member_id !== membership.memberId) {
       return NextResponse.json(
@@ -150,7 +150,7 @@ export async function PATCH(
       .select(SELECT_FIELDS)
       .maybeSingle();
     if (error) throw error;
-    if (!data) return NextResponse.json({ error: "Item nao encontrado." }, { status: 404 });
+    if (!data) return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
 
     return NextResponse.json({ item: data });
   } catch (e) {
@@ -173,7 +173,7 @@ export async function DELETE(
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
 
@@ -184,7 +184,7 @@ export async function DELETE(
       .eq("trip_id", membership.tripId)
       .maybeSingle();
     if (itemError) throw itemError;
-    if (!item) return NextResponse.json({ error: "Item nao encontrado." }, { status: 404 });
+    if (!item) return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
 
     if (!membership.isOrganizer && item.member_id !== membership.memberId) {
       return NextResponse.json(

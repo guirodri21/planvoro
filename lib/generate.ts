@@ -61,11 +61,11 @@ function buildPrompt(
   const people = members
     .map((m) => {
       const p = prefs[m.id];
-      if (!p) return `- ${m.name}: ainda nao preencheu preferencias.`;
+      if (!p) return `- ${m.name}: ainda não preencheu preferências.`;
       const partes = [
         `interesses: ${p.interests.join(", ") || "nenhum marcado"}`,
-        `restricoes: ${p.restrictions.join(", ") || "nenhuma"}`,
-        `orcamento: ${p.daily_budget ?? "nao informado"}`,
+        `restrições: ${p.restrictions.join(", ") || "nenhuma"}`,
+        `orçamento: ${p.daily_budget ?? "não informado"}`,
       ];
       if (p.present_from || p.present_to) {
         partes.push(
@@ -99,11 +99,11 @@ function buildPrompt(
           const parts = [
             `titulo: ${idea.title}`,
             `sugerida por: ${memberName(idea.member_id)}`,
-            `categoria: ${idea.category ?? "nao informada"}`,
+            `categoria: ${idea.category ?? "não informada"}`,
             `custo estimado: ${
-              idea.estimated_cost == null ? "nao informado" : `R$ ${Number(idea.estimated_cost).toFixed(0)}`
+              idea.estimated_cost == null ? "não informado" : `R$ ${Number(idea.estimated_cost).toFixed(0)}`
             }`,
-            `votos: ${likes} curti, ${doubts} na duvida, ${dislikes} nao curti, saldo ${score}`,
+            `votos: ${likes} curti, ${doubts} na dúvida, ${dislikes} não curti, saldo ${score}`,
           ];
           if (idea.notes) parts.push(`detalhes: ${idea.notes}`);
 
@@ -118,8 +118,8 @@ function buildPrompt(
   const solo = trip.is_solo || members.length <= 1;
 
   const abertura = solo
-    ? `Voce monta roteiros de viagem sob medida. A pessoa abaixo vai viajar sozinha. Seu trabalho e montar um roteiro que caiba de verdade nos interesses, nas restricoes e no orcamento dela -- e explicar as escolhas.`
-    : `Voce monta roteiros de viagem para GRUPOS. O grupo abaixo vai viajar junto e as preferencias das pessoas CONFLITAM entre si. Seu trabalho e equilibrar isso de forma justa e explicar as escolhas.`;
+    ? `Você monta roteiros de viagem sob medida. A pessoa abaixo vai viajar sozinha. Seu trabalho e montar um roteiro que caiba de verdade nos interesses, nas restrições e no orçamento dela -- e explicar as escolhas.`
+    : `Você monta roteiros de viagem para GRUPOS. O grupo abaixo vai viajar junto e as preferências das pessoas CONFLITAM entre si. Seu trabalho e equilibrar isso de forma justa e explicar as escolhas.`;
 
   const regrasGrupo = solo
     ? ""
@@ -127,8 +127,8 @@ function buildPrompt(
 6. Quando o grupo estiver dividido sobre algo (ex: 3 querem museu, 3 nao), marque o item com "needs_vote": true e escreva no titulo as opcoes.`;
 
   const fecho = solo
-    ? `Na "rationale", explique em 3 a 5 frases as principais decisoes: como voce encaixou os interesses dela, o que deixou de fora e por que, e como o roteiro respeita o orcamento e as restricoes.`
-    : `Na "rationale", explique em 3 a 5 frases as principais decisoes: quem voce acomodou em quais dias, quais conflitos existiam e como resolveu. Cite as pessoas pelo nome.`;
+    ? `Na "rationale", explique em 3 a 5 frases as principais decisões: como você encaixou os interesses dela, o que deixou de fora e por que, e como o roteiro respeita o orçamento e as restrições.`
+    : `Na "rationale", explique em 3 a 5 frases as principais decisões: quem você acomodou em quais dias, quais conflitos existiam e como resolveu. Cite as pessoas pelo nome.`;
 
   return `${abertura}
 
@@ -136,8 +136,8 @@ VIAGEM
 Destino: ${trip.destination}
 Datas: ${trip.start_date} ate ${trip.end_date}
 ${solo ? "Viajando sozinho(a)" : `Pessoas no grupo: ${trip.party_size}`}
-Orcamento por pessoa (sem passagem): ${trip.budget_band ?? "nao informado"}
-Estilo escolhido pelo organizador: ${trip.styles.join(", ") || "nao informado"}
+Orcamento por pessoa (sem passagem): ${trip.budget_band ?? "não informado"}
+Estilo escolhido pelo organizador: ${trip.styles.join(", ") || "não informado"}
 
 ${solo ? "VIAJANTE" : "PESSOAS"}
 ${people}
@@ -153,7 +153,7 @@ ${dates.map((date, index) => `${index + 1}. ${date}`).join("\n")}
 REGRAS OBRIGATORIAS
 0. O array "days" precisa ter exatamente ${dates.length} item${dates.length === 1 ? "" : "s"}, um para cada data listada acima, na mesma ordem. Nao retorne menos dias, nao retorne dias extras e nao altere as datas.
 1. Respeite TODAS as restricoes alimentares e de mobilidade. Se ha restricao vegetariana, todo restaurante do roteiro precisa ter opcao vegetariana clara.
-2. Se alguem marcou "Nao acordo cedo", nenhum dia comeca antes das 10h.
+2. Se alguem marcou "Não acordo cedo", nenhum dia comeca antes das 10h.
 3. Se alguem chega depois do inicio ou sai antes do fim, ajuste os dias afetados e diga isso na explicacao.
 4. Nao supere 4 atividades por dia. Roteiro sufocado e o erro mais comum.
 5. Atividades do mesmo dia devem ficar geograficamente proximas (ate ~20 min de deslocamento entre elas).
@@ -227,7 +227,7 @@ export function datasEntre(start: string, end: string) {
   const dates: string[] = [];
   const cursor = new Date(first);
   while (cursor <= last) {
-    if (dates.length >= 400) throw new Error("Viagens acima de 400 dias ainda nao sao suportadas.");
+    if (dates.length >= 400) throw new Error("Viagens acima de 400 dias ainda não são suportadas.");
     dates.push(cursor.toISOString().slice(0, 10));
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
@@ -344,11 +344,11 @@ async function viaGemini(
 
   if (ultimoErro instanceof Error && ultimoErro.message.includes("Gemini respondeu 50")) {
     throw new Error(
-      "O gerador de roteiros esta sobrecarregado neste momento. Tentamos algumas vezes e nao deu. Espere um minuto e tente de novo."
+      "O gerador de roteiros esta sobrecarregado neste momento. Tentamos algumas vezes e não deu. Espere um minuto e tente de novo."
     );
   }
 
-  throw ultimoErro ?? new Error("Nao consegui falar com a IA.");
+  throw ultimoErro ?? new Error("Não consegui falar com a IA.");
 }
 
 async function geminiUmaVez(
@@ -395,7 +395,7 @@ async function geminiUmaVez(
     const detail = await res.text();
     if (res.status === 429) {
       throw new Error(
-        "Voce bateu o limite gratuito do Gemini (15 chamadas por minuto, 1.500 por dia). Espere um minuto e tente de novo."
+        "Você bateu o limite gratuito do Gemini (15 chamadas por minuto, 1.500 por dia). Espere um minuto e tente de novo."
       );
     }
     throw new Error(`Gemini respondeu ${res.status}: ${detail.slice(0, 300)}`);
@@ -403,7 +403,7 @@ async function geminiUmaVez(
 
   const json = await res.json();
   const text = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("A IA nao retornou um roteiro no formato esperado.");
+  if (!text) throw new Error("A IA não retornou um roteiro no formato esperado.");
   return parseItinerary(text);
 }
 
@@ -442,7 +442,7 @@ async function viaAnthropic(prompt: string): Promise<GeneratedItinerary> {
 
   const json = await res.json();
   const block = json?.content?.find((b: { type: string }) => b.type === "tool_use");
-  if (!block) throw new Error("A IA nao retornou um roteiro no formato esperado.");
+  if (!block) throw new Error("A IA não retornou um roteiro no formato esperado.");
   return block.input as GeneratedItinerary;
 }
 
@@ -453,6 +453,6 @@ function parseItinerary(text: string): GeneratedItinerary {
     // As vezes o modelo embrulha o JSON em markdown. Tenta resgatar.
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]) as GeneratedItinerary;
-    throw new Error("A IA respondeu num formato que nao consegui ler.");
+    throw new Error("A IA respondeu num formato que não consegui ler.");
   }
 }

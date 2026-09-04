@@ -28,7 +28,7 @@ export function buildItinerarySummary(
   const days = itinerary?.itinerary_days ?? [];
 
   if (!days.length) {
-    linhas.push("O roteiro ainda esta sendo montado.");
+    linhas.push("O roteiro ainda está sendo montado.");
     linhas.push("");
     linhas.push(url);
     return linhas.join("\n");

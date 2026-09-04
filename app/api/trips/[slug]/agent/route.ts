@@ -30,7 +30,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     logCtx.userId = user.id;
@@ -52,7 +52,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       .eq("slug", slug)
       .maybeSingle();
     if (tripError) throw tripError;
-    if (!trip) return NextResponse.json({ error: "Viagem nao encontrada." }, { status: 404 });
+    if (!trip) return NextResponse.json({ error: "Viagem não encontrada." }, { status: 404 });
 
     const [members, preferences, itineraries, expenses, ideas, vaultItems, checklistItems] = await Promise.all([
       db

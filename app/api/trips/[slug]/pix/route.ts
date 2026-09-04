@@ -26,7 +26,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ slug: string }>
     }
     if (raw && !isLikelyPixKey(raw)) {
       return NextResponse.json(
-        { error: "Isso nao parece uma chave Pix. Use CPF, CNPJ, e-mail, telefone ou chave aleatoria." },
+        { error: "Isso não parece uma chave Pix. Use CPF, CNPJ, e-mail, telefone ou chave aleatoria." },
         { status: 400 }
       );
     }
@@ -39,7 +39,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ slug: string }>
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const { data, error } = await db

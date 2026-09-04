@@ -90,7 +90,7 @@ export function TravelAgentView({
   async function createAgentTask(title: string, category: TripChecklistCategory, key = title) {
     if (!accessToken || savingTaskKey || !title.trim()) return false;
     if (hasTask(title)) {
-      setActionMessage("Essa tarefa já esta no Checklist.");
+      setActionMessage("Essa tarefa já está no Checklist.");
       return false;
     }
 

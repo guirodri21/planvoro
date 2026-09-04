@@ -15,7 +15,7 @@ export async function POST(
     const { status } = await req.json();
 
     if (!STATUSES.includes(status)) {
-      return NextResponse.json({ error: "Status invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Status inválido." }, { status: 400 });
     }
 
     const db = supabaseAdmin();
@@ -26,10 +26,10 @@ export async function POST(
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
     if (!(await ideaBelongsToTrip(db, membership.tripId, ideaId))) {
-      return NextResponse.json({ error: "Ideia nao encontrada nesta viagem." }, { status: 404 });
+      return NextResponse.json({ error: "Ideia não encontrada nesta viagem." }, { status: 404 });
     }
 
     const { data, error } = await db

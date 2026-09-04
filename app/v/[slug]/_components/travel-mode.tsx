@@ -348,7 +348,7 @@ export function TripAgendaView({
         <div className="agenda-days">
           {entries.length === 0 ? (
             <div className="card agenda-empty">
-              <h3>A linha do tempo ainda esta vazia</h3>
+              <h3>A linha do tempo ainda está vazia</h3>
               <p className="sub">
                 Gere o roteiro ou adicione datas nos itens do Cofre para a Agenda virar o painel
                 cronologico da viagem.

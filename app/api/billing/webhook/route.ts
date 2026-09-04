@@ -85,11 +85,11 @@ export async function POST(req: Request) {
      * falso. Por isso as duas sao exigidas, e nunca uma no lugar da outra.
      */
     if (!webhookSecretConfere(url.searchParams.get("webhookSecret"))) {
-      return NextResponse.json({ error: "Webhook nao autorizado." }, { status: 401 });
+      return NextResponse.json({ error: "Webhook não autorizado." }, { status: 401 });
     }
 
     if (!assinaturaConfere(raw, req.headers.get("x-webhook-signature"))) {
-      return NextResponse.json({ error: "Assinatura invalida." }, { status: 401 });
+      return NextResponse.json({ error: "Assinatura inválida." }, { status: 401 });
     }
 
     /**

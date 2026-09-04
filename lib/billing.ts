@@ -9,12 +9,12 @@ export const BILLING_COPY: Record<
   trip_pass: {
     label: "Passe de viagem",
     description:
-      "Libera uma viagem inteira para o grupo todo. So o organizador paga. Vale ate 90 dias depois da volta.",
+      "Libera uma viagem inteira para o grupo todo. Só o organizador paga. Vale até 90 dias depois da volta.",
     amount: 2900,
   },
   pro_annual: {
     label: "Planvoro Pro anual",
-    description: "Viagens ilimitadas por um ano, com importacao de reservas e historico completo.",
+    description: "Viagens ilimitadas por um ano, com importação de reservas e histórico completo.",
     amount: 7900,
   },
 };

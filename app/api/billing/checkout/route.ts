@@ -3,6 +3,8 @@ import { criarCheckout, criarCliente, type BillingPlan } from "@/lib/abacatepay"
 import { getUserFromRequest } from "@/lib/auth";
 import { betaBlocksCheckoutFor } from "@/lib/beta";
 import { billingOrigin } from "@/lib/billing";
+import { traduzErroPagamento } from "@/lib/erros";
+import { logError } from "@/lib/logger";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -18,7 +20,7 @@ export async function POST(req: Request) {
 
     if (betaBlocksCheckoutFor(user.email)) {
       return NextResponse.json(
-        { error: "A beta gratis esta ativa. Voce ja pode testar o Planvoro sem pagar agora." },
+        { error: "A beta grátis está ativa. Você já pode testar o Planvoro sem pagar agora." },
         { status: 409 }
       );
     }
@@ -26,7 +28,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const plan = String(body.plan ?? "") as BillingPlan;
     if (!PLANS.includes(plan)) {
-      return NextResponse.json({ error: "Plano invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Plano inválido." }, { status: 400 });
     }
 
     const origin = billingOrigin(req);
@@ -41,7 +43,7 @@ export async function POST(req: Request) {
 
     if (plan === "pro_annual") {
       if (["active", "trialing"].includes(subscription?.status ?? "")) {
-        return NextResponse.json({ error: "Sua conta ja esta no Pro." }, { status: 400 });
+        return NextResponse.json({ error: "Sua conta já está no Pro." }, { status: 400 });
       }
     } else {
       const slug = String(body.trip_slug ?? "").trim();
@@ -51,11 +53,11 @@ export async function POST(req: Request) {
 
       const membership = await memberForUserInTrip(db, slug, user.id);
       if (!membership) {
-        return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+        return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
       }
       if (!membership.isOrganizer) {
         return NextResponse.json(
-          { error: "So o organizador pode liberar a viagem." },
+          { error: "Só o organizador pode liberar a viagem." },
           { status: 403 }
         );
       }
@@ -67,7 +69,7 @@ export async function POST(req: Request) {
         .eq("status", "paid")
         .maybeSingle();
       if (paid) {
-        return NextResponse.json({ error: "Essa viagem ja esta liberada." }, { status: 400 });
+        return NextResponse.json({ error: "Essa viagem já está liberada." }, { status: 400 });
       }
 
       tripId = membership.tripId;
@@ -90,7 +92,7 @@ export async function POST(req: Request) {
       .select("id")
       .single();
 
-    if (erroPedido || !pedido) throw erroPedido ?? new Error("Nao consegui registrar o pedido.");
+    if (erroPedido || !pedido) throw erroPedido ?? new Error("Não consegui registrar o pedido.");
 
     const customerId =
       subscription?.provider_customer_id ??
@@ -123,10 +125,22 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: checkout.url });
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Erro ao iniciar pagamento.";
+    const bruto = e instanceof Error ? e.message : "Erro ao iniciar pagamento.";
+
+    /**
+     * O texto do provedor fica no log, nunca na tela.
+     *
+     * O primeiro checkout de verdade morreu com `CARD is not available for
+     * this store` aparecendo cru para o cliente: ingles, no meio da compra,
+     * falando de uma configuracao de loja que ele nao tem como resolver.
+     * Aqui dentro esse texto e exatamente o que precisamos para depurar; do
+     * outro lado ele so assusta.
+     */
+    logError({ event: "checkout_falhou", route: "billing/checkout", error: e });
+
     // Falta de configuracao e problema nosso, nao do cliente: 503 deixa
     // isso claro no monitoramento em vez de virar mais um 500 generico.
-    const status = msg.includes("ABACATEPAY_") ? 503 : 500;
-    return NextResponse.json({ error: msg }, { status });
+    const status = bruto.includes("ABACATEPAY_") ? 503 : 500;
+    return NextResponse.json({ error: traduzErroPagamento(bruto) }, { status });
   }
 }

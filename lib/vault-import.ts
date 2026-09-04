@@ -172,7 +172,7 @@ function parseJsonObject(text: string) {
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]) as RawVaultImport;
-    throw new Error("Nao consegui ler a importacao retornada pela IA.");
+    throw new Error("Não consegui ler a importacao retornada pela IA.");
   }
 }
 
@@ -206,7 +206,7 @@ function buildPrompt(
   const fonte = hasFile
     ? `O usuario enviou um arquivo (PDF, print ou foto de uma confirmacao). Leia o
 conteudo do arquivo anexado a esta mensagem e extraia os dados dele.`
-    : "O usuario colou um texto de confirmacao.";
+    : "O usuário colou um texto de confirmação.";
 
   return `Voce e o importador do Cofre Planvoro, um SaaS de planejamento de viagens.
 Sua tarefa e transformar uma confirmacao de reserva em um rascunho estruturado.
@@ -295,7 +295,7 @@ export async function importVaultDraftFromText(
 
   const json = await res.json();
   const output = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!output) throw new Error("A IA nao retornou dados para importar.");
+  if (!output) throw new Error("A IA não retornou dados para importar.");
 
   return normalizeImport(parseJsonObject(output));
 }

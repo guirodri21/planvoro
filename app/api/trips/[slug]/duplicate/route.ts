@@ -44,11 +44,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       .eq("slug", slug)
       .maybeSingle();
     if (originError) throw originError;
-    if (!origin) return NextResponse.json({ error: "Viagem nao encontrada." }, { status: 404 });
+    if (!origin) return NextResponse.json({ error: "Viagem não encontrada." }, { status: 404 });
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership && !origin.is_public) {
-      return NextResponse.json({ error: "Essa viagem nao e publica." }, { status: 403 });
+      return NextResponse.json({ error: "Essa viagem não e pública." }, { status: 403 });
     }
 
     const tripLimitMessage = await checkTripCreation(db, user.id);

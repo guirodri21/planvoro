@@ -19,7 +19,7 @@ export async function POST(
     const { value } = await req.json();
 
     if (![1, 0, -1].includes(value)) {
-      return NextResponse.json({ error: "Voto invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Voto inválido." }, { status: 400 });
     }
 
     const db = supabaseAdmin();
@@ -33,10 +33,10 @@ export async function POST(
     // id de um item de outra viagem consegue votar nela.
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
     if (!(await itemBelongsToTrip(db, membership.tripId, itemId))) {
-      return NextResponse.json({ error: "Item nao encontrado nesta viagem." }, { status: 404 });
+      return NextResponse.json({ error: "Item não encontrado nesta viagem." }, { status: 404 });
     }
 
     const { data: existing } = await db

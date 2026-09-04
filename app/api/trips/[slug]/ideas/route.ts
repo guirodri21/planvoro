@@ -37,7 +37,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       numericCost !== null &&
       (!Number.isFinite(numericCost) || numericCost < 0 || numericCost > MAX_COST)
     ) {
-      return NextResponse.json({ error: "Custo estimado invalido." }, { status: 400 });
+      return NextResponse.json({ error: "Custo estimado inválido." }, { status: 400 });
     }
 
     const db = supabaseAdmin();
@@ -48,7 +48,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const { data, error } = await db

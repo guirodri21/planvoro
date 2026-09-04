@@ -35,7 +35,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {
-      return NextResponse.json({ error: "Voce nao participa desta viagem." }, { status: 403 });
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
     }
 
     const body = await req.json();
@@ -52,7 +52,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
       );
     }
     if (!recipientEmails.every((email) => EMAIL_RE.test(email))) {
-      return NextResponse.json({ error: "Tem e-mail invalido na lista." }, { status: 400 });
+      return NextResponse.json({ error: "Tem e-mail inválido na lista." }, { status: 400 });
     }
     if (message.length > MAX_MESSAGE) {
       return NextResponse.json({ error: "Mensagem muito longa." }, { status: 400 });
