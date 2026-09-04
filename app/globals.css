@@ -6185,3 +6185,106 @@ details p {
     width: min(264px, calc(100vw - 32px));
   }
 }
+
+/* ============================================================ JANELA MODAL
+   A exclusao de conta saiu do rodape do painel para o menu da conta. A
+   confirmacao por digitacao nao cabe num menu de 264px, entao ela abre
+   aqui — e centralizada obriga a decidir antes de continuar, que e o que
+   uma acao irreversivel merece. */
+
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(12, 17, 28, 0.5);
+  backdrop-filter: blur(2px);
+}
+
+.modal {
+  width: min(440px, 100%);
+  padding: 26px;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(10, 15, 30, 0.28);
+}
+
+.modal h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+
+.modal .sub {
+  margin: 0;
+}
+
+.modal-rotulo {
+  display: block;
+  margin: 22px 0 7px;
+  font-size: 13px;
+  color: var(--text-soft, #5c6478);
+}
+
+.modal input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line, #dfe3ec);
+  border-radius: 11px;
+  font: inherit;
+  font-size: 14px;
+}
+
+.modal input:focus {
+  outline: none;
+  border-color: #b4342a;
+}
+
+.modal-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Vermelho so no botao que destroi, nunca no cartao inteiro: uma tela
+   toda vermelha assusta sem informar qual clique e o perigoso. */
+.modal-perigo h2 {
+  color: #b4342a;
+}
+
+.btn-perigo {
+  background: #b4342a;
+  border-color: #b4342a;
+  color: #fff;
+}
+
+.btn-perigo:hover:not(:disabled) {
+  background: #9c2c23;
+  border-color: #9c2c23;
+}
+
+.conta-apagar {
+  color: #b4342a;
+}
+
+.conta-apagar:hover {
+  background: rgba(180, 52, 42, 0.08);
+}
+
+@media (max-width: 520px) {
+  .modal {
+    padding: 22px 18px;
+  }
+
+  .modal-acoes {
+    flex-direction: column-reverse;
+  }
+
+  .modal-acoes .btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

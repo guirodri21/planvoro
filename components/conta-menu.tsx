@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { ApagarConta } from "./apagar-conta";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { userDisplayName } from "@/lib/user-name";
 
@@ -36,6 +37,7 @@ export function ContaMenu({
   const [plano, setPlano] = useState<Plano | null>(null);
   const [avisoSenha, setAvisoSenha] = useState("");
   const [enviandoSenha, setEnviandoSenha] = useState(false);
+  const [apagando, setApagando] = useState(false);
   const caixa = useRef<HTMLDivElement>(null);
 
   const nomeCompleto = userDisplayName(user);
@@ -180,8 +182,23 @@ export function ContaMenu({
             <button type="button" role="menuitem" onClick={() => onSignOut()}>
               Sair
             </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="conta-apagar"
+              onClick={() => {
+                setAberto(false);
+                setApagando(true);
+              }}
+            >
+              Apagar minha conta
+            </button>
           </div>
         </div>
+      )}
+
+      {apagando && (
+        <ApagarConta accessToken={accessToken} onFechar={() => setApagando(false)} />
       )}
     </div>
   );
