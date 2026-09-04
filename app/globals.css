@@ -6320,12 +6320,31 @@ details p {
       320px. A causa era a grade da faixa de recursos, cujo conteudo nao
       encolhia abaixo do proprio tamanho — o padrao do CSS Grid e
       `min-width: auto`, que ignora a largura da coluna. */
-.feature-strip-grid {
-  grid-template-columns: minmax(0, 1fr);
+/* A faixa de recursos nunca virou uma coluna no celular.
+   
+   Existe um `@media (max-width: 820px)` mandando `.feature-strip` usar
+   `grid-template-columns: 1fr` — mas ele esta na linha 326, e a regra de
+   duas colunas que ele deveria vencer esta na 1659. Entre seletores de
+   mesma especificidade, quem vem depois no arquivo ganha, e estar dentro
+   de uma media query nao muda isso.
+   
+   O resultado: `0.9fr 1.1fr` valia ate em 320px. Com 42px de espaco e 92
+   de padding num container de 282, as duas colunas colapsavam — medi o
+   titulo "Antes da viagem" com 2px de largura, ou seja, ilegivel.
+   
+   Este bloco fica no fim do arquivo, entao vence. */
+@media (max-width: 820px) {
+  .feature-strip {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 28px;
+  }
 }
 
-.feature-strip-grid > * {
-  min-width: 0;
+.feature-strip-grid {
+  /* `minmax(0, 1fr)` no lugar do `1fr` implicito: sem isso a coluna nunca
+     encolhe abaixo do conteudo, porque o padrao do Grid e `min-width: auto`. */
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* 2. Alvos de toque abaixo de 44px.
@@ -6337,11 +6356,24 @@ details p {
   min-height: 44px;
 }
 
+/* Altura declarada em vez de calculada a partir do padding: com 13,5px de
+   fonte, `padding: 11px` dava 43 e ficava um pixel abaixo da regra. */
 .fcol a {
-  padding: 11px 0;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 4px 0;
 }
 
-.conta-gatilho {
+.conta-gatilho,
+.logo {
+  min-height: 44px;
+}
+
+/* Link solto em texto pequeno tambem precisa caber no polegar. */
+a.tiny {
+  display: inline-flex;
+  align-items: center;
   min-height: 44px;
 }
 
