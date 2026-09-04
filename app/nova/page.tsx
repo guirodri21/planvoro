@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import { BUDGET_BANDS, DAILY_BUDGETS, INTERESTS, RESTRICTIONS, STYLES } from "@/lib/types";
@@ -133,15 +133,44 @@ function tripDuration(startDate: string, endDate: string) {
   return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
 }
 
+/** Limite generoso, so para nao aceitar um destino colado de um livro. */
+const MAX_DESTINO_NA_URL = 60;
+
+/**
+ * Ler a query string obriga a pagina a esperar o navegador, e sem este
+ * Suspense o build inteiro falha. O aviso e curto de proposito: o
+ * formulario aparece logo em seguida.
+ */
 export default function NovaViagem() {
+  return (
+    <Suspense fallback={<div className="card muted">Abrindo o formulário...</div>}>
+      <NovaViagemForm />
+    </Suspense>
+  );
+}
+
+function NovaViagemForm() {
   const router = useRouter();
+  const params = useSearchParams();
+
+  /**
+   * Destino vindo da URL.
+   *
+   * Os atalhos do primeiro acesso apontam para /nova?destino=Lisboa. Sem
+   * isto o atalho abriria o formulario vazio, e a pessoa digitaria de novo
+   * o que acabou de escolher — que e a definicao de atalho inutil.
+   *
+   * O valor vem da barra de endereco, entao e texto de fora: cortado no
+   * tamanho e usado so como valor de campo, nunca interpretado.
+   */
+  const destinoInicial = (params.get("destino") ?? "").trim().slice(0, MAX_DESTINO_NA_URL);
   const { session, user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<SubmitPhase>("idle");
   const [error, setError] = useState("");
   const [form, setForm] = useState({
     organizer_name: "",
-    destination: "",
+    destination: destinoInicial,
     start_date: "",
     end_date: "",
     party_size: 6,

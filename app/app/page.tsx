@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
+import { PrimeiroAcesso } from "./_components/primeiro-acesso";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { userDisplayName } from "@/lib/user-name";
 
@@ -213,6 +214,15 @@ export default function AppPage() {
         description="Sua área logada junta viagens criadas, convites aceitos, roteiros e gastos em um único lugar."
         nextPath="/app"
       />
+    );
+  }
+
+  if (!loading && data && trips.length === 0) {
+    return (
+      <div className="dashboard-shell">
+        {error && <div className="err">{error}</div>}
+        <PrimeiroAcesso nome={userDisplayName(user)} />
+      </div>
     );
   }
 

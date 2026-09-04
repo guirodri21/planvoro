@@ -5538,3 +5538,391 @@ details p {
   text-align: center;
   color: var(--muted, #5c6478);
 }
+
+/* ============================================================ PRIMEIRO ACESSO
+   Painel de quem ainda nao tem viagem. O peso visual vai todo para a
+   proxima acao; metrica zerada fica pequena e ao lado, explicando por que
+   esta zerada em vez de fingir que informa alguma coisa. */
+
+.onb {
+  display: flex;
+  flex-direction: column;
+  gap: 44px;
+}
+
+.onb-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.onb-hello {
+  font-size: 13px;
+  color: var(--muted, #6b7386);
+  margin: 0 0 10px;
+}
+
+.onb-titulo {
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0;
+  max-width: 15ch;
+}
+
+.onb-titulo em {
+  font-style: italic;
+  color: var(--accent, #2f6bff);
+}
+
+.onb-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(260px, 0.9fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* ---- cartao principal ---- */
+
+.onb-hero {
+  padding: 44px 40px 32px;
+  text-align: center;
+}
+
+.onb-marca {
+  display: block;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 22px;
+  border-radius: 999px;
+  background: var(--accent, #2f6bff);
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent, #2f6bff) 12%, transparent);
+}
+
+.onb-hero h2 {
+  font-size: clamp(20px, 2.4vw, 26px);
+  margin: 0 0 12px;
+  letter-spacing: -0.01em;
+}
+
+.onb-hero .sub {
+  max-width: 46ch;
+  margin: 0 auto;
+}
+
+.onb-cta {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 26px 0 34px;
+}
+
+/* Os tres passos explicam o produto sem exigir leitura: quem bate o olho
+   ja entende que e curto. */
+.onb-passos {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 26px 0 0;
+  border-top: 1px solid var(--line, #e6e9f0);
+  text-align: left;
+}
+
+.onb-passos li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.onb-num,
+.onb-etapa-num {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent, #2f6bff) 14%, transparent);
+  color: var(--accent, #2f6bff);
+}
+
+.onb-passos b {
+  display: block;
+  font-size: 14px;
+}
+
+.onb-passos small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted, #6b7386);
+}
+
+/* ---- coluna lateral ---- */
+
+.onb-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.onb-trilha {
+  background: #131722;
+  border-color: #131722;
+  color: #eef1f7;
+  padding: 22px;
+}
+
+.onb-trilha-topo {
+  margin: 0 0 16px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: #9aa4bb;
+}
+
+.onb-trilha-medida {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #9aa4bb;
+}
+
+.onb-trilha-medida b {
+  font-size: 20px;
+  color: #fff;
+}
+
+.onb-barra {
+  height: 4px;
+  margin: 10px 0 20px;
+  border-radius: 999px;
+  background: #29303f;
+  overflow: hidden;
+}
+
+.onb-barra i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent, #2f6bff);
+}
+
+.onb-trilha ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.onb-etapa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+}
+
+.onb-etapa-rotulo {
+  flex: 1 1 auto;
+}
+
+.e-feito .onb-etapa-rotulo {
+  text-decoration: line-through;
+  color: #79839b;
+}
+
+.e-feito .onb-etapa-num {
+  background: #1f8a55;
+  color: #fff;
+}
+
+.e-agora .onb-etapa-num {
+  background: var(--accent, #2f6bff);
+  color: #fff;
+}
+
+.e-depois {
+  color: #79839b;
+}
+
+.e-depois .onb-etapa-num {
+  background: #262d3c;
+  color: #79839b;
+}
+
+.onb-agora {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent, #2f6bff) 22%, transparent);
+  color: #cddcff;
+}
+
+.onb-numeros {
+  padding: 20px 22px;
+}
+
+.onb-numeros h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+
+.onb-numeros dl {
+  margin: 0 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.onb-numeros dl > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.onb-numeros dt {
+  font-size: 13.5px;
+  color: var(--muted, #6b7386);
+}
+
+.onb-numeros dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.onb-numeros .onb-vazio {
+  font-weight: 500;
+  color: var(--muted, #6b7386);
+}
+
+.onb-beta {
+  margin: 0;
+  padding: 13px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  border: 1px dashed var(--line, #d9dde8);
+  color: var(--muted, #5c6478);
+}
+
+/* ---- destinos ---- */
+
+.onb-destinos h2 {
+  font-size: clamp(19px, 2.2vw, 23px);
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+
+.onb-destino-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+}
+
+.onb-destino {
+  display: block;
+  padding: 0 0 16px;
+  border: 1px solid var(--line, #e6e9f0);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--card, #fff);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.onb-destino:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(16, 22, 40, 0.09);
+}
+
+/* Sem foto de banco de imagem: cada destino ganha um gradiente proprio.
+   Foto generica de praia diz menos que uma cor consistente, e ainda pesa
+   no carregamento da primeira tela. */
+.onb-destino-arte {
+  display: block;
+  height: 104px;
+  margin-bottom: 14px;
+}
+
+.t-rio .onb-destino-arte {
+  background: linear-gradient(135deg, #12a594, #f4b942);
+}
+.t-lisboa .onb-destino-arte {
+  background: linear-gradient(135deg, #3b6fd4, #e8d3a1);
+}
+.t-salvador .onb-destino-arte {
+  background: linear-gradient(135deg, #e0553b, #f6c453);
+}
+.t-buenos .onb-destino-arte {
+  background: linear-gradient(135deg, #5b6ee1, #9fc4f0);
+}
+
+.onb-destino b {
+  display: block;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+.onb-destino small {
+  display: block;
+  padding: 3px 16px 0;
+  font-size: 12.5px;
+  color: var(--muted, #6b7386);
+}
+
+@media (max-width: 980px) {
+  .onb-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onb-destino-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .onb {
+    gap: 32px;
+  }
+
+  .onb-hero {
+    padding: 32px 20px 26px;
+  }
+
+  .onb-cta .btn.lg {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Em coluna os passos viram uma lista curta, que le melhor no polegar
+     do que tres colunas espremidas. */
+  .onb-passos {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .onb-destino-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .onb-destino-arte {
+    height: 84px;
+  }
+}
