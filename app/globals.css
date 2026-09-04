@@ -5926,3 +5926,85 @@ details p {
     height: 84px;
   }
 }
+
+/* ================================================== WORKSPACE MAIS QUIETO
+   As abas eram dez botoes de duas linhas, cada um carregando uma contagem
+   ("42 dias", "150 marcos", "59 no mapa"). Numero que nao pede acao
+   ocupava o topo inteiro e empurrava o conteudo para baixo da dobra. */
+
+.tab-btn {
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 9px 15px;
+  border-radius: 999px;
+}
+
+.tab-btn span {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+/* Contagem so onde ha algo esperando resposta. */
+.tab-alerta {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  background: rgba(14, 156, 107, 0.14);
+  color: #0b6b4b;
+}
+
+.tab-btn.on .tab-alerta {
+  background: rgba(14, 156, 107, 0.24);
+}
+
+/* Sem os cinco botoes de navegacao repetida e sem o painel de conquistas,
+   o resumo cabe em duas colunas mais leves e num cartao mais baixo. */
+.trip-command-center {
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.85fr);
+  padding: 22px;
+  border-radius: 24px;
+}
+
+.trip-command-center .command-main h2 {
+  margin: 0 0 20px;
+  font-size: clamp(19px, 2.2vw, 23px);
+  letter-spacing: -0.01em;
+}
+
+.command-gerar {
+  margin-top: 22px;
+  width: 100%;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .trip-command-center {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* No celular a barra vira uma faixa que rola de lado, em vez de quatro
+     linhas de botoes empurrando o conteudo para fora da tela. */
+  .workspace-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .workspace-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab-btn {
+    flex: 0 0 auto;
+  }
+}

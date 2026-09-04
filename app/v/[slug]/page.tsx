@@ -257,15 +257,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             memberCount={members.length}
             checklistOpenCount={checklist_items.filter((item) => item.status === "open").length}
             ideaCount={ideas.length}
-            itineraryDays={itinerary?.itinerary_days.length ?? 0}
-            timelineCount={
-              (itinerary?.itinerary_days.reduce((sum, day) => sum + day.itinerary_items.length, 0) ?? 0) +
-              vault_items.filter((item) => item.starts_at || item.ends_at).length
-            }
             travelPulseCount={travelPulseCount}
-            vaultCount={vault_items.length}
-            expenseCount={expenses.length}
-            mappedCount={mappedPointCount}
           />
 
           {locked && <TripLockedNotice slug={slug} isOrganizer={Boolean(me?.is_organizer)} />}
@@ -470,12 +462,7 @@ function WorkspaceTabs({
   memberCount,
   checklistOpenCount,
   ideaCount,
-  itineraryDays,
-  timelineCount,
   travelPulseCount,
-  vaultCount,
-  expenseCount,
-  mappedCount,
 }: {
   tab: WorkspaceTab;
   onChange: (tab: WorkspaceTab) => void;
@@ -484,32 +471,30 @@ function WorkspaceTabs({
   memberCount: number;
   checklistOpenCount: number;
   ideaCount: number;
-  itineraryDays: number;
-  timelineCount: number;
   travelPulseCount: number;
-  vaultCount: number;
-  expenseCount: number;
-  mappedCount: number;
 }) {
-  const tabs: Array<{ id: WorkspaceTab; label: string; meta: string }> = [
-    { id: "grupo", label: groupLabel, meta: `${preferencesCount}/${memberCount} prontas` },
-    {
-      id: "checklist",
-      label: "Checklist",
-      meta: checklistOpenCount ? `${checklistOpenCount} pendente${checklistOpenCount === 1 ? "" : "s"}` : "em dia",
-    },
-    { id: "ideias", label: "Ideias", meta: ideaCount ? `${ideaCount} no quadro` : "em aberto" },
-    { id: "roteiro", label: "Roteiro", meta: itineraryDays ? `${itineraryDays} dias` : "a gerar" },
-    { id: "agenda", label: "Agenda", meta: timelineCount ? `${timelineCount} marcos` : "a montar" },
-    { id: "mapa", label: "Mapa", meta: mappedCount ? `${mappedCount} no mapa` : "sem lugares" },
-    {
-      id: "viagem",
-      label: "Modo viagem",
-      meta: travelPulseCount ? `${travelPulseCount} alerta${travelPulseCount === 1 ? "" : "s"}` : "ao vivo",
-    },
-    { id: "cofre", label: "Cofre", meta: vaultCount ? `${vaultCount} salvo${vaultCount === 1 ? "" : "s"}` : "vazio" },
-    { id: "agente", label: "Agente", meta: itineraryDays ? "consultor ativo" : "pre-roteiro" },
-    { id: "gastos", label: "Gastos", meta: expenseCount ? `${expenseCount} lançados` : "zerado" },
+  /**
+   * Abas.
+   *
+   * Cada aba tinha uma segunda linha com contagem — "42 dias", "150
+   * marcos", "59 no mapa", "consultor ativo". Dez abas de duas linhas
+   * viravam um paredao de numeros logo no topo, e nenhum deles pedia
+   * acao: saber que ha 150 paradas nao muda o que a pessoa faz agora.
+   *
+   * Agora so aparece numero onde ele significa "tem coisa esperando por
+   * voce". O resto e rotulo, e o conteudo esta a um clique.
+   */
+  const tabs: Array<{ id: WorkspaceTab; label: string; alerta?: number }> = [
+    { id: "grupo", label: groupLabel, alerta: Math.max(0, memberCount - preferencesCount) },
+    { id: "checklist", label: "Checklist", alerta: checklistOpenCount },
+    { id: "ideias", label: "Ideias", alerta: ideaCount },
+    { id: "roteiro", label: "Roteiro" },
+    { id: "agenda", label: "Agenda" },
+    { id: "mapa", label: "Mapa" },
+    { id: "viagem", label: "Modo viagem", alerta: travelPulseCount },
+    { id: "cofre", label: "Cofre" },
+    { id: "agente", label: "Agente" },
+    { id: "gastos", label: "Gastos" },
   ];
 
   return (
@@ -522,7 +507,7 @@ function WorkspaceTabs({
           onClick={() => onChange(item.id)}
         >
           <span>{item.label}</span>
-          <small>{item.meta}</small>
+          {item.alerta ? <em className="tab-alerta">{item.alerta}</em> : null}
         </button>
       ))}
     </div>
@@ -652,94 +637,25 @@ function TripExecutiveSummary({
     },
   ].filter(Boolean).slice(0, 5) as Array<{ title: string; body: string; tab: WorkspaceTab }>;
 
-  const wins = [
-    itinerary && `${routeDays} dia${routeDays === 1 ? "" : "s"} de roteiro com ${routeItems} parada${routeItems === 1 ? "" : "s"}`,
-    preferences.length > 0 && `${preferences.length}/${members.length} preferencia${members.length === 1 ? "" : "s"} recebida${preferences.length === 1 ? "" : "s"}`,
-    activeVaultItems.length > 0 && `${activeVaultItems.length} ${pluralItens(activeVaultItems.length)} no Cofre`,
-    doneChecklist > 0 && `${doneChecklist} tarefa${doneChecklist === 1 ? "" : "s"} concluida${doneChecklist === 1 ? "" : "s"}`,
-    plannedIdeas > 0 && `${plannedIdeas} ideia${plannedIdeas === 1 ? "" : "s"} aprovada${plannedIdeas === 1 ? "" : "s"}`,
-    (totalExpenses > 0 || paidVaultTotal > 0) &&
-      `${formatMoney(totalExpenses + paidVaultTotal)} mapeado em gastos e reservas pagas`,
-  ].filter(Boolean) as string[];
-
-  const actionCards = [
-    !itinerary && {
-      label: progress
-        ? `Montando ${progress.diasGerados}/${progress.diasTotais} dias`
-        : generating
-          ? "Gerando roteiro..."
-          : "Gerar roteiro",
-      hint: preferences.length ? "Criar primeira versão com IA" : "Preencha ao menos uma preferencia",
-      onClick: onGenerate,
-      disabled: generating || preferences.length === 0,
-      primary: true,
-    },
-    (itinerary || activeVaultItems.some((item) => item.starts_at || item.ends_at)) && {
-      label: "Ver agenda",
-      hint: "Roteiro e reservas por horario",
-      onClick: () => onGoToTab("agenda"),
-      disabled: false,
-      primary: false,
-    },
-    (itinerary || activeVaultItems.some((item) => item.starts_at || item.ends_at)) && {
-      label: "Modo viagem",
-      hint: "Próximo passo, hoje e alertas",
-      onClick: () => onGoToTab("viagem"),
-      disabled: false,
-      primary: false,
-    },
-    openChecklist > 0 && {
-      label: "Resolver checklist",
-      hint: `${openChecklist} pendencia${openChecklist === 1 ? "" : "s"} aberta${openChecklist === 1 ? "" : "s"}`,
-      onClick: () => onGoToTab("checklist"),
-      disabled: false,
-      primary: false,
-    },
-    (!hasTravelMovement || !hasLodging || attentionVault > 0) && {
-      label: "Organizar Cofre",
-      hint: "Reservas, documentos e alertas",
-      onClick: () => onGoToTab("cofre"),
-      disabled: false,
-      primary: false,
-    },
-    openIdeas > 0 && {
-      label: "Decidir ideias",
-      hint: `${openIdeas} ideia${openIdeas === 1 ? "" : "s"} em aberto`,
-      onClick: () => onGoToTab("ideias"),
-      disabled: false,
-      primary: false,
-    },
-    {
-      label: "Perguntar ao agente",
-      hint: "Prioridades, riscos e próximas ações",
-      onClick: () => onGoToTab("agente"),
-      disabled: false,
-      primary: false,
-    },
-    {
-      label: "Ver gastos",
-      hint: totalExpenses ? formatMoney(totalExpenses) : "Comecar controle financeiro",
-      onClick: () => onGoToTab("gastos"),
-      disabled: false,
-      primary: false,
-    },
-  ].filter(Boolean) as Array<{
-    label: string;
-    hint: string;
-    onClick: () => void;
-    disabled: boolean;
-    primary: boolean;
-  }>;
+  /**
+   * A unica acao que o resumo oferece.
+   *
+   * Antes eram cinco cartoes — "Ver agenda", "Modo viagem", "Resolver
+   * checklist", "Organizar Cofre", "Perguntar ao agente" — que so
+   * levavam para abas ja visiveis logo acima. Cinco botoes para repetir
+   * uma navegacao que ja existia, e nenhum deles fazia nada por conta
+   * propria.
+   *
+   * Gerar o roteiro e diferente: e a unica coisa que so acontece a partir
+   * daqui, e o proximo passo obvio de quem ainda nao tem roteiro.
+   */
+  const podeGerar = !itinerary;
 
   return (
     <section className="trip-command-center">
       <div className="command-main">
-        <span className="badge b-ok">central de comando</span>
-        <h2>Resumo executivo da viagem</h2>
-        <p className="sub">
-          Um painel rápido para saber se o grupo já tem contexto suficiente, o que ainda está solto
-          e qual ação mais aproxima a viagem de ficar redonda.
-        </p>
+        <h2>Resumo da viagem</h2>
+
         <div className="command-readiness">
           <div className="readiness-ring" style={{ "--score": readiness } as CSSProperties}>
             <strong>{readiness}%</strong>
@@ -754,7 +670,9 @@ function TripExecutiveSummary({
             </div>
             <div>
               <span className="stat-label">Duração</span>
-              <strong>{travelDays} dia{travelDays === 1 ? "" : "s"}</strong>
+              <strong>
+                {travelDays} dia{travelDays === 1 ? "" : "s"}
+              </strong>
             </div>
             <div>
               <span className="stat-label">Linha do tempo</span>
@@ -762,13 +680,39 @@ function TripExecutiveSummary({
             </div>
           </div>
         </div>
+
+        {podeGerar && (
+          <button
+            type="button"
+            className="btn lg command-gerar"
+            onClick={onGenerate}
+            disabled={generating || preferences.length === 0}
+          >
+            {progress
+              ? `Montando ${progress.diasGerados}/${progress.diasTotais} dias`
+              : generating
+                ? "Gerando roteiro..."
+                : preferences.length
+                  ? "Gerar roteiro"
+                  : "Preencha uma preferência para gerar"}
+          </button>
+        )}
       </div>
 
       <div className="command-side">
+        {/*
+          So o que pede acao.
+          O painel "Ja encaminhado" ficava logo abaixo repetindo os mesmos
+          numeros como conquista — "1 item no Cofre" aparecia como pendencia
+          de um lado e como vitoria do outro, na mesma tela. Progresso ja
+          esta no percentual acima; aqui fica so o que ainda falta.
+        */}
         <div className="command-panel">
           <div className="command-panel-head">
             <span className="stat-label">O que pede atenção</span>
-            <strong>{risks.length ? `${risks.length} foco${risks.length === 1 ? "" : "s"}` : "sem travas"}</strong>
+            <strong>
+              {risks.length ? `${risks.length} foco${risks.length === 1 ? "" : "s"}` : "sem travas"}
+            </strong>
           </div>
           {risks.length ? (
             <div className="command-risk-list">
@@ -780,52 +724,15 @@ function TripExecutiveSummary({
               ))}
             </div>
           ) : (
-            <p className="sub">Nada grande travando agora. Da para usar o Agente para lapidar detalhes.</p>
+            <p className="sub">
+              Nada travando agora. Dá para usar o Agente para lapidar detalhes.
+            </p>
           )}
         </div>
-
-        <div className="command-panel done">
-          <div className="command-panel-head">
-            <span className="stat-label">Já encaminhado</span>
-            <strong>{wins.length || "comecando"}</strong>
-          </div>
-          {wins.length ? (
-            <div className="command-win-list">
-              {wins.slice(0, 5).map((win) => (
-                <span key={win}>{win}</span>
-              ))}
-            </div>
-          ) : (
-            <p className="sub">Preencha preferencias, gere o roteiro e guarde reservas para ver progresso aqui.</p>
-          )}
-        </div>
-      </div>
-
-      <div className="command-actions">
-        {actionCards.slice(0, 5).map((action) => (
-          <button
-            type="button"
-            className={`command-action ${action.primary ? "primary" : ""}`}
-            key={action.label}
-            onClick={action.onClick}
-            disabled={action.disabled}
-          >
-            <strong>{action.label}</strong>
-            <span>{action.hint}</span>
-          </button>
-        ))}
       </div>
     </section>
   );
 }
-
-
-
-
-
-
-
-
 
 /**
  * Aviso de viagem trancada.
