@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
+import { BILLING_COPY } from "@/lib/billing";
 import { PrimeiroAcesso } from "./_components/primeiro-acesso";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { userDisplayName } from "@/lib/user-name";
@@ -480,7 +481,9 @@ function TripSection({
                       onClick={() => startCheckout("trip_pass", trip.slug)}
                       disabled={billingAction === tripBillingAction}
                     >
-                      {billingAction === tripBillingAction ? "Abrindo..." : "Liberar R$79"}
+                      {billingAction === tripBillingAction
+                        ? "Abrindo..."
+                        : `Liberar R$ ${BILLING_COPY.trip_pass.amount / 100}`}
                     </button>
                   )}
                   <a className="btn sm" href={`/app/trips/${trip.slug}`}>
