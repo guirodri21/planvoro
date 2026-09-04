@@ -271,8 +271,6 @@ export async function generateItinerary(
 // ---------------------------------------------------------------- Gemini
 // Camada gratuita. Chamada via REST para nao adicionar dependencia.
 
-/** Tempo maximo da primeira tentativa, deixando folga para uma segunda. */
-const GEMINI_PRIMEIRA_TENTATIVA_MS = 25_000;
 /** Abaixo disso nao vale recomecar: a segunda tentativa morreria no meio. */
 const GEMINI_SOBRA_MINIMA_MS = 12_000;
 const GEMINI_ESPERA_ENTRE_TENTATIVAS_MS = 1_200;
@@ -281,11 +279,12 @@ function ehFalhaPassageira(erro: unknown) {
   const texto = erro instanceof Error ? erro.message : String(erro);
   // 503 UNAVAILABLE e o "modelo sobrecarregado" do Gemini, que a propria
   // resposta descreve como temporario. 500 costuma ser do mesmo tipo.
-  return (
-    texto.includes("Gemini respondeu 503") ||
-    texto.includes("Gemini respondeu 500") ||
-    texto.includes("demorou demais")
-  );
+  //
+  // Estouro de tempo NAO entra aqui, de proposito. Ele falha depois de
+  // gastar o orcamento inteiro, entao repetir so consome o que sobrou e
+  // troca uma espera longa por duas. Ja o 503 chega em segundos e deixa
+  // folga de sobra para outra tentativa.
+  return texto.includes("Gemini respondeu 503") || texto.includes("Gemini respondeu 500");
 }
 
 const dormir = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -310,12 +309,12 @@ async function viaGemini(prompt: string): Promise<GeneratedItinerary> {
     const sobra = limite - Date.now();
     if (sobra <= 0) break;
 
-    // A primeira tentativa se contem para caber uma segunda; a ultima usa
-    // tudo que sobrou, porque depois dela nao ha outra chance.
-    const tempo = tentativa === 1 ? Math.min(sobra, GEMINI_PRIMEIRA_TENTATIVA_MS) : sobra;
-
+    // Cada tentativa usa todo o tempo que ainda existe. Reservar folga
+    // para uma segunda tentativa parecia prudente, mas encurtava a
+    // primeira — e destino que precisa de trinta segundos passou a falhar
+    // por causa da retentativa que existia para salva-lo.
     try {
-      return await geminiUmaVez(prompt, tempo);
+      return await geminiUmaVez(prompt, sobra);
     } catch (erro) {
       ultimoErro = erro;
       if (!ehFalhaPassageira(erro)) throw erro;
