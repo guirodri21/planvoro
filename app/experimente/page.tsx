@@ -49,7 +49,10 @@ export default function ExperimentePage() {
 
     setLoading(true);
     setError("");
-    setResult(null);
+    // O roteiro anterior fica na tela ate o novo chegar.
+    // Limpar aqui punia quem tentava um segundo destino: se o pedido
+    // falhasse, a pessoa perdia tambem o roteiro que ja tinha conseguido,
+    // e ficava com a tela vazia depois de esperar.
     track("amostra_pedida", { destino: alvo.toLowerCase() });
 
     try {

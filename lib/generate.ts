@@ -270,7 +270,70 @@ export async function generateItinerary(
 
 // ---------------------------------------------------------------- Gemini
 // Camada gratuita. Chamada via REST para nao adicionar dependencia.
+
+/** Tempo maximo da primeira tentativa, deixando folga para uma segunda. */
+const GEMINI_PRIMEIRA_TENTATIVA_MS = 25_000;
+/** Abaixo disso nao vale recomecar: a segunda tentativa morreria no meio. */
+const GEMINI_SOBRA_MINIMA_MS = 12_000;
+const GEMINI_ESPERA_ENTRE_TENTATIVAS_MS = 1_200;
+
+function ehFalhaPassageira(erro: unknown) {
+  const texto = erro instanceof Error ? erro.message : String(erro);
+  // 503 UNAVAILABLE e o "modelo sobrecarregado" do Gemini, que a propria
+  // resposta descreve como temporario. 500 costuma ser do mesmo tipo.
+  return (
+    texto.includes("Gemini respondeu 503") ||
+    texto.includes("Gemini respondeu 500") ||
+    texto.includes("demorou demais")
+  );
+}
+
+const dormir = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Chama o Gemini, e tenta de novo quando a falha e passageira.
+ *
+ * O Gemini responde 503 dizendo, com essas palavras, que picos de demanda
+ * costumam ser temporarios e que e para tentar de novo. Antes nos
+ * repassavamos esse pedido ao visitante — que acabara de esperar dez ou
+ * quarenta segundos e, na pratica, ia embora.
+ *
+ * As tentativas dividem um orcamento unico de tempo, em vez de cada uma
+ * ter o seu. Sem isso, duas tentativas de 42s somariam 84s e a funcao
+ * seria cortada pela Vercel antes de responder qualquer coisa.
+ */
 async function viaGemini(prompt: string): Promise<GeneratedItinerary> {
+  const limite = Date.now() + GEMINI_TIMEOUT_MS;
+  let ultimoErro: unknown = null;
+
+  for (let tentativa = 1; tentativa <= 3; tentativa += 1) {
+    const sobra = limite - Date.now();
+    if (sobra <= 0) break;
+
+    // A primeira tentativa se contem para caber uma segunda; a ultima usa
+    // tudo que sobrou, porque depois dela nao ha outra chance.
+    const tempo = tentativa === 1 ? Math.min(sobra, GEMINI_PRIMEIRA_TENTATIVA_MS) : sobra;
+
+    try {
+      return await geminiUmaVez(prompt, tempo);
+    } catch (erro) {
+      ultimoErro = erro;
+      if (!ehFalhaPassageira(erro)) throw erro;
+      if (limite - Date.now() < GEMINI_SOBRA_MINIMA_MS) break;
+      await dormir(GEMINI_ESPERA_ENTRE_TENTATIVAS_MS);
+    }
+  }
+
+  if (ultimoErro instanceof Error && ultimoErro.message.includes("Gemini respondeu 50")) {
+    throw new Error(
+      "O gerador de roteiros esta sobrecarregado neste momento. Tentamos algumas vezes e nao deu. Espere um minuto e tente de novo."
+    );
+  }
+
+  throw ultimoErro ?? new Error("Nao consegui falar com a IA.");
+}
+
+async function geminiUmaVez(prompt: string, timeoutMs: number): Promise<GeneratedItinerary> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) {
     throw new Error(
@@ -283,7 +346,7 @@ async function viaGemini(prompt: string): Promise<GeneratedItinerary> {
     {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
-      signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
       body: JSON.stringify({
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         generationConfig: {

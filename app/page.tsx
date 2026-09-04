@@ -52,7 +52,7 @@ export default function Home() {
               <i />
               <i />
               <i />
-              <span>planvoro.app/v/lisboa-portugal</span>
+              <span>planvoro.com.br/v/lisboa-portugal</span>
             </div>
             <div className="mock-body command-body">
               <div className="command-top">
@@ -137,12 +137,12 @@ export default function Home() {
             </span>
             <h3 style={{ marginTop: 14 }}>Vou sozinho</h3>
             <p className="small" style={{ marginTop: 8 }}>
-              Marque seus interesses, restrições e orçamento. Em menos de um minuto o roteiro está
+              Marque seus interesses, restrições e orçamento. Em cerca de um minuto o roteiro está
               pronto, com horários, custo por dia e deslocamento realista entre os lugares.
             </p>
             <div className="row" style={{ marginTop: 14 }}>
               <span>Roteiro dia a dia</span>
-              <span className="small muted">2 minutos</span>
+              <span className="small muted">1 minuto</span>
             </div>
             <div className="row">
               <span>Lugares marcados para conferência</span>
@@ -174,7 +174,7 @@ export default function Home() {
             </div>
             <div className="row">
               <span>Divisão de despesas com acerto por Pix</span>
-              <span className="small muted">roadmap</span>
+              <span className="small muted">incluso</span>
             </div>
           </div>
         </div>
@@ -628,7 +628,7 @@ export default function Home() {
           />
           <h2 className="h2">Abra sua central de viagem.</h2>
           <p className="lead" style={{ margin: "16px auto 0", textAlign: "center" }}>
-            Leva dois minutos para criar o primeiro roteiro. Depois você adiciona reservas,
+            Leva cerca de um minuto para criar o primeiro roteiro. Depois você adiciona reservas,
             checklist, gastos e chama o grupo quando quiser.
           </p>
           <div
