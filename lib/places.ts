@@ -1,7 +1,8 @@
 import { supabaseAdmin } from "./supabase";
 
 export type PlaceInfo = {
-  verified: boolean;
+  /** true conferido, false conferido e nao achado, null nem chegamos a conferir. */
+  verified: boolean | null;
   lat: number | null;
   lng: number | null;
   data: Record<string, unknown> | null;

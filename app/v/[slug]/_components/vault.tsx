@@ -36,6 +36,7 @@ import {
   vaultStatusLabel,
 } from "../_lib/format";
 import { isOutsideTripDates } from "../_lib/format";
+import { Confirmar } from "@/components/confirmar";
 import {
   MAX_PENDING_ATTACHMENTS,
   type VaultImportDraft,
@@ -282,6 +283,8 @@ export function TravelVaultView({
   const [saving, setSaving] = useState(false);
   const [workingId, setWorkingId] = useState("");
   const [error, setError] = useState("");
+  /** Item aguardando confirmacao de remocao. Vazio quando nao ha dialogo. */
+  const [confirmarRemocao, setConfirmarRemocao] = useState("");
   const [importText, setImportText] = useState("");
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
@@ -581,15 +584,7 @@ export function TravelVaultView({
   async function removeItem(itemId: string) {
     if (!accessToken || workingId) return;
 
-    // Item do Cofre costuma ser a unica copia de um localizador, e some
-    // junto com os anexos. Um toque errado no celular nao pode fazer isso
-    // em silencio.
-    const item = items.find((entry) => entry.id === itemId);
-    const confirmado = window.confirm(
-      `Remover "${item?.title ?? "este item"}" do Cofre? Os anexos dele tambem sao apagados, e nao da para desfazer.`
-    );
-    if (!confirmado) return;
-
+    setConfirmarRemocao("");
     setWorkingId(itemId);
     setError("");
 
@@ -690,7 +685,7 @@ export function TravelVaultView({
                 <span className="badge b-warn">importação inteligente</span>
                 <h3>Colar confirmação</h3>
               </div>
-              <span className="tiny">Nada e salvo automaticamente.</span>
+              <span className="tiny">Nada é salvo automaticamente.</span>
             </div>
             <p className="sub">
               Cole um email ou recibo, ou envie o PDF da confirmação e o print da tela. O
@@ -748,7 +743,7 @@ export function TravelVaultView({
                 <strong>Rascunho preenchido. Confira antes de salvar.</strong>
                 <span>{importResult.summary}</span>
                 <small>
-                  Confianca estimada: {Math.round(importResult.confidence * 100)}%
+                  Confiança estimada: {Math.round(importResult.confidence * 100)}%
                   {importResult.missing_fields.length
                     ? ` · Falta conferir: ${importResult.missing_fields.join(", ")}`
                     : " · Sem campos criticos pendentes"}
@@ -815,7 +810,7 @@ export function TravelVaultView({
 
         <div className="grid2 tight">
           <div>
-            <label>Comeca em</label>
+            <label>Começa em</label>
             <input
               type="datetime-local"
               value={form.starts_at}
@@ -1114,7 +1109,7 @@ export function TravelVaultView({
                   </button>
                   <button
                     className="btn ghost sm"
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => setConfirmarRemocao(item.id)}
                     disabled={workingId === item.id || !canRemove(item)}
                   >
                     {workingId === item.id ? "Removendo..." : "Remover"}
@@ -1125,6 +1120,24 @@ export function TravelVaultView({
           ))
         )}
       </div>
+
+      {/*
+        Item do Cofre costuma ser a unica copia de um localizador, e some
+        junto com os anexos. Um toque errado no celular nao pode fazer
+        isso em silencio.
+      */}
+      {confirmarRemocao && (
+        <Confirmar
+          titulo="Remover do Cofre?"
+          descricao={`"${
+            items.find((entry) => entry.id === confirmarRemocao)?.title ?? "Este item"
+          }" sai do Cofre e os anexos dele também são apagados. Não dá para desfazer.`}
+          acao="Remover item"
+          trabalhando={workingId === confirmarRemocao}
+          onConfirmar={() => removeItem(confirmarRemocao)}
+          onCancelar={() => setConfirmarRemocao("")}
+        />
+      )}
     </div>
   );
 }

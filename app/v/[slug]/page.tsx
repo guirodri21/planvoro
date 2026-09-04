@@ -39,6 +39,7 @@ import {
 } from "./_lib/api";
 import {
   dateKeyFromDate,
+  formatAgendaDay,
   formatDueDate,
   formatMoney,
   formatTripDate,
@@ -92,10 +93,13 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   const [tab, setTab] = useState<WorkspaceTab>("grupo");
   const [error, setError] = useState("");
   const [generating, setGenerating] = useState(false);
+  /** A ultima falha veio da geracao? So essa da para tentar de novo daqui. */
+  const [falhaNaGeracao, setFalhaNaGeracao] = useState(false);
   const [progress, setProgress] = useState<GenerationProgress | null>(null);
 
   const load = useCallback(async () => {
     setError("");
+    setFalhaNaGeracao(false);
 
     const res = await fetch(`/api/trips/${slug}`, {
       headers: authHeaders(accessToken),
@@ -204,6 +208,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     } catch (e) {
       track("roteiro_falhou");
       setError(e instanceof Error ? e.message : "Erro ao gerar.");
+      setFalhaNaGeracao(true);
     }
 
     setGenerating(false);
@@ -449,7 +454,23 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
         </>
       )}
 
-      {error && <div className="err">{error}</div>}
+      {error && (
+        <div className="err err-acao">
+          <span>{error}</span>
+          {/*
+            Botao de tentar de novo, e nao so a mensagem.
+            A causa mais comum e o modelo sobrecarregado, que costuma
+            passar em segundos. Sem o botao, a pessoa que esperou meio
+            minuto precisa procurar sozinha onde reiniciar — e a maioria
+            simplesmente fecha a aba.
+          */}
+          {falhaNaGeracao && (
+            <button className="btn sm" type="button" onClick={generate} disabled={generating}>
+              {generating ? "Tentando..." : "Tentar de novo"}
+            </button>
+          )}
+        </div>
+      )}
     </>
   );
 }
@@ -1162,7 +1183,10 @@ function ItineraryView({
           <div className="day" key={day.id}>
             <div className="day-h">
               <b>
-                {day.day_date}
+                {/* Era "2026-11-10" na tela, formato de banco. O cabecalho
+                    da viagem, dois centimetros acima, ja mostrava
+                    "10/11/2026" — a mesma data em duas linguas. */}
+                {formatAgendaDay(day.day_date)}
                 {day.title ? ` · ${day.title}` : ""}
               </b>
               <span className="muted">~R$ {total.toFixed(0)}/pessoa</span>
@@ -1420,9 +1444,9 @@ function AfterItinerary({
         <div className="card invite">
           <h3>Vai com mais alguém?</h3>
           <p className="sub">
-            Mande esse link e cada pessoa marca o que quer fazer. A IA remonta o roteiro
-            equilibrando o grupo inteiro -- quem e vegetariano, quem odeia museu, quem chega
-            depois.
+            Mande o <b>link de convite</b> abaixo e cada pessoa marca o que quer fazer. A IA
+            remonta o roteiro equilibrando o grupo inteiro — quem é vegetariano, quem odeia museu,
+            quem chega depois.
           </p>
           <div className="copybox">{inviteUrl}</div>
           <div className="invite-actions">
@@ -1437,16 +1461,26 @@ function AfterItinerary({
       )}
 
       <div className="card">
-        <h3>Compartilhar o roteiro</h3>
+        <h3>Página pública do roteiro</h3>
+        {/*
+          Os dois blocos ficam lado a lado e falam de links diferentes: o de
+          convite (/v/), que leva a pessoa para dentro da viagem, e o
+          publico (/r/), que mostra so o roteiro sem login. Dizer "o link"
+          nos dois fazia um parecer desmentir o outro — um prometia que
+          cada pessoa entra e marca preferencias, o outro avisava que o
+          link daria pagina nao encontrada.
+        */}
         {trip.is_public ? (
           <p className="sub">
-            Link público, sem login. Qualquer pessoa consegue abrir e ver o roteiro pronto. Cofre,
-            gastos e checklist nunca aparecem ali.
+            Endereço público, sem login, para mostrar o roteiro a quem não vai viajar. Cofre,
+            gastos e checklist nunca aparecem ali. É diferente do link de convite, que leva para
+            dentro da viagem.
           </p>
         ) : (
           <p className="sub">
-            Esta viagem está privada: quem receber o link vai encontrar uma página não encontrada.
-            Publique o roteiro para poder compartilhar.
+            A página pública ainda não existe, então esse endereço responde “não encontrada”.
+            Publique para criá-la. O <b>link de convite</b> não depende disto e continua
+            funcionando normalmente.
           </p>
         )}
 

@@ -45,7 +45,8 @@ export type Item = {
   category: string | null;
   cost_estimate: number | null;
   place_query: string | null;
-  verified: boolean;
+  /** null quando o orcamento de tempo acabou antes de conferir este lugar. */
+  verified: boolean | null;
   lat: number | null;
   lng: number | null;
   needs_vote: boolean;

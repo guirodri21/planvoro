@@ -10,11 +10,22 @@ import type { Idea, IdeaVote, Preference } from "@/lib/types";
 
 export const maxDuration = 60;
 
-// A verificacao no Nominatim e serializada em 1 req/s por exigencia da
-// politica de uso. Para nao estourar o tempo limite da funcao, damos um
-// orcamento de tempo: o que nao der pra conferir fica como nao verificado.
-const VERIFY_BUDGET_MS = 8_000;
-const NOT_VERIFIED: PlaceInfo = { verified: false, lat: null, lng: null, data: null };
+/**
+ * Tempo para conferir lugares.
+ *
+ * O Nominatim exige 1 requisicao por segundo, entao o orcamento vira
+ * quase o numero de lugares conferidos. Eram 8 segundos fixos: um roteiro
+ * de cinco dias saia com o primeiro dia no mapa e o resto sem coordenada.
+ *
+ * Agora o orcamento e o que sobrar da funcao, ate um teto. A geracao ja
+ * terminou quando chegamos aqui, entao o tempo restante e conhecido — e
+ * guardamos uma folga para gravar tudo no banco antes do corte da Vercel.
+ */
+const VERIFY_TETO_MS = 22_000;
+const FOLGA_PARA_GRAVAR_MS = 8_000;
+
+/** null, e nao false: nao chegamos a conferir, o que e diferente de nao existir. */
+const NAO_CONFERIDO: PlaceInfo = { verified: null, lat: null, lng: null, data: null };
 const DIAS_POR_LOTE = 7;
 
 type ExistingItinerary = {
@@ -163,7 +174,8 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
       if (updateError) throw updateError;
     }
 
-    const deadline = Date.now() + VERIFY_BUDGET_MS;
+    const sobraDaFuncao = maxDuration * 1000 - elapsed() - FOLGA_PARA_GRAVAR_MS;
+    const deadline = Date.now() + Math.max(0, Math.min(VERIFY_TETO_MS, sobraDaFuncao));
 
     let insertedDays = 0;
     for (const day of generated.days) {
@@ -187,7 +199,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
       const items = day.items ?? [];
       const checked: PlaceInfo[] = [];
       for (const item of items) {
-        checked.push(Date.now() < deadline ? await verifyPlace(item.place_query) : NOT_VERIFIED);
+        checked.push(Date.now() < deadline ? await verifyPlace(item.place_query) : NAO_CONFERIDO);
       }
 
       const rows = items.map((item, i) => ({

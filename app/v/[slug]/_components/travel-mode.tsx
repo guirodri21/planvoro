@@ -495,13 +495,31 @@ export function TripMapView({ itinerary }: { itinerary: Itinerary | null }) {
     );
   }
 
+  /**
+   * Quantos lugares nem chegaram a ser conferidos.
+   *
+   * A conferencia acontece na hora de gerar e respeita 1 consulta por
+   * segundo, exigencia do servico de mapas. Roteiro longo estoura esse
+   * orcamento, e o que sobra fica sem coordenada — sem que ninguem tenha
+   * dito que aquele lugar nao existe.
+   *
+   * Contar isso na tela e a diferenca entre "o Planvoro nao achou o
+   * Instituto Ricardo Brennand" e "o Planvoro ainda nao olhou".
+   */
+  const naoConferidos = days.reduce(
+    (soma, day) =>
+      soma + day.itinerary_items.filter((item) => item.verified === null).length,
+    0
+  );
+
   if (!mappable.length) {
     return (
       <div className="card">
         <h2>Mapa</h2>
         <p className="sub">
-          Nenhum item do roteiro tem coordenada confirmada ainda. Só entram no mapa os lugares que
-          a verificação conseguiu localizar — plotar um palpite levaria você ao endereço errado.
+          {naoConferidos > 0
+            ? `Nenhum lugar deste roteiro foi conferido ainda — a conferência de endereços respeita um limite de uma consulta por segundo e não alcançou nenhum item. Regerar o roteiro tenta de novo.`
+            : "Nenhum item do roteiro tem coordenada confirmada. Só entram no mapa os lugares que a verificação conseguiu localizar — plotar um palpite levaria você ao endereço errado."}
         </p>
       </div>
     );
@@ -550,6 +568,16 @@ export function TripMapView({ itinerary }: { itinerary: Itinerary | null }) {
             ? "1 lugar no mapa neste dia"
             : `${active.points.length} lugares no mapa · ${formatKm(route.currentKm)} de deslocamento em linha reta`}
         </p>
+
+        {naoConferidos > 0 && (
+          <p className="tiny map-aviso">
+            {naoConferidos === 1
+              ? "1 lugar do roteiro ainda não foi conferido"
+              : `${naoConferidos} lugares do roteiro ainda não foram conferidos`}{" "}
+            — a conferência de endereço aceita uma consulta por segundo e não alcançou todos. Não
+            quer dizer que não existam.
+          </p>
+        )}
       </div>
 
       <div className="card">
