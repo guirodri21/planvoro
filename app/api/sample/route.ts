@@ -109,8 +109,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ destination, itinerary: generated, days: SAMPLE_DAYS });
   } catch (e) {
     logError({ event: "sample_failed", route: "sample", durationMs: elapsed(), error: e });
+
+    /**
+     * Quando o motivo e o modelo sobrecarregado, dizer isso.
+     *
+     * "Nao consegui montar a amostra" faz a pessoa achar que o destino
+     * dela e o problema — e ela tenta outro, que falha igual, e vai
+     * embora. Saber que a falha e temporaria e nossa, e nao dela, e o que
+     * faz alguem esperar um minuto e voltar.
+     *
+     * So esta mensagem passa: erro de banco ou de codigo continua
+     * generico, porque detalhe interno em tela publica nao ajuda ninguem.
+     */
+    const sobrecarga =
+      e instanceof Error && e.message.includes("sobrecarregado")
+        ? e.message
+        : null;
+
     return NextResponse.json(
-      { error: "Não consegui montar a amostra agora. Tente de novo em instantes." },
+      {
+        error:
+          sobrecarga ??
+          "Não consegui montar a amostra agora. Tente de novo em instantes.",
+      },
       { status: 500 }
     );
   }
