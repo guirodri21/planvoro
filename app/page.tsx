@@ -10,7 +10,8 @@ export default function Home() {
         <div className="hero-grid">
           <div>
             <div className="pill">
-              <span className="dot-live" /> Roteiro pronto sem criar conta
+              <span className="dot-live" />{" "}
+              {betaAccessEnabled ? "Beta aberta · tudo liberado, sem cobrança" : "Roteiro pronto sem criar conta"}
             </div>
             <h1 className="h1">
               O roteiro sai em 1 minuto.
@@ -39,8 +40,10 @@ export default function Home() {
               Ou{" "}
               <a href="/entrar?mode=signup&next=%2Fnova" className="linklike">
                 criar minha viagem de verdade
-              </a>{" "}
-              — também grátis, e funciona no celular.
+              </a>
+              {betaAccessEnabled
+                ? " — durante a beta, todos os recursos estão liberados e ninguém paga nada."
+                : " — também grátis, e funciona no celular."}
             </p>
           </div>
 
@@ -441,11 +444,24 @@ export default function Home() {
           </div>
 
           <div className="plan">
+            {betaAccessEnabled && <span className="plan-badge">LIBERADO NA BETA</span>}
             <h3>Passe de viagem</h3>
             <div className="price">
-              R$ 29 <small>uma vez</small>
+              {betaAccessEnabled ? (
+                <>
+                  R$ 0 <small>na beta</small>
+                </>
+              ) : (
+                <>
+                  R$ 29 <small>uma vez</small>
+                </>
+              )}
             </div>
-            <p className="tiny">Uma viagem inteira, o grupo todo</p>
+            <p className="tiny">
+              {betaAccessEnabled
+                ? "Uma viagem inteira, o grupo todo. Vai custar R$ 29 quando a cobrança ligar."
+                : "Uma viagem inteira, o grupo todo"}
+            </p>
             <ul className="feat">
               <li>Cofre de reservas com anexos</li>
               <li>Gastos com divisão e acerto</li>
@@ -459,12 +475,25 @@ export default function Home() {
             </a>
           </div>
 
-          <div className="plan plan-muted">
+          <div className={betaAccessEnabled ? "plan" : "plan plan-muted"}>
+            {betaAccessEnabled && <span className="plan-badge">LIBERADO NA BETA</span>}
             <h3>Pro anual</h3>
             <div className="price">
-              R$ 79 <small>por ano</small>
+              {betaAccessEnabled ? (
+                <>
+                  R$ 0 <small>na beta</small>
+                </>
+              ) : (
+                <>
+                  R$ 79 <small>por ano</small>
+                </>
+              )}
             </div>
-            <p className="tiny">A partir da terceira viagem, sai mais barato</p>
+            <p className="tiny">
+              {betaAccessEnabled
+                ? "Viagens ilimitadas. Vai custar R$ 79 por ano quando a cobrança ligar."
+                : "A partir da terceira viagem, sai mais barato"}
+            </p>
             <ul className="feat">
               <li>Tudo do Passe, em viagens ilimitadas</li>
               <li>Importar reserva de PDF e print</li>
@@ -478,6 +507,14 @@ export default function Home() {
             </a>
           </div>
         </div>
+
+        {betaAccessEnabled && (
+          <p className="beta-aviso">
+            <b>Ninguém paga nada agora.</b> Os valores acima são o que passará a valer quando a
+            cobrança for ligada, e não há cartão nem cobrança automática esperando por você:
+            hoje não existe forma de pagar no site, mesmo querendo.
+          </p>
+        )}
       </section>
 
       {/* FAQ */}

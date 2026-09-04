@@ -5523,3 +5523,18 @@ details p {
     align-self: flex-start;
   }
 }
+
+/* Aviso de beta no fim da tabela de precos.
+   Quem chegou ate aqui acabou de ler tres numeros; a frase existe para
+   desfazer a impressao de que algum deles sera cobrado hoje. */
+.beta-aviso {
+  max-width: 680px;
+  margin: 32px auto 0;
+  padding: 16px 18px;
+  border: 1px solid var(--line, #e3e6ee);
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  text-align: center;
+  color: var(--muted, #5c6478);
+}
