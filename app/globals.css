@@ -6310,3 +6310,46 @@ details p {
 .err-acao .btn {
   flex: 0 0 auto;
 }
+
+/* ================================================ ACABAMENTO DE CELULAR
+   Medido com o site aberto em iPhone SE, iPhone 13 e Pixel 7, com toque
+   ligado. Tres coisas apareceram, e nenhuma delas da para ver no
+   computador. */
+
+/* 1. A home rolava de lado no iPhone SE: 324px de conteudo numa tela de
+      320px. A causa era a grade da faixa de recursos, cujo conteudo nao
+      encolhia abaixo do proprio tamanho — o padrao do CSS Grid e
+      `min-width: auto`, que ignora a largura da coluna. */
+.feature-strip-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.feature-strip-grid > * {
+  min-width: 0;
+}
+
+/* 2. Alvos de toque abaixo de 44px.
+      Os chips de interesse mediam 43 de altura, os links do rodape 31 e o
+      gatilho da conta 40. Um pixel parece implicancia, mas 44 e o minimo
+      que a Apple e o Google publicam, e chip errado no celular muda a
+      preferencia que alimenta o roteiro. */
+.chip {
+  min-height: 44px;
+}
+
+.fcol a {
+  padding: 11px 0;
+}
+
+.conta-gatilho {
+  min-height: 44px;
+}
+
+@media (max-width: 420px) {
+  /* No iPhone SE o passo a passo da nova viagem some da tela; ele ja rola
+     de lado, mas encolher deixa mais de um passo visivel por vez. */
+  .wizard-step {
+    font-size: 11px;
+    padding: 8px;
+  }
+}
