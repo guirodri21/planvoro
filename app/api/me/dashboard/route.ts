@@ -94,6 +94,13 @@ export async function GET(req: Request) {
 
     if (subscriptionError) throw subscriptionError;
 
+    const { data: trial } = await db
+      .from("trip_entitlements")
+      .select("access_expires_at")
+      .eq("purchaser_user_id", user.id)
+      .eq("status", "trial")
+      .maybeSingle();
+
     const accountBilling = {
       subscription: (subscription ?? null) as SubscriptionRow | null,
       is_pro_active: isProStatusActive(
@@ -103,6 +110,10 @@ export async function GET(req: Request) {
       // Sem renovacao automatica, a data de fim e a informacao que a
       // pessoa precisa ver — nao ha assinatura para gerenciar.
       pro_expires_at: subscription?.current_period_end ?? null,
+      // O teste gratis e uma vez por conta, e a vitrine precisa saber se
+      // ainda ha um para oferecer ou se ja foi usado.
+      trial_used: Boolean(trial),
+      trial_expires_at: trial?.access_expires_at ?? null,
       // A lista de testadores so existe no servidor, entao o painel nao tem
       // como decidir sozinho se mostra o botao de pagar.
       can_checkout: !betaBlocksCheckoutFor(user.email),

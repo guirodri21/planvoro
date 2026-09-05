@@ -64,3 +64,18 @@ export function tripAccessExpiresAt(endDate?: string | null) {
   // pagou hoje tem os 90 dias contados a partir de hoje.
   return (expires > fallback ? expires : fallback).toISOString();
 }
+
+/**
+ * Teste gratis.
+ *
+ * Sete dias e o prazo que cobre uma semana inteira de planejamento sem
+ * dar tempo de a viagem acontecer dentro dele — quem testa precisa sentir
+ * falta do Cofre depois, nao usar a viagem toda de graca.
+ */
+export const TRIAL_DIAS = 7;
+
+export function trialExpiresAt() {
+  const fim = new Date();
+  fim.setDate(fim.getDate() + TRIAL_DIAS);
+  return fim.toISOString();
+}

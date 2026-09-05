@@ -15,10 +15,11 @@ import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
  * Uma viagem esta liberada quando:
  *   - a beta gratis esta ligada; ou
  *   - alguem comprou o Passe dela e ele nao expirou; ou
+ *   - ela esta no teste gratis de 7 dias; ou
  *   - quem organiza tem o Pro ativo.
  */
 
-export type TripAccessReason = "beta" | "trip_pass" | "pro" | "locked";
+export type TripAccessReason = "beta" | "trip_pass" | "trial" | "pro" | "locked";
 
 export type TripAccess = {
   unlocked: boolean;
@@ -33,15 +34,26 @@ export async function resolveTripAccess(
 ): Promise<TripAccess> {
   if (betaAccessEnabled) return { unlocked: true, reason: "beta" };
 
-  const { data: entitlement } = await db
+  const { data: entitlements } = await db
     .from("trip_entitlements")
     .select("status, access_expires_at")
     .eq("trip_id", tripId)
-    .eq("status", "paid")
-    .maybeSingle();
+    .in("status", ["paid", "trial"]);
 
-  if (isTripEntitlementActive(entitlement?.status, entitlement?.access_expires_at)) {
-    return { unlocked: true, reason: "trip_pass" };
+  for (const linha of entitlements ?? []) {
+    const status = linha.status as string;
+    const expira = linha.access_expires_at as string | null;
+
+    if (status === "paid" && isTripEntitlementActive(status, expira)) {
+      return { unlocked: true, reason: "trip_pass" };
+    }
+
+    // Teste gratis: mesma liberacao do Passe, so que com prazo. Vencido,
+    // a viagem tranca de novo — e nada do que foi salvo e apagado, como
+    // em qualquer outro caso de tranca.
+    if (status === "trial" && expira && new Date(expira).getTime() > Date.now()) {
+      return { unlocked: true, reason: "trial" };
+    }
   }
 
   // O Pro de quem organiza cobre a viagem inteira. Um participante Pro

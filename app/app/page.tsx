@@ -5,6 +5,7 @@ import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
 import { BILLING_COPY } from "@/lib/billing";
+import { Planos } from "./_components/planos";
 import { PrimeiroAcesso } from "./_components/primeiro-acesso";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { userDisplayName } from "@/lib/user-name";
@@ -48,6 +49,8 @@ type DashboardResponse = {
     is_pro_active: boolean;
     pro_expires_at: string | null;
     can_checkout: boolean;
+    trial_used: boolean;
+    trial_expires_at: string | null;
     subscription: {
       status: string;
       provider: string | null;
@@ -218,6 +221,38 @@ export default function AppPage() {
     );
   }
 
+  async function comecarTeste() {
+    if (!session?.access_token) return;
+
+    // O teste vale para uma viagem so, entao vai na que a pessoa organiza.
+    // Com mais de uma, a primeira: pedir para escolher agora seria uma
+    // pergunta a mais no caminho de quem so quer experimentar.
+    const alvo = trips.find((trip) => trip.viewer_member?.is_organizer)?.slug;
+    if (!alvo) {
+      setBillingError("Crie uma viagem primeiro para usar o teste grátis.");
+      return;
+    }
+
+    setBillingAction("trial");
+    setBillingError("");
+
+    try {
+      const res = await fetch("/api/billing/trial", {
+        method: "POST",
+        headers: authJsonHeaders(session.access_token),
+        body: JSON.stringify({ trip_slug: alvo }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível começar o teste.");
+
+      await loadDashboard();
+    } catch (e) {
+      setBillingError(e instanceof Error ? e.message : "Erro ao começar o teste.");
+    } finally {
+      setBillingAction("");
+    }
+  }
+
   if (!loading && data && trips.length === 0) {
     return (
       <div className="dashboard-shell">
@@ -252,52 +287,16 @@ export default function AppPage() {
       {error && <div className="err">{error}</div>}
       {billingError && <div className="err">{billingError}</div>}
 
-      <div className="billing-panel">
-        <div>
-          <p className="eyebrow">{betaAccessEnabled ? betaAccessLabel : "Plano"}</p>
-          <h2>
-            {betaAccessEnabled
-              ? "Tudo liberado para testar"
-              : accountBilling?.is_pro_active
-                ? "Planvoro Pro ativo"
-                : "Cresça quando precisar"}
-          </h2>
-          <p className="sub">
-            {betaAccessEnabled
-              ? `${betaAccessDescription} A cobrança já está pronta para quando a gente ligar.`
-              : "Use grátis para começar. Quando a viagem ficar séria, libere um grupo por R$ 29 ou pegue o Pro por R$ 79 ao ano."}
-          </p>
-        </div>
-        <div className="billing-actions">
-          {betaAccessEnabled && !accountBilling?.can_checkout ? (
-            <>
-              <span className="badge b-ok">Acesso beta ativo</span>
-              <a className="btn" href="/nova">
-                Criar viagem
-              </a>
-            </>
-          ) : accountBilling?.is_pro_active ? (
-            <>
-              <span className="badge b-ok">Pro ativo</span>
-              {accountBilling?.pro_expires_at && (
-                <span className="tiny">
-                  Vale até {new Date(accountBilling.pro_expires_at).toLocaleDateString("pt-BR")}. Não
-                  renova sozinho.
-                </span>
-              )}
-            </>
-          ) : (
-            <button
-              className="btn"
-              type="button"
-              onClick={() => startCheckout("pro_annual")}
-              disabled={billingAction === "pro_annual"}
-            >
-              {billingAction === "pro_annual" ? "Abrindo checkout..." : "Pegar o Pro por 1 ano"}
-            </button>
-          )}
-        </div>
-      </div>
+      <Planos
+        proAtivo={Boolean(accountBilling?.is_pro_active)}
+        proExpiraEm={accountBilling?.pro_expires_at ?? null}
+        podeComprar={Boolean(accountBilling?.can_checkout)}
+        temTeste={Boolean(accountBilling?.trial_used)}
+        testeExpiraEm={accountBilling?.trial_expires_at ?? null}
+        acao={billingAction}
+        onPro={() => startCheckout("pro_annual")}
+        onTeste={comecarTeste}
+      />
 
       <div className="grid4 dashboard-stats">
         <div className="card stat-card">

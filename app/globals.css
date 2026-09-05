@@ -6385,3 +6385,127 @@ a.tiny {
     padding: 8px;
   }
 }
+
+/* ============================================================ VITRINE DE PLANOS
+   A area do usuario tinha uma faixa com um botao so. Quem nunca leu a
+   home nao sabia que existia um Passe por viagem, nem o que ele libera —
+   e voltar para a pagina inicial depois de ter conta ninguem faz. */
+
+.planos {
+  margin: 22px 0;
+}
+
+.planos-topo h2 {
+  margin: 4px 0 8px;
+  font-size: clamp(20px, 2.4vw, 25px);
+  letter-spacing: -0.01em;
+}
+
+.planos-topo .sub {
+  max-width: 62ch;
+  margin: 0;
+}
+
+.planos-grade {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 22px;
+  align-items: stretch;
+}
+
+.plano {
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  border: 1px solid var(--line, #e6e9f0);
+  border-radius: 18px;
+  background: var(--card, #fff);
+}
+
+/* Uma borda so, no plano que a pessoa deveria olhar agora: o Passe para
+   quem nao tem nada, o Pro para quem ja assinou. Destacar os tres seria o
+   mesmo que nao destacar nenhum. */
+.plano-destaque {
+  border-color: rgba(14, 156, 107, 0.4);
+  box-shadow: 0 0 0 3px rgba(14, 156, 107, 0.08);
+}
+
+.plano header {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line, #eef0f5);
+}
+
+.plano h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.plano header strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}
+
+.plano header small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--text-faint, #7a8296);
+}
+
+.plano ul {
+  flex: 1 1 auto;
+  list-style: none;
+  margin: 0;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.plano li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-soft, #5c6478);
+}
+
+.plano li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(14, 156, 107, 0.5);
+}
+
+.plano-marca {
+  display: block;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  text-align: center;
+  background: rgba(16, 22, 40, 0.04);
+  color: var(--text-faint, #7a8296);
+}
+
+.plano-marca.ok {
+  background: rgba(14, 156, 107, 0.1);
+  color: #0b6b4b;
+}
+
+.plano-nota {
+  margin: 10px 0 0;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .planos-grade {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
