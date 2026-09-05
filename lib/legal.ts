@@ -27,7 +27,15 @@
  */
 
 export const LEGAL = {
-  /** Nome completo, se pessoa fisica. Razao social, se empresa. */
+  /**
+   * Nome completo, se pessoa fisica. Razao social, se empresa.
+   *
+   * A razao social registrada e "68.948.655 GUILHERME PAIXAO RODRIGUES",
+   * o formato que a Receita gera para MEI: o proprio CNPJ na frente do
+   * nome. Publicar assim seria repetir o numero que ja aparece na linha
+   * de baixo, e ficaria ilegivel sem identificar melhor ninguem — o CNPJ
+   * e que e a chave unica, e ele esta ali.
+   */
   controllerName: "Guilherme Paixão Rodrigues",
 
   /** Ver a observacao acima antes de preencher. */
@@ -36,7 +44,7 @@ export const LEGAL = {
   documentLabel: "CNPJ" as "CPF" | "CNPJ",
 
   /** Cidade/UF. Ex: "Salvador/BA". */
-  city: "",
+  city: "Lauro de Freitas/BA",
   /** Foro eleito. Normalmente a comarca da cidade acima. */
   jurisdiction: "",
 
