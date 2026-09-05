@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@/lib/analytics";
 import { betaAccessEnabled } from "@/lib/beta";
 import { BILLING_COPY, TRIAL_DIAS } from "@/lib/billing";
 
@@ -94,7 +95,7 @@ export function Planos({
 
         {/* A tabela completa mora na home. Levar para la custa um clique e
             evita manter dois lugares dizendo quanto custa cada plano. */}
-        <a className="btn ghost" href="/#precos">
+        <a className="btn ghost" href="/#precos" onClick={() => track("planos_abertos")}>
           Ver planos
         </a>
       </div>

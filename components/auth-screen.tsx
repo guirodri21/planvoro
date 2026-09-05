@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/analytics";
 import { traduzErro } from "@/lib/erros";
 import { browserSupabaseReady, supabaseBrowser } from "@/lib/supabase-browser";
 import { useAuth } from "./auth-provider";
@@ -293,6 +294,11 @@ export function AuthScreen({
           },
         });
         if (signUpError) throw signUpError;
+
+        // A conversao mais importante do produto, e a unica que nao
+        // estava sendo medida. Dispara nos dois caminhos: quem ja entra
+        // direto e quem ainda precisa confirmar o e-mail.
+        track("conta_criada", { confirmou_na_hora: Boolean(data.session) });
 
         if (data.session) {
           router.replace(nextPath);

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { identificar } from "@/lib/analytics";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 const SESSION_REFRESH_MARGIN_MS = 5 * 60 * 1000;
@@ -74,6 +75,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(nextSession);
       setUser(nextSession?.user ?? null);
       setLoading(false);
+
+      /**
+       * Sem isto, todo evento e anonimo.
+       *
+       * O funil inteiro dependia de ligar "viu a amostra" a "criou conta",
+       * e essa ligacao nunca existiu — `identificar` estava escrito no
+       * modulo de analytics e nao era chamado em lugar nenhum. Na pratica
+       * o PostHog tinha eventos soltos, sem dono, e a metrica que o
+       * proprio arquivo diz decidir o rumo do produto nao era calculavel.
+       */
+      if (nextSession?.user) {
+        identificar(nextSession.user.id, { email: nextSession.user.email });
+      }
     });
 
     return () => {

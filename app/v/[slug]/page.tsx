@@ -1029,6 +1029,10 @@ function JoinCard({
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
 
+      // "% de convidados que entram" e a metrica que o modulo de
+      // analytics diz decidir o rumo do produto. Ela nunca foi coletada.
+      track("convidado_entrou", { slug });
+
       await onJoined();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Erro ao entrar.");
@@ -1100,6 +1104,10 @@ function PreferencesCard({
         present_to: to,
       }),
     });
+
+    // Segundo degrau do funil de convite: entrar e uma coisa, preencher
+    // preferencia e o que faz o roteiro melhorar para o grupo.
+    track("preferencias_salvas", { interesses: interests.length });
 
     setLoading(false);
     setSaved(true);

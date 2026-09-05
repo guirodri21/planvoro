@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
+import { track } from "@/lib/analytics";
 import { BILLING_COPY } from "@/lib/billing";
 import { Planos } from "./_components/planos";
 import { PrimeiroAcesso } from "./_components/primeiro-acesso";
@@ -188,6 +189,7 @@ export default function AppPage() {
     if (!session?.access_token) return;
 
     const actionKey = tripSlug ? `${plan}:${tripSlug}` : plan;
+    track("checkout_iniciado", { plano: plan });
     setBillingAction(actionKey);
     setBillingError("");
 
@@ -245,6 +247,7 @@ export default function AppPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Não foi possível começar o teste.");
 
+      track("teste_gratis_iniciado");
       await loadDashboard();
     } catch (e) {
       setBillingError(e instanceof Error ? e.message : "Erro ao começar o teste.");

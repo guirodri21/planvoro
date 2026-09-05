@@ -63,6 +63,7 @@ export function identificar(id: string, props?: Props) {
  */
 export type Evento =
   // entrada
+  | "conta_criada"
   | "viagem_criada"
   | "convite_aberto"
   | "convite_copiado"
@@ -90,4 +91,7 @@ export type Evento =
   // limites e falhas que o usuario sente
   | "limite_atingido"
   // dinheiro
-  | "checkout_iniciado";
+  | "planos_abertos"
+  | "teste_gratis_iniciado"
+  | "checkout_iniciado"
+  | "checkout_voltou";
