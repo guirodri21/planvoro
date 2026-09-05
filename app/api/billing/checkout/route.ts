@@ -98,13 +98,29 @@ export async function POST(req: Request) {
       subscription?.provider_customer_id ??
       (user.email ? await criarCliente(user.email, null) : null);
 
-    const checkout = await criarCheckout({
-      plan,
-      externalId: pedido.id,
-      completionUrl: `${voltarPara}?billing=success`,
-      returnUrl: `${voltarPara}?billing=cancel`,
-      customerId,
-    });
+    /**
+     * Se a AbacatePay recusar, a linha nao pode ficar para tras.
+     *
+     * O pedido nasce antes da chamada porque o id dele e o que viaja como
+     * `externalId`. Quando a chamada falha — foi o que aconteceu no
+     * primeiro checkout de verdade, recusado por cartao nao liberado — a
+     * linha ficava `pending` para sempre. Tres tentativas frustradas
+     * viraram tres registros que nunca vao virar pagamento, e que
+     * contariam como abandono em qualquer relatorio de conversao.
+     */
+    let checkout;
+    try {
+      checkout = await criarCheckout({
+        plan,
+        externalId: pedido.id,
+        completionUrl: `${voltarPara}?billing=success`,
+        returnUrl: `${voltarPara}?billing=cancel`,
+        customerId,
+      });
+    } catch (erro) {
+      await db.from("billing_checkouts").delete().eq("id", pedido.id);
+      throw erro;
+    }
 
     await db
       .from("billing_checkouts")
