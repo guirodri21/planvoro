@@ -5369,7 +5369,10 @@ details p {
 
 /* Amostra sem conta */
 .sample-shell {
-  max-width: 760px;
+  /* O conteudo e uma lista dia a dia, entao a largura e de leitura, nao
+     de painel. Abriu de 760 para 880 porque em monitor grande sobrava
+     vazio demais; alem disso a linha fica longa e cansa de varrer. */
+  max-width: 880px;
   margin: 0 auto;
   display: grid;
   gap: 18px;
