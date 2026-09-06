@@ -104,7 +104,21 @@ img {
 }
 
 .wrap {
-  max-width: 1160px;
+  /**
+   * Largura que acompanha a tela em vez de ignorar.
+   *
+   * Eram 1160px fixos. Num monitor de 2520px isso deixava mais de 500px
+   * vazios de cada lado, e o site parecia uma coluna estreita perdida no
+   * meio — a impressao errada para quem chega pela primeira vez num
+   * produto que se vende como central de trabalho.
+   *
+   * O `clamp` cresce ate 1560 e para ali. Sem teto, os cards de tres
+   * colunas viravam faixas largas demais e a linha do olho ficava longa
+   * demais para varrer. A prosa nao corre risco: `.lead` ja limita em
+   * 48ch, entao o texto continua com a mesma medida boa de leitura,
+   * independente do tamanho do monitor.
+   */
+  max-width: clamp(1160px, 88vw, 1560px);
   margin: 0 auto;
   padding: 0 28px;
 }
