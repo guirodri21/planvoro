@@ -503,41 +503,27 @@ dizer quem e o controlador, que e o que a LGPD exige.
 Os textos sao bons rascunhos, escritos para o que o produto faz. Nao
 substituem revisao de advogado antes de cobrar de alguem.
 
-### Prioridade 2 - ligar a AbacatePay
+### ~~Prioridade 2 - ligar a AbacatePay~~ (feito em 06/09/2026)
 
-A Stripe foi abandonada: nao liberou a conta brasileira, primeiro com CPF
-e depois com o processo travado em analise. A troca saiu barata porque o
-modelo de preco — um pagamento avulso e um anual, sem mensalidade —
-dispensa recorrencia, que era a unica coisa que prendia o projeto a ela.
+Pagamento provado ponta a ponta com um Pix real de R$ 29: checkout abriu,
+webhook processou, `trip_entitlements` liberou com validade de 90 dias
+depois do fim da viagem. Verificado no banco, nao no formulario.
 
-O que ja existe, em codigo e no banco:
+A chave em producao e de producao (`abc_pro`, `devMode: false`, saldo
+movimentado). Nao ha ordem a respeitar entre trocar chave e desligar a
+beta — a chave ja esta certa.
 
-- `lib/abacatepay.ts`: checkout, cliente e validacao de webhook.
-- Rotas de checkout e webhook reescritas.
-- Tabela `billing_checkouts`, que guarda o pedido antes de mandar a pessoa
-  pagar. O id dela e a unica coisa que viaja ate o provedor e volta no
-  webhook, entao nenhum identificador interno passa por terceiro.
-- Colunas neutras (`provider`, `provider_checkout_id`) no lugar das
-  `stripe_*`, que foram removidas.
+O detalhe operacional que sobrou: **nao da para testar cobranca sem mexer
+em dinheiro real.** Existe so a chave de producao, e o webhook de sandbox
+foi apagado na limpeza. Para recriar o ambiente de teste sao duas coisas,
+e faltar uma quebra o teste: criar chave `abc_dev` e recriar o webhook em
+Dev Mode. Os detalhes estao no README, secao Pagamentos.
 
-O que falta, tudo em painel:
-
-- Criar a chave de API. Toda conta comeca em Dev mode, com pagamento
-  simulado: da para validar o fluxo inteiro antes da aprovacao do CNPJ.
-- Criar dois produtos, ambos **sem ciclo de recorrencia**: Passe R$ 29 e
-  Pro R$ 79.
-- Cadastrar o webhook com o segredo na query string.
-- Testar ponta a ponta: checkout abre, pagamento simulado, webhook chega,
-  acesso libera.
-
-Duas coisas para nao esquecer:
-
-1. A chave de Dev precisa virar chave de producao **antes** de a beta ser
-   desligada. Na ordem contraria, o cliente compra e nada e cobrado.
-2. A chave HMAC que assina os webhooks da AbacatePay esta publicada na
-   documentacao deles, ou seja, qualquer um forja uma assinatura valida.
-   Quem autentica de verdade e o segredo na query string. Por isso o
-   webhook exige os dois, e nenhum dos dois e redundante.
+Quatro defeitos apareceram nesse caminho, todos invisiveis para tipagem e
+build, todos corrigidos e documentados no README: o campo do evento chamar
+`type` e nao `event`, a ausencia de `x-webhook-signature`, a confianca no
+webhook como prova em vez de aviso, e o indice unico de um `paid` por
+viagem.
 
 ### Prioridade 3 - validar o mobile no aparelho
 

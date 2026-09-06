@@ -111,30 +111,78 @@ lib/
 
 ## Pagamentos
 
-Durante a beta, `NEXT_PUBLIC_PLANVORO_BETA_ACCESS=true` deixa todos os recursos principais
-liberados para teste e bloqueia a criação de checkout pago. Quando quiser cobrar, troque para
-`false` na Vercel e faça um novo deploy.
-
-O provedor é a **AbacatePay**. A Stripe foi abandonada porque não liberou a conta brasileira,
-e o modelo de preço do Planvoro — um pagamento avulso e um anual, sem mensalidade — dispensa a
+O provedor é a **AbacatePay**. A Stripe foi abandonada porque não liberou a conta brasileira, e o
+modelo de preço do Planvoro — um pagamento avulso e um anual, sem mensalidade — dispensa a
 recorrência, que era a única coisa que prendia o projeto a ela.
 
-1. Crie a conta na AbacatePay. Toda conta nova já começa em **Dev mode**, onde os pagamentos são
-   simulados: dá para validar o fluxo inteiro antes da aprovação. O ambiente é definido pela
-   chave, não pela URL.
-2. Crie dois produtos, **ambos sem ciclo de recorrência**: Passe de viagem (R$ 29) e Planvoro Pro
-   (R$ 79). Guarde os External IDs em `ABACATEPAY_PRODUCT_TRIP_PASS` e
-   `ABACATEPAY_PRODUCT_PRO_ANNUAL`.
-3. Configure `ABACATEPAY_API_KEY` na Vercel.
-4. Cadastre o webhook em `https://planvoro.com.br/api/billing/webhook?webhookSecret=SEGREDO` e
-   guarde o mesmo segredo em `ABACATEPAY_WEBHOOK_SECRET`.
+### Estado hoje
 
-O Pro é **pagamento único que vale um ano**, sem renovação automática. Renovar sozinho exigiria
-um fluxo de cancelamento fácil, que o CDC obriga e a AbacatePay não oferece pronto.
+Ligado e provado ponta a ponta em 06/09/2026, com um Pix real de R$ 29: checkout aberto,
+webhook processado, `trip_entitlements` liberado com validade de 90 dias após o fim da viagem.
 
-Atenção: uma chave de Dev em produção simula todo pagamento. Ela precisa virar chave de produção
-**antes** de `NEXT_PUBLIC_PLANVORO_BETA_ACCESS` virar `false`, ou o cliente compra e nada é
-cobrado.
+A chave em produção é **de produção**, não de sandbox. Três evidências: o prefixo é `abc_pro`
+(sandbox seria `abc_dev`), o webhook chega com `devMode: false`, e o dinheiro movimentou saldo
+real com taxa descontada. Sandbox não mexe em caixa.
+
+Só o Pix está habilitado (`ABACATEPAY_METHODS=PIX`). Cartão exige liberação à parte, que não se
+liga sozinho pelo painel — quando liberarem, é trocar a variável para `PIX,CARD`, sem deploy de
+código.
+
+### Variáveis
+
+| variável | para quê |
+|---|---|
+| `ABACATEPAY_API_KEY` | criar checkout e consultar cobrança |
+| `ABACATEPAY_WEBHOOK_SECRET` | autenticar o webhook, na query string da URL |
+| `ABACATEPAY_PRODUCT_TRIP_PASS` | produto do Passe (R$ 29) |
+| `ABACATEPAY_PRODUCT_PRO_ANNUAL` | produto do Pro (R$ 79) |
+| `ABACATEPAY_METHODS` | formas aceitas, separadas por vírgula |
+
+Os dois produtos são **sem ciclo de recorrência**. O Pro é pagamento único que vale um ano, sem
+renovação automática: renovar sozinho exigiria um fluxo de cancelamento fácil, que o CDC obriga e
+a AbacatePay não oferece pronto.
+
+### Para testar sem mexer em dinheiro real
+
+Hoje **não dá**, e isso é uma lacuna consciente. Existe só a chave de produção, e o webhook de
+sandbox foi apagado na limpeza de 06/09.
+
+Para recriar o ambiente de teste são duas coisas, e falta qualquer uma quebra o teste:
+
+1. Criar uma chave `abc_dev` no painel.
+2. Recriar o webhook **em Dev Mode**, apontando para a mesma URL com o mesmo segredo.
+
+O ambiente é definido pela chave, não pela URL — mas o webhook de produção não entrega eventos de
+sandbox, então os dois passos andam juntos.
+
+### Armadilhas que já custaram caro
+
+Quatro defeitos apareceram entre o primeiro checkout e o primeiro pagamento confirmado. Nenhum
+deles aparece em teste de tipagem ou build:
+
+- **O campo do evento chama `type`, não `event`.** A documentação e o painel mostram `event`; a
+  entrega manda `type`. Ler só `event` fazia o handler descartar pagamentos em silêncio.
+- **A AbacatePay não envia `x-webhook-signature`.** Exigir a assinatura recusava pagamentos
+  legítimos com 401. Hoje ela é conferida só quando vem.
+- **O webhook é aviso, não prova.** Antes de liberar acesso, o servidor consulta
+  `GET /checkouts/get` e só continua se a resposta disser `PAID`. Assim, um webhook forjado não
+  libera nada — o segredo viaja na URL, e URL vaza em log de proxy e print de tela.
+- **Existe um índice único de um `paid` por viagem.** Atualizar todos os `checkout_pending` de
+  uma viagem de uma vez viola esse índice e o Postgres recusa a instrução inteira. A liberação
+  marca uma linha só, a do checkout pago, e encerra as outras como `expired`.
+
+Toda escrita do webhook confere o erro e lança se falhar. Responder 200 sobre um acesso que não
+foi liberado é o pior resultado possível: o provedor para de reenviar e o cliente fica sem o que
+pagou.
+
+### Beta
+
+`NEXT_PUBLIC_PLANVORO_BETA_ACCESS=true` libera os recursos principais e **bloqueia o checkout**.
+`PLANVORO_BILLING_TESTERS` é uma lista de e-mails que fura esse bloqueio, para testar cobrança
+sem abrir para todo mundo.
+
+Para começar a cobrar, troque a variável para `false` na Vercel e faça um novo deploy. A chave já
+é de produção, então não há ordem a respeitar entre as duas coisas.
 
 ## Stack
 
