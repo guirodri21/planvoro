@@ -42,7 +42,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
 
     const access = await resolveTripAccess(db, membership.tripId);
     if (!access.unlocked) {
-      return NextResponse.json({ error: lockedMessage("Anexar arquivos") }, { status: 402 });
+      return NextResponse.json({ error: lockedMessage("Anexar arquivos", membership.isOrganizer) }, { status: 402 });
     }
 
     const item = await vaultItemForTrip(db, membership.tripId, itemId);

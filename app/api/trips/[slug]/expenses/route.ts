@@ -50,7 +50,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const access = await resolveTripAccess(db, membership.tripId);
     if (!access.unlocked) {
-      return NextResponse.json({ error: lockedMessage("Dividir gastos") }, { status: 402 });
+      return NextResponse.json({ error: lockedMessage("Dividir gastos", membership.isOrganizer) }, { status: 402 });
     }
 
     if (!(await memberIdsBelongToTrip(db, membership.tripId, [payerId, ...splitIds]))) {

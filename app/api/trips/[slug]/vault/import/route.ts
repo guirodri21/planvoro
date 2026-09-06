@@ -97,7 +97,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const access = await resolveTripAccess(db, membership.tripId);
     if (!access.unlocked) {
-      return NextResponse.json({ error: lockedMessage("A importacao do Cofre") }, { status: 402 });
+      return NextResponse.json({ error: lockedMessage("A importacao do Cofre", membership.isOrganizer) }, { status: 402 });
     }
 
     logCtx.userId = user.id;

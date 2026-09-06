@@ -123,7 +123,7 @@ export async function PATCH(
 
     const access = await resolveTripAccess(db, membership.tripId);
     if (!access.unlocked) {
-      return NextResponse.json({ error: lockedMessage("O Cofre") }, { status: 402 });
+      return NextResponse.json({ error: lockedMessage("O Cofre", membership.isOrganizer) }, { status: 402 });
     }
 
     const { data: item, error: itemError } = await db

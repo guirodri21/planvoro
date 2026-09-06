@@ -35,7 +35,7 @@ export async function PATCH(
 
     const access = await resolveTripAccess(db, membership.tripId);
     if (!access.unlocked) {
-      return NextResponse.json({ error: lockedMessage("O checklist") }, { status: 402 });
+      return NextResponse.json({ error: lockedMessage("O checklist", membership.isOrganizer) }, { status: 402 });
     }
 
     const { data, error } = await db

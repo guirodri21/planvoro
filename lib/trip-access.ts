@@ -84,7 +84,17 @@ export async function resolveTripAccess(
   return LOCKED;
 }
 
-/** Mensagem para quem tentou escrever numa viagem trancada. */
-export function lockedMessage(feature: string) {
-  return `${feature} faz parte do Passe desta viagem. Peca ao organizador para liberar, ou assine o Pro.`;
+/**
+ * Mensagem para quem tentou escrever numa viagem trancada.
+ *
+ * A saida muda com quem esta lendo. A versao anterior mandava "peca ao
+ * organizador" para todo mundo — inclusive para o proprio organizador,
+ * que ficava sendo instruido a pedir para si mesmo. Quem pode resolver
+ * precisa do caminho; quem nao pode precisa saber que nao vai pagar nada.
+ */
+export function lockedMessage(feature: string, isOrganizer = false) {
+  if (isOrganizer) {
+    return `${feature} faz parte do Passe desta viagem. Libere no seu painel, ou teste 7 dias grátis.`;
+  }
+  return `${feature} faz parte do Passe desta viagem. Peça ao organizador para liberar — você não paga nada.`;
 }

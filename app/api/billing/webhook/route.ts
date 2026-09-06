@@ -393,7 +393,7 @@ export async function POST(req: Request) {
         event: "abacate_webhook_nao_confirmado",
         route: "billing/webhook",
         abacateEvent: evento,
-        statusNaFonte: naFonte?.status ?? "nao encontrado",
+        statusNaFonte: naFonte?.status ?? "não encontrado",
         durationMs: elapsed(),
       });
       return NextResponse.json({ received: true });

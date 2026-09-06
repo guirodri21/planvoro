@@ -70,6 +70,23 @@ DICIONARIO = {
     "duracao": "duração", "Duracao": "Duração",
     "localizacao": "localização", "Localizacao": "Localização",
     "invalido": "inválido", "invalida": "inválida",
+    # Verbos com cedilha, que sao os que mais escapam: nao aparecem em
+    # rotulo de tela, e sim no meio de frase de erro. Foi assim que
+    # "Peca ao organizador" sobreviveu a tres varreduras.
+    "peca": "peça", "Peca": "Peça",
+    "faca": "faça", "Faca": "Faça",
+    "confirmacoes": "confirmações",
+    "acao": "ação", "Acao": "Ação", "acoes": "ações", "Acoes": "Ações",
+    "solucao": "solução", "Solucao": "Solução",
+    "ligacao": "ligação", "condicao": "condição", "condicoes": "condições",
+    "excecao": "exceção", "excecoes": "exceções",
+    "posicao": "posição", "posicoes": "posições",
+    "selecao": "seleção", "Selecao": "Seleção",
+    "verificacao": "verificação", "Verificacao": "Verificação",
+    "autorizacao": "autorização", "Autorizacao": "Autorização",
+    "Voces": "Vocês", "voces": "vocês",
+    # "esta" fica de fora de proposito: e palavra valida ("esta viagem") e
+    # verbo sem acento so as vezes. Trocar sempre estragaria o texto certo.
 }
 
 # Linha que e claramente codigo, nao texto de tela.
