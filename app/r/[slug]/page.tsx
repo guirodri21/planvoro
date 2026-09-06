@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DuplicateTrip } from "@/components/duplicate-trip";
 import { RoteiroShare } from "@/components/roteiro-share";
+import { formatItemCost } from "@/lib/cost";
 import { formatBR, getPublicTrip, getTripPublishState, tripDays } from "@/lib/public";
 import { buildItinerarySummary } from "@/lib/share";
 import { SITE_URL } from "@/lib/site";
@@ -125,7 +126,7 @@ export default async function RoteiroPublico({
                       <div className="item-d">{item.description}</div>
                     </div>
                     <div className="cost">
-                      {item.cost_estimate ? `~R$ ${item.cost_estimate.toFixed(0)}` : "grátis"}
+                      {formatItemCost(item.cost_estimate, item.cost_local, item.cost_currency)}
                     </div>
                   </div>
                 ))}

@@ -211,6 +211,10 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
         description: item.description,
         category: item.category,
         cost_estimate: item.cost_estimate,
+        // Sem moeda declarada, assume real: destino no Brasil e o caso
+        // comum, e roteiro antigo nao tem esses campos.
+        cost_local: item.cost_local ?? item.cost_estimate,
+        cost_currency: (item.cost_currency ?? "BRL").toUpperCase().slice(0, 3),
         place_query: item.place_query,
         needs_vote: Boolean(item.needs_vote),
         verified: checked[i].verified,

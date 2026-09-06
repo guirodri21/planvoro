@@ -7,6 +7,8 @@ export type GeneratedItem = {
   description: string;
   category: string;
   cost_estimate: number;
+  cost_local?: number;
+  cost_currency?: string;
   place_query: string;
   needs_vote?: boolean;
 };
@@ -159,7 +161,12 @@ REGRAS OBRIGATORIAS
 5. Atividades do mesmo dia devem ficar geograficamente proximas (ate ~20 min de deslocamento entre elas).
 ${regrasGrupo}
 7. "place_query" deve ser o nome real e pesquisavel do lugar mais a cidade, ex: "Time Out Market, Lisboa". Nunca invente lugares que voce nao tem certeza que existem.
-8. "cost_estimate": estimativa aproximada por pessoa, convertida para reais. NAO e preco oficial nem cotacao. Para destino fora do Brasil, use uma ordem de grandeza plausivel — quem for conferir vai encontrar o valor na moeda local, entao nao finja precisao que voce nao tem. Prefira arredondar.
+8. Custos, por pessoa, sempre em tres campos:
+   - "cost_currency": codigo ISO da moeda que se paga NO DESTINO (BRL, EUR, USD, JPY, ARS...). Para destino no Brasil, "BRL".
+   - "cost_local": valor aproximado NA MOEDA LOCAL. E o numero que a pessoa vai ver no cardapio ou na bilheteria, entao e o unico que ela consegue conferir.
+   - "cost_estimate": o mesmo valor convertido para reais, aproximado, so para somar orcamento.
+   Nenhum dos dois e preco oficial. Arredonde. Se o destino usa real, os dois campos ficam iguais.
+   Atividade gratuita: zero nos dois.
 9. Escreva tudo em portugues do Brasil.
 10. Se houver ideias separadas pelo grupo, trate-as como prioridades: inclua as ideias com melhor saldo quando couber no ritmo, orcamento e geografia. Se alguma ideia separada ficar de fora, explique na "rationale" por que ela nao entrou.
 
@@ -175,6 +182,8 @@ const ITEM_PROPS = {
   description: { type: "string" },
   category: { type: "string" },
   cost_estimate: { type: "number" },
+  cost_local: { type: "number" },
+  cost_currency: { type: "string" },
   place_query: { type: "string" },
   needs_vote: { type: "boolean" },
 } as const;
@@ -186,6 +195,8 @@ const ITEM_REQUIRED = [
   "description",
   "category",
   "cost_estimate",
+  "cost_local",
+  "cost_currency",
   "place_query",
 ];
 

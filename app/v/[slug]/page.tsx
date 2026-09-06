@@ -28,6 +28,7 @@ import {
   type Vote,
 } from "@/lib/types";
 import { track } from "@/lib/analytics";
+import { formatItemCost } from "@/lib/cost";
 import { whatsappShareUrl } from "@/lib/share";
 import { userDisplayName } from "@/lib/user-name";
 import {
@@ -1324,12 +1325,8 @@ function ItemRow({
           </div>
           <div className="item-d">{item.description}</div>
         </div>
-        {/* "~" e a diferenca entre estimativa e preco. Um roteiro de
-            Toquio mostrava "R$ 120,00" para um almoco: uma conversao que
-            a IA fez sozinha, sem taxa declarada e sem o valor em ienes.
-            Quem for conferir vai encontrar outro numero. */}
         <div className="cost">
-          {item.cost_estimate ? `~R$ ${item.cost_estimate.toFixed(0)}` : "grátis"}
+          {formatItemCost(item.cost_estimate, item.cost_local, item.cost_currency)}
         </div>
       </div>
 

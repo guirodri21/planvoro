@@ -44,6 +44,13 @@ export type Item = {
   description: string | null;
   category: string | null;
   cost_estimate: number | null;
+  /**
+   * Valor na moeda do destino, que e o unico que a pessoa consegue
+   * conferir. O `cost_estimate` ao lado e a conversao aproximada para
+   * real, util para somar orcamento e inutil para comparar preco.
+   */
+  cost_local: number | null;
+  cost_currency: string | null;
   place_query: string | null;
   /** null quando o orcamento de tempo acabou antes de conferir este lugar. */
   verified: boolean | null;
