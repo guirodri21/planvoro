@@ -120,6 +120,48 @@ async function abacateFetch(path: string, body: unknown) {
   return json?.data ?? null;
 }
 
+export type CheckoutNaFonte = {
+  id: string;
+  externalId: string | null;
+  status: string;
+  amount: number | null;
+  paidAmount: number | null;
+};
+
+/**
+ * Pergunta a AbacatePay o que aconteceu de verdade com uma cobranca.
+ *
+ * O webhook passa a ser aviso, nao prova. Ele chega por HTTPS com um
+ * segredo na query string e sem assinatura — a AbacatePay nao manda o
+ * header `x-webhook-signature`, o log confirmou. Segredo em URL vaza com
+ * facilidade: aparece em log de proxy, em historico, em print de tela.
+ *
+ * Consultar a fonte antes de liberar acesso tira esse peso todo: mesmo
+ * que alguem forje um webhook perfeito, a API vai dizer que a cobranca
+ * nao esta PAID e nada e liberado. E de quebra resolve o payload que
+ * chega incompleto no reenvio — o externalId vem daqui, sempre.
+ */
+export async function buscarCheckout(id: string): Promise<CheckoutNaFonte | null> {
+  const res = await fetch(`${API}/checkouts/get?id=${encodeURIComponent(id)}`, {
+    headers: { Authorization: `Bearer ${abacateApiKey()}` },
+  });
+
+  const json = (await res.json().catch(() => null)) as
+    | { data?: Record<string, unknown>; error?: string | null }
+    | null;
+
+  if (!res.ok || json?.error || !json?.data) return null;
+
+  const d = json.data;
+  return {
+    id: String(d.id ?? id),
+    externalId: d.externalId ? String(d.externalId) : null,
+    status: String(d.status ?? ""),
+    amount: typeof d.amount === "number" ? d.amount : null,
+    paidAmount: typeof d.paidAmount === "number" ? d.paidAmount : null,
+  };
+}
+
 export async function criarCheckout(params: CriarCheckout): Promise<CheckoutCriado> {
   const data = (await abacateFetch("/checkouts/create", {
     items: [{ id: productIdForPlan(params.plan), quantity: 1 }],

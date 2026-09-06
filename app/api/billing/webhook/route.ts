@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assinaturaConfere, webhookSecretConfere } from "@/lib/abacatepay";
+import { assinaturaConfere, buscarCheckout, webhookSecretConfere } from "@/lib/abacatepay";
 import { tripAccessExpiresAt } from "@/lib/billing";
 import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -128,20 +128,84 @@ export async function POST(req: Request) {
      */
     const payload = JSON.parse(raw) as {
       event?: string;
-      data?: {
-        checkout?: { id?: string; externalId?: string; paidAmount?: number; amount?: number };
-      };
+      data?: Record<string, unknown>;
     };
 
     evento = payload.event ?? "unknown";
 
     if (evento !== "checkout.completed" && evento !== "transparent.completed") {
+      // Este return era mudo, e um webhook que sai por aqui responde 200
+      // em 4ms sem deixar rastro — indistinguivel de um que funcionou.
+      // Foi assim que o primeiro pagamento sumiu sem explicacao.
+      logWarn({
+        event: "abacate_webhook_evento_ignorado",
+        route: "billing/webhook",
+        abacateEvent: evento,
+        durationMs: elapsed(),
+      });
       return NextResponse.json({ received: true });
     }
 
-    const checkout = payload.data?.checkout;
-    const externalId = checkout?.externalId;
+    /**
+     * O id da cobranca, venha ele de onde vier.
+     *
+     * O envio original trazia `data.checkout.id`. O reenvio pelo painel
+     * chega com outro formato, e ler so um caminho fazia o handler sair
+     * calado. Como o payload e escrito por terceiro e pode mudar sem
+     * aviso, aqui a leitura e generosa — e o que decide de verdade vem
+     * logo abaixo, da API deles.
+     */
+    const dados = payload.data ?? {};
+    const aninhado = (dados.checkout ?? dados.transparent ?? {}) as Record<string, unknown>;
+    const idCobranca =
+      (typeof aninhado.id === "string" && aninhado.id) ||
+      (typeof dados.id === "string" && dados.id) ||
+      null;
+
+    if (!idCobranca) {
+      logWarn({
+        event: "abacate_webhook_sem_id",
+        route: "billing/webhook",
+        abacateEvent: evento,
+        // As chaves, nunca os valores: o corpo carrega nome e e-mail de
+        // quem pagou, e log nao e lugar para isso.
+        chavesData: Object.keys(dados).join(","),
+        chavesAninhado: Object.keys(aninhado).join(","),
+        durationMs: elapsed(),
+      });
+      return NextResponse.json({ received: true });
+    }
+
+    /**
+     * Confirma com a AbacatePay antes de liberar qualquer coisa.
+     *
+     * O webhook vira aviso, nao prova. Ele chega sem assinatura — a
+     * AbacatePay nao manda o header — entao a unica defesa era o segredo
+     * na query string, e segredo em URL vaza em log de proxy, historico e
+     * print de tela. Perguntar a fonte remove a confianca no mensageiro:
+     * webhook forjado nao consegue fazer a API dizer PAID.
+     */
+    const naFonte = await buscarCheckout(idCobranca);
+
+    if (!naFonte || naFonte.status !== "PAID") {
+      logWarn({
+        event: "abacate_webhook_nao_confirmado",
+        route: "billing/webhook",
+        abacateEvent: evento,
+        statusNaFonte: naFonte?.status ?? "nao encontrado",
+        durationMs: elapsed(),
+      });
+      return NextResponse.json({ received: true });
+    }
+
+    const externalId = naFonte.externalId;
     if (!externalId) {
+      logWarn({
+        event: "abacate_webhook_sem_externalid",
+        route: "billing/webhook",
+        abacateEvent: evento,
+        durationMs: elapsed(),
+      });
       return NextResponse.json({ received: true });
     }
 
@@ -167,11 +231,7 @@ export async function POST(req: Request) {
     // Idempotencia: o provedor reenvia o mesmo evento ate receber 200, e
     // liberar duas vezes reescreveria a validade do acesso ja concedido.
     if (pedido.status !== "paid") {
-      await liberarAcesso(
-        pedido,
-        checkout?.id ?? null,
-        checkout?.paidAmount ?? checkout?.amount ?? null
-      );
+      await liberarAcesso(pedido, naFonte.id, naFonte.paidAmount ?? naFonte.amount);
     }
 
     logInfo({
