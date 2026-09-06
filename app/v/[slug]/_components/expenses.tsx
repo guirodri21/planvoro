@@ -739,7 +739,7 @@ export function ExpensesView({
             </div>
             <div>
               <strong>{expenses.length ? formatMoney(totalSpent / Math.max(1, members.length)) : formatMoney(0)}</strong>
-              <span>media registrada por pessoa no grupo</span>
+              <span>média registrada por pessoa no grupo</span>
             </div>
           </div>
           <p className="sub small" style={{ marginTop: 14, marginBottom: 0 }}>

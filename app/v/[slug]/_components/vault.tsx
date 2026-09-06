@@ -326,7 +326,7 @@ export function TravelVaultView({
     !hasDocument && {
       tone: "neutral",
       title: "Documentos e regras",
-      body: "Vale guardar visto, seguro, apolice, pasta de documentos ou requisitos de entrada.",
+      body: "Vale guardar visto, seguro, apólice, pasta de documentos ou requisitos de entrada.",
     },
     attentionCount > 0 && {
       tone: "warn",

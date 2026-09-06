@@ -94,9 +94,12 @@ export async function GET(req: Request) {
 
     if (subscriptionError) throw subscriptionError;
 
+    // O destino junto: o teste vale para UMA viagem, e o painel precisa
+    // dizer qual. Sem isso ele anunciava acesso da conta inteira, e quem
+    // abria as outras viagens as encontrava trancadas.
     const { data: trial } = await db
       .from("trip_entitlements")
-      .select("access_expires_at")
+      .select("access_expires_at, trips(destination)")
       .eq("purchaser_user_id", user.id)
       .eq("status", "trial")
       .maybeSingle();
@@ -114,6 +117,8 @@ export async function GET(req: Request) {
       // ainda ha um para oferecer ou se ja foi usado.
       trial_used: Boolean(trial),
       trial_expires_at: trial?.access_expires_at ?? null,
+      trial_trip:
+        (trial?.trips as { destination?: string } | null)?.destination ?? null,
       // A lista de testadores so existe no servidor, entao o painel nao tem
       // como decidir sozinho se mostra o botao de pagar.
       can_checkout: !betaBlocksCheckoutFor(user.email),

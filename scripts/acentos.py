@@ -12,6 +12,19 @@ comentario, nome de variavel, chave de objeto, rota e classe CSS — foi
 trocando `/historico` por `/historico` com acento que uma varredura
 anterior criou 404 de verdade.
 
+DOIS LIMITES CONHECIDOS:
+
+1. So acha o que esta no dicionario. Palavra sem acento
+que ninguem listou passa batido — foi assim que "Peca ao organizador" e "o
+plano gratis" sobreviveram a varreduras que fecharam em zero. Quando achar
+uma nova, adicione aqui em vez de so corrigir o arquivo: a proxima vez que
+ela aparecer, o script pega sozinho.
+
+2. So olha uma linha por vez. Prosa JSX quebrada em varias linhas escapa,
+porque o padrao exige `<` e `>` na mesma linha. Foi assim que "ideias e
+votacao continuam liberados" sobreviveu — a frase estava partida ao meio.
+Ao revisar texto longo em JSX, leia com o olho tambem.
+
 Uso:
     python scripts/acentos.py app             # relatorio
     python scripts/acentos.py app --corrigir  # aplica
@@ -75,6 +88,35 @@ DICIONARIO = {
     # "Peca ao organizador" sobreviveu a tres varreduras.
     "peca": "peça", "Peca": "Peça",
     "faca": "faça", "Faca": "Faça",
+    "gratis": "grátis", "Gratis": "Grátis",
+    "apolice": "apólice", "Apolice": "Apólice",
+    "necessarios": "necessários", "necessarias": "necessárias",
+    "necessario": "necessário", "necessaria": "necessária",
+    "media": "média", "medias": "médias",
+    "visivel": "visível", "visiveis": "visíveis",
+    "invisivel": "invisível",
+    "responsavel": "responsável", "responsaveis": "responsáveis",
+    "util": "útil", "uteis": "úteis",
+    "nivel": "nível", "niveis": "níveis",
+    "movel": "móvel", "moveis": "móveis",
+    "possiveis": "possíveis",
+    "ferias": "férias", "Ferias": "Férias",
+    "saida": "saída", "saidas": "saídas", "Saida": "Saída",
+    "familia": "família", "Familia": "Família",
+    "criancas": "crianças", "crianca": "criança",
+    "refeicao": "refeição", "refeicoes": "refeições",
+    "excursao": "excursão", "excursoes": "excursões",
+    "bagagem": "bagagem",
+    "facil": "fácil", "Facil": "Fácil", "faceis": "fáceis",
+    "rapido": "rápido", "rapida": "rápida", "Rapido": "Rápido",
+    "proprio": "próprio", "propria": "própria", "Proprio": "Próprio",
+    "ultimo": "último", "ultima": "última", "Ultimo": "Último",
+    "minimo": "mínimo", "maximo": "máximo", "Minimo": "Mínimo",
+    "numero": "número", "numeros": "números", "Numero": "Número",
+    "cartao": "cartão", "Cartao": "Cartão",
+    "sessao": "sessão", "Sessao": "Sessão",
+    "conexao": "conexão", "conexoes": "conexões",
+    "permissao": "permissão", "permissoes": "permissões",
     "confirmacoes": "confirmações",
     "acao": "ação", "Acao": "Ação", "acoes": "ações", "Acoes": "Ações",
     "solucao": "solução", "Solucao": "Solução",

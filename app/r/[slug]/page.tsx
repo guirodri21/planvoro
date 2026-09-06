@@ -125,7 +125,7 @@ export default async function RoteiroPublico({
                       <div className="item-d">{item.description}</div>
                     </div>
                     <div className="cost">
-                      {item.cost_estimate ? `R$ ${item.cost_estimate.toFixed(0)}` : "grátis"}
+                      {item.cost_estimate ? `~R$ ${item.cost_estimate.toFixed(0)}` : "grátis"}
                     </div>
                   </div>
                 ))}

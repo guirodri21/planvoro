@@ -171,7 +171,9 @@ export async function checkTripCreation(
 
   if (unpaidActive < FREE_ACTIVE_TRIPS) return null;
 
-  return "O plano gratis cobre uma viagem ativa por vez. Libere a viagem atual com o Passe, assine o Pro, ou espere ela terminar.";
+  // "a viagem atual" no singular soa errado para quem tem quatro abertas,
+  // e sugere que existe uma so para liberar.
+  return "O plano grátis cobre uma viagem ativa por vez. Libere uma delas com o Passe, assine o Pro para ter ilimitadas, ou espere alguma terminar.";
 }
 
 async function countEvents(

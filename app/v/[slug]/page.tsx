@@ -789,7 +789,7 @@ function TripLockedNotice({ slug, isOrganizer }: { slug: string; isOrganizer: bo
       <span className="badge b-warn">recursos do Passe</span>
       <h3>Cofre, gastos e checklist estão trancados</h3>
       <p className="sub">
-        Roteiro, grupo, ideias e votacao continuam liberados. O que já foi salvo continua visivel e
+        Roteiro, grupo, ideias e votação continuam liberados. O que já foi salvo continua visível e
         pode ser removido — nada fica preso aqui dentro.
       </p>
       {isOrganizer ? (
@@ -1324,7 +1324,13 @@ function ItemRow({
           </div>
           <div className="item-d">{item.description}</div>
         </div>
-        <div className="cost">{item.cost_estimate ? `R$ ${item.cost_estimate.toFixed(0)}` : "gratis"}</div>
+        {/* "~" e a diferenca entre estimativa e preco. Um roteiro de
+            Toquio mostrava "R$ 120,00" para um almoco: uma conversao que
+            a IA fez sozinha, sem taxa declarada e sem o valor em ienes.
+            Quem for conferir vai encontrar outro numero. */}
+        <div className="cost">
+          {item.cost_estimate ? `~R$ ${item.cost_estimate.toFixed(0)}` : "grátis"}
+        </div>
       </div>
 
       <div className="reactions">

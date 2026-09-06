@@ -47,7 +47,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     }
     if (recipientEmails.length > MAX_RECIPIENTS) {
       return NextResponse.json(
-        { error: `Envie no maximo ${MAX_RECIPIENTS} convites por vez.` },
+        { error: `Envie no máximo ${MAX_RECIPIENTS} convites por vez.` },
         { status: 400 }
       );
     }

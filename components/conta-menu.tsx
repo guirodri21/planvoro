@@ -22,6 +22,8 @@ type Plano = {
   beta: boolean;
   is_pro_active: boolean;
   expires_at: string | null;
+  passes_ativos: number;
+  teste_expira_em: string | null;
 };
 
 export function ContaMenu({
@@ -114,23 +116,45 @@ export function ContaMenu({
     setEnviandoSenha(false);
   }
 
+  /**
+   * O que a pessoa tem, na ordem em que ela pensa nisso.
+   *
+   * Pro cobre tudo, entao vem primeiro. Depois o Passe, que e compra
+   * avulsa e a mais facil de esquecer que existe. Depois o teste. So
+   * quem nao tem nada disso e "Grátis".
+   *
+   * Dizer "Grátis" para quem pagou R$ 29 foi o defeito que essa ordem
+   * conserta: a menu lia so a assinatura e ignorava a compra por viagem.
+   */
+  const data = (iso: string) => new Date(iso).toLocaleDateString("pt-BR");
+
   const planoRotulo = !plano
     ? "Carregando..."
     : plano.beta
       ? "Beta grátis"
       : plano.is_pro_active
         ? "Planvoro Pro"
-        : "Grátis";
+        : plano.passes_ativos > 0
+          ? plano.passes_ativos === 1
+            ? "1 viagem liberada"
+            : `${plano.passes_ativos} viagens liberadas`
+          : plano.teste_expira_em
+            ? "Teste grátis"
+            : "Grátis";
 
   const planoDetalhe = !plano
     ? ""
     : plano.beta
       ? "Tudo liberado, sem cobrança"
-      : plano.is_pro_active && plano.expires_at
-        ? `Vale até ${new Date(plano.expires_at).toLocaleDateString("pt-BR")}`
-        : plano.is_pro_active
-          ? "Ativo"
-          : "Uma viagem ativa por vez";
+      : plano.is_pro_active
+        ? plano.expires_at
+          ? `Vale até ${data(plano.expires_at)}`
+          : "Viagens ilimitadas"
+        : plano.passes_ativos > 0
+          ? "Passe pago, por viagem"
+          : plano.teste_expira_em
+            ? `Uma viagem, até ${data(plano.teste_expira_em)}`
+            : "Uma viagem ativa por vez";
 
   return (
     <div className="conta" ref={caixa}>

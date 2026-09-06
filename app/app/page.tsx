@@ -53,6 +53,7 @@ type DashboardResponse = {
     can_checkout: boolean;
     trial_used: boolean;
     trial_expires_at: string | null;
+    trial_trip: string | null;
     subscription: {
       status: string;
       provider: string | null;
@@ -332,6 +333,7 @@ export default function AppPage() {
         podeComprar={Boolean(accountBilling?.can_checkout)}
         temTeste={Boolean(accountBilling?.trial_used)}
         testeExpiraEm={accountBilling?.trial_expires_at ?? null}
+        testeViagem={accountBilling?.trial_trip ?? null}
         acao={billingAction}
         onPro={() => startCheckout("pro_annual")}
         onTeste={comecarTeste}

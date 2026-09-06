@@ -159,7 +159,7 @@ REGRAS OBRIGATORIAS
 5. Atividades do mesmo dia devem ficar geograficamente proximas (ate ~20 min de deslocamento entre elas).
 ${regrasGrupo}
 7. "place_query" deve ser o nome real e pesquisavel do lugar mais a cidade, ex: "Time Out Market, Lisboa". Nunca invente lugares que voce nao tem certeza que existem.
-8. "cost_estimate" em reais, por pessoa.
+8. "cost_estimate": estimativa aproximada por pessoa, convertida para reais. NAO e preco oficial nem cotacao. Para destino fora do Brasil, use uma ordem de grandeza plausivel — quem for conferir vai encontrar o valor na moeda local, entao nao finja precisao que voce nao tem. Prefira arredondar.
 9. Escreva tudo em portugues do Brasil.
 10. Se houver ideias separadas pelo grupo, trate-as como prioridades: inclua as ideias com melhor saldo quando couber no ritmo, orcamento e geografia. Se alguma ideia separada ficar de fora, explique na "rationale" por que ela nao entrou.
 

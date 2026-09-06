@@ -84,12 +84,12 @@ export function TripChecklistView({
     !hasVaultKind(["insurance"]) && {
       title: "Conferir seguro viagem",
       category: "health" as TripChecklistCategory,
-      notes: "Guarde apolice, contato de emergência e cobertura principal.",
+      notes: "Guarde apólice, contato de emergência e cobertura principal.",
     },
     !hasVaultKind(["document", "visa"]) && {
       title: "Conferir documentos e requisitos de entrada",
       category: "documents" as TripChecklistCategory,
-      notes: "Verifique passaporte, visto, vacinas, autorizações e comprovantes necessarios.",
+      notes: "Verifique passaporte, visto, vacinas, autorizações e comprovantes necessários.",
     },
     preferences.length < members.length && {
       title: "Chamar quem ainda não preencheu preferências",

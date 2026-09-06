@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { betaAccessEnabled } from "@/lib/beta";
-import { isProStatusActive } from "@/lib/billing";
+import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
  * Plano da conta, sozinho.
  *
- * O menu de conta precisa de tres campos. Pedi-los ao /api/me/dashboard
+ * O menu de conta precisa de poucos campos. Pedi-los ao /api/me/dashboard
  * traria junto todas as viagens, membros e gastos da pessoa — dezenas de
- * kilobytes para escrever "Pro ativo" numa linha, a cada vez que alguem
- * abre o menu.
+ * kilobytes para escrever uma linha.
+ *
+ * Olha as duas fontes de acesso pago, e nao so a assinatura. A versao
+ * anterior lia apenas `user_subscriptions`: quem comprou o Passe de uma
+ * viagem via "Grátis" no proprio menu, depois de pagar R$ 29. Cliente que
+ * paga e o produto diz que ele nao pagou abre chamado de suporte e pede
+ * reembolso — e tem razao.
  */
 export async function GET(req: Request) {
   try {
@@ -20,16 +25,43 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Entre na sua conta." }, { status: 401 });
     }
 
-    const { data } = await db
-      .from("user_subscriptions")
-      .select("status, current_period_end")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    const [assinatura, direitos] = await Promise.all([
+      db
+        .from("user_subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+      db
+        .from("trip_entitlements")
+        .select("status, access_expires_at")
+        .eq("purchaser_user_id", user.id)
+        .in("status", ["paid", "trial"]),
+    ]);
+
+    const linhas = direitos.data ?? [];
+
+    const passes = linhas.filter(
+      (linha) =>
+        linha.status === "paid" &&
+        isTripEntitlementActive(linha.status as string, linha.access_expires_at as string | null)
+    );
+
+    const teste = linhas.find(
+      (linha) =>
+        linha.status === "trial" &&
+        linha.access_expires_at &&
+        new Date(linha.access_expires_at as string).getTime() > Date.now()
+    );
 
     return NextResponse.json({
       beta: betaAccessEnabled,
-      is_pro_active: isProStatusActive(data?.status ?? null, data?.current_period_end ?? null),
-      expires_at: data?.current_period_end ?? null,
+      is_pro_active: isProStatusActive(
+        assinatura.data?.status ?? null,
+        assinatura.data?.current_period_end ?? null
+      ),
+      expires_at: assinatura.data?.current_period_end ?? null,
+      passes_ativos: passes.length,
+      teste_expira_em: (teste?.access_expires_at as string | null) ?? null,
     });
   } catch {
     return NextResponse.json({ error: "Erro ao ler o plano." }, { status: 500 });

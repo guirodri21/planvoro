@@ -23,6 +23,7 @@ export function Planos({
   podeComprar,
   temTeste,
   testeExpiraEm,
+  testeViagem,
   acao,
   onPro,
   onTeste,
@@ -34,6 +35,8 @@ export function Planos({
   /** Ja usou o teste gratis alguma vez. */
   temTeste: boolean;
   testeExpiraEm: string | null;
+  /** Destino da viagem que esta no teste. O teste vale para uma so. */
+  testeViagem: string | null;
   acao: string;
   onPro: () => void;
   onTeste: () => void;
@@ -46,7 +49,7 @@ export function Planos({
     : proAtivo
       ? "Planvoro Pro ativo"
       : testeAtivo
-        ? "Teste grátis em andamento"
+        ? "Teste grátis em uma viagem"
         : "Cresça quando precisar";
 
   const descricao = betaAccessEnabled
@@ -56,7 +59,18 @@ export function Planos({
         ? `Vale até ${data(proExpiraEm)}. Não renova sozinho.`
         : "Viagens ilimitadas, sem mensalidade."
       : testeAtivo && testeExpiraEm
-        ? `Cofre, gastos e checklist liberados até ${data(testeExpiraEm)}. Nada é apagado quando acabar.`
+        ? /*
+             Nomeia a viagem, porque o teste vale para uma so.
+             Sem o nome, esta linha anunciava "Cofre, gastos e checklist
+             liberados" como se valesse para a conta inteira — e quem
+             abria as outras viagens as encontrava trancadas, depois de
+             ler no painel que tinha acesso.
+          */
+          `${
+            testeViagem ? `"${testeViagem}"` : "Uma viagem"
+          } está com Cofre, gastos e checklist liberados até ${data(
+            testeExpiraEm
+          )}. As outras seguem no plano grátis.`
         : `Roteiro e grupo são grátis para sempre. Libere uma viagem por R$ ${
             BILLING_COPY.trip_pass.amount / 100
           } ou pegue o Pro por R$ ${BILLING_COPY.pro_annual.amount / 100} ao ano.`;
