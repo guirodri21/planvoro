@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { useAuth } from "@/components/auth-provider";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
+import { Confirmar } from "@/components/confirmar";
 import { track } from "@/lib/analytics";
 import { BILLING_COPY } from "@/lib/billing";
 import { Planos } from "./_components/planos";
@@ -146,6 +147,10 @@ export default function AppPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [billingAction, setBillingAction] = useState("");
+  /** Viagem aguardando confirmacao de exclusao. */
+  const [confirmarApagar, setConfirmarApagar] = useState<DashboardTrip | null>(null);
+  const [apagandoViagem, setApagandoViagem] = useState("");
+  const [erroApagar, setErroApagar] = useState("");
   const [billingError, setBillingError] = useState("");
 
   async function loadDashboard() {
@@ -221,6 +226,37 @@ export default function AppPage() {
         nextPath="/app"
       />
     );
+  }
+
+  /**
+   * Apaga uma viagem.
+   *
+   * Nao existia rota para isso: a unica forma de sumir com uma viagem era
+   * apagar a conta inteira. Quem testou o produto ficava com o lixo do
+   * teste no painel para sempre.
+   */
+  async function apagarViagem(slug: string) {
+    if (!session?.access_token) return;
+
+    setApagandoViagem(slug);
+    setErroApagar("");
+
+    try {
+      const res = await fetch(`/api/trips/${slug}`, {
+        method: "DELETE",
+        headers: authJsonHeaders(session.access_token),
+        body: JSON.stringify({ confirm: "APAGAR" }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível apagar a viagem.");
+
+      setConfirmarApagar(null);
+      await loadDashboard();
+    } catch (e) {
+      setErroApagar(e instanceof Error ? e.message : "Erro ao apagar a viagem.");
+    } finally {
+      setApagandoViagem("");
+    }
   }
 
   async function comecarTeste() {
@@ -375,6 +411,7 @@ export default function AppPage() {
             accountBilling={accountBilling}
             billingAction={billingAction}
             startCheckout={startCheckout}
+            onApagar={setConfirmarApagar}
           />
 
           {archivedTrips.length > 0 && (
@@ -386,9 +423,31 @@ export default function AppPage() {
               accountBilling={accountBilling}
               billingAction={billingAction}
               startCheckout={startCheckout}
+              onApagar={setConfirmarApagar}
             />
           )}
         </div>
+      )}
+
+      {/*
+        Exige digitar APAGAR, como a exclusao de conta. Apagar uma viagem
+        leva junto o roteiro, o Cofre e os gastos de todo o grupo — pessoas
+        que nao foram consultadas e nao tem como recuperar nada.
+      */}
+      {confirmarApagar && (
+        <Confirmar
+          titulo={`Apagar "${confirmarApagar.destination}"?`}
+          descricao="Some o roteiro, o Cofre com os anexos, os gastos e o checklist — para você e para todo o grupo. Não dá para desfazer."
+          acao="Apagar viagem"
+          exigirTexto="APAGAR"
+          trabalhando={apagandoViagem === confirmarApagar.slug}
+          erro={erroApagar}
+          onConfirmar={() => apagarViagem(confirmarApagar.slug)}
+          onCancelar={() => {
+            setConfirmarApagar(null);
+            setErroApagar("");
+          }}
+        />
       )}
     </div>
   );
@@ -402,6 +461,7 @@ function TripSection({
   accountBilling,
   billingAction,
   startCheckout,
+  onApagar,
 }: {
   title: string;
   description: string;
@@ -410,6 +470,7 @@ function TripSection({
   accountBilling: DashboardResponse["account_billing"] | null;
   billingAction: string;
   startCheckout: (plan: "trip_pass" | "pro_annual", tripSlug?: string) => Promise<void>;
+  onApagar: (trip: DashboardTrip) => void;
 }) {
   if (trips.length === 0) {
     return (
@@ -491,6 +552,18 @@ function TripSection({
                   <a className="btn sm" href={`/app/trips/${trip.slug}`}>
                     Abrir
                   </a>
+                  {/* So quem organiza apaga: a acao leva junto o Cofre e os
+                      gastos de todo o grupo. */}
+                  {trip.viewer_member?.is_organizer && (
+                    <button
+                      className="btn ghost sm btn-apagar"
+                      type="button"
+                      onClick={() => onApagar(trip)}
+                      aria-label={`Apagar a viagem para ${trip.destination}`}
+                    >
+                      Apagar
+                    </button>
+                  )}
                 </div>
               </div>
 

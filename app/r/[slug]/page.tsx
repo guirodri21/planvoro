@@ -2,12 +2,18 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DuplicateTrip } from "@/components/duplicate-trip";
 import { RoteiroShare } from "@/components/roteiro-share";
-import { formatBR, getPublicTrip, tripDays } from "@/lib/public";
+import { formatBR, getPublicTrip, getTripPublishState, tripDays } from "@/lib/public";
 import { buildItinerarySummary } from "@/lib/share";
 import { SITE_URL } from "@/lib/site";
 
 
-export const revalidate = 3600;
+/**
+ * Uma hora de cache guardava tambem a resposta "nao publicado", e a pagina
+ * continuava dizendo isso por ate sessenta minutos depois do organizador
+ * publicar. Um minuto mantem o ganho de cache para o que importa — roteiro
+ * publicado, que quase nunca muda — sem prender o aviso.
+ */
+export const revalidate = 60;
 
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
@@ -38,7 +44,16 @@ export default async function RoteiroPublico({
 }) {
   const { slug } = await params;
   const data = await getPublicTrip(slug);
-  if (!data) notFound();
+
+  if (!data) {
+    // Existe mas nao foi publicada: isso tem conserto, e quem chegou aqui
+    // merece saber qual. 404 seco manda a pessoa embora achando que o link
+    // esta quebrado.
+    if ((await getTripPublishState(slug)) === "nao-publicado") {
+      return <RoteiroNaoPublicado slug={slug} />;
+    }
+    notFound();
+  }
 
   const { trip, itinerary } = data;
   const dias = tripDays(trip);
@@ -134,5 +149,38 @@ export default async function RoteiroPublico({
         </p>
       </div>
     </>
+  );
+}
+
+/**
+ * Roteiro que existe mas ainda nao foi publicado.
+ *
+ * Nao mostra nada da viagem — nem destino, nem datas, nem quem organiza.
+ * Quem tem o link ja sabe que ela existe; o conteudo continua fechado ate
+ * o organizador decidir abrir.
+ */
+function RoteiroNaoPublicado({ slug }: { slug: string }) {
+  return (
+    <div className="card" style={{ maxWidth: 560, margin: "0 auto", textAlign: "center" }}>
+      <p className="eyebrow">Roteiro privado</p>
+      <h1 style={{ marginBottom: 8 }}>Este roteiro ainda não foi publicado</h1>
+      <p className="sub">
+        A página pública existe, mas só depois que quem organiza a viagem publicar o roteiro. Até
+        lá, este endereço fica fechado.
+      </p>
+
+      <div className="hero-cta" style={{ justifyContent: "center", marginTop: 24 }}>
+        <a className="btn" href={`/v/${slug}`}>
+          Abrir a viagem
+        </a>
+        <a className="btn ghost" href="/experimente">
+          Ver um roteiro de exemplo
+        </a>
+      </div>
+
+      <p className="tiny" style={{ marginTop: 18 }}>
+        Se a viagem é sua, abra e use “Publicar roteiro” na aba de compartilhar.
+      </p>
+    </div>
   );
 }

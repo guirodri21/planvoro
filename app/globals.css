@@ -6385,3 +6385,15 @@ a.tiny {
     padding: 8px;
   }
 }
+
+/* Apagar viagem fica discreto no card e so mostra a cor no hover: ele
+   divide espaco com "Abrir", e vermelho permanente ali puxaria o olho
+   para a acao destrutiva em vez da util. */
+.btn-apagar {
+  color: var(--text-faint, #7a8296);
+}
+
+.btn-apagar:hover {
+  border-color: rgba(180, 52, 42, 0.35);
+  color: #b4342a;
+}

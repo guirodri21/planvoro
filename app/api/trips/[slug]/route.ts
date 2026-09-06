@@ -3,6 +3,7 @@ import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveTripAccess } from "@/lib/trip-access";
+import { VAULT_BUCKET } from "@/lib/vault-attachments";
 
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   try {
@@ -229,6 +230,73 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     return NextResponse.json({ trip: data });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Erro ao atualizar a viagem.";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+/**
+ * Apaga a viagem.
+ *
+ * Nao existia jeito nenhum de remover uma viagem: a unica saida era apagar
+ * a conta inteira. Quem testou o produto ficou com o lixo do teste no
+ * painel para sempre, e quem desiste de uma viagem tambem.
+ *
+ * So o organizador apaga, e a acao leva junto o grupo, o roteiro, o Cofre
+ * e os gastos de todo mundo. Por isso exige confirmacao digitada, como a
+ * exclusao de conta: quem participa da viagem perde o conteudo sem ter
+ * sido consultado.
+ */
+export async function DELETE(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  try {
+    const { slug } = await ctx.params;
+    const db = supabaseAdmin();
+
+    const user = await getUserFromRequest(req, db);
+    if (!user) {
+      return NextResponse.json({ error: "Entre na sua conta." }, { status: 401 });
+    }
+
+    const membership = await memberForUserInTrip(db, slug, user.id);
+    if (!membership) {
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
+    }
+    if (!membership.isOrganizer) {
+      return NextResponse.json(
+        { error: "Só quem organiza a viagem pode apagá-la." },
+        { status: 403 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    if (String(body.confirm ?? "").trim().toUpperCase() !== "APAGAR") {
+      return NextResponse.json({ error: "Confirmação inválida." }, { status: 400 });
+    }
+
+    /**
+     * Os arquivos saem antes das linhas.
+     *
+     * O cascade do banco nao alcanca o Storage. Apagar as linhas primeiro
+     * deixaria os anexos no bucket sem nenhuma referencia — invisiveis no
+     * app, cobrados na fatura, e impossiveis de reencontrar depois.
+     */
+    const { data: attachments } = await db
+      .from("trip_vault_attachments")
+      .select("storage_path")
+      .eq("trip_id", membership.tripId);
+
+    if (attachments?.length) {
+      const { error: erroStorage } = await db.storage
+        .from(VAULT_BUCKET)
+        .remove(attachments.map((row) => row.storage_path as string));
+      if (erroStorage) throw erroStorage;
+    }
+
+    const { error } = await db.from("trips").delete().eq("id", membership.tripId);
+    if (error) throw error;
+
+    return NextResponse.json({ deleted: true, anexos: attachments?.length ?? 0 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Erro ao apagar a viagem.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

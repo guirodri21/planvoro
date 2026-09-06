@@ -10,6 +10,32 @@ type DayRow = { position: number; itinerary_items: { position: number }[] };
  * E o que alimenta as paginas indexaveis pelo Google -- o canal de
  * aquisicao organica que nao custa nada.
  */
+/**
+ * A viagem existe? E esta publicada?
+ *
+ * Sao perguntas diferentes e o 404 respondia as duas do mesmo jeito. Quem
+ * compartilhava o link antes de publicar via a propria pagina sumir, sem
+ * nada dizendo que faltava um clique — enquanto a tabela de precos
+ * anuncia "Pagina publica do roteiro" como recurso incluso.
+ *
+ * Nao devolve dado nenhum da viagem nao publicada. Saber que ela existe ja
+ * esta implicito em quem tem o link; o conteudo continua fechado.
+ */
+export async function getTripPublishState(
+  slug: string
+): Promise<"publicado" | "nao-publicado" | "inexistente"> {
+  const db = supabaseAdmin();
+
+  const { data } = await db
+    .from("trips")
+    .select("is_public")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  if (!data) return "inexistente";
+  return data.is_public ? "publicado" : "nao-publicado";
+}
+
 export async function getPublicTrip(slug: string): Promise<PublicTrip | null> {
   const db = supabaseAdmin();
 
