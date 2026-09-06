@@ -19,6 +19,14 @@ function umAnoAdiante() {
   return fim.toISOString();
 }
 
+/**
+ * Transforma pagamento confirmado em acesso liberado.
+ *
+ * Cada escrita e conferida. Antes nenhuma era: a atualizacao do direito de
+ * acesso foi recusada pelo banco, o erro caiu no chao, e o webhook
+ * respondeu "handled" — cobranca paga, Passe trancado, e nada no log
+ * dizendo por que.
+ */
 async function liberarAcesso(pedido: Pedido, checkoutId: string | null, valor: number | null) {
   const db = supabaseAdmin();
   const agora = new Date().toISOString();
@@ -30,24 +38,73 @@ async function liberarAcesso(pedido: Pedido, checkoutId: string | null, valor: n
       .eq("id", pedido.trip_id)
       .maybeSingle();
 
+    /**
+     * Libera UMA linha, a desta cobranca — nao todas as da viagem.
+     *
+     * A versao anterior filtrava por `trip_id` + `checkout_pending`. Como
+     * cada tentativa de compra cria a sua linha, tres tentativas viraram
+     * tres pendentes na mesma viagem, e o update tentou marcar as tres
+     * como paga de uma vez. Existe um indice unico que permite so um
+     * `paid` por viagem — e com razao, senao a mesma viagem seria vendida
+     * duas vezes. O Postgres recusou a instrucao inteira.
+     *
+     * Pegar a mais recente resolve os dois lados: uma linha so, e a que
+     * corresponde ao checkout que a pessoa acabou de pagar.
+     */
+    const { data: pendente } = await db
+      .from("trip_entitlements")
+      .select("id")
+      .eq("trip_id", pedido.trip_id)
+      .eq("status", "checkout_pending")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (!pendente) {
+      logWarn({
+        event: "abacate_sem_direito_pendente",
+        route: "billing/webhook",
+        tripId: pedido.trip_id,
+      });
+    } else {
+      const { error } = await db
+        .from("trip_entitlements")
+        .update({
+          status: "paid",
+          provider: "abacatepay",
+          provider_checkout_id: checkoutId,
+          amount_total: valor,
+          currency: "brl",
+          paid_at: agora,
+          access_expires_at: tripAccessExpiresAt(trip?.end_date),
+          updated_at: agora,
+        })
+        .eq("id", pendente.id);
+
+      if (error) {
+        logError({ event: "abacate_direito_nao_gravado", route: "billing/webhook", error });
+        throw error;
+      }
+
+      logInfo({
+        event: "abacate_direito_liberado",
+        route: "billing/webhook",
+        tripId: pedido.trip_id,
+      });
+    }
+
+    // As outras tentativas da mesma viagem nao viram nada: encerram como
+    // abandonadas, senao continuam pendentes para sempre e a proxima
+    // compra tropeca nelas de novo.
     await db
       .from("trip_entitlements")
-      .update({
-        status: "paid",
-        provider: "abacatepay",
-        provider_checkout_id: checkoutId,
-        amount_total: valor,
-        currency: "brl",
-        paid_at: agora,
-        access_expires_at: tripAccessExpiresAt(trip?.end_date),
-        updated_at: agora,
-      })
+      .update({ status: "expired", updated_at: agora })
       .eq("trip_id", pedido.trip_id)
       .eq("status", "checkout_pending");
   }
 
   if (pedido.plan === "pro_annual") {
-    await db.from("user_subscriptions").upsert(
+    const { error } = await db.from("user_subscriptions").upsert(
       {
         user_id: pedido.user_id,
         status: "active",
@@ -59,15 +116,38 @@ async function liberarAcesso(pedido: Pedido, checkoutId: string | null, valor: n
       },
       { onConflict: "user_id" }
     );
+
+    if (error) {
+      logError({ event: "abacate_assinatura_nao_gravada", route: "billing/webhook", error });
+      throw error;
+    }
   }
 
-  await db
+  const { error: erroPedido } = await db
     .from("billing_checkouts")
     .update({ status: "paid", paid_at: agora, provider_checkout_id: checkoutId })
     .eq("id", pedido.id);
+
+  if (erroPedido) {
+    logError({ event: "abacate_pedido_nao_gravado", route: "billing/webhook", error: erroPedido });
+    throw erroPedido;
+  }
 }
 
-type Payload = { event?: string; data?: Record<string, unknown> };
+/**
+ * O corpo do webhook da AbacatePay.
+ *
+ * O campo do evento chama-se `type`. A documentacao e o painel mostram
+ * `event`, e o que a entrega manda e `type` — foi essa diferenca que fez
+ * o primeiro pagamento de verdade ser descartado em silencio. `event`
+ * fica como alternativa para o dia em que eles alinharem os dois.
+ */
+type Payload = { type?: string; event?: string; data?: Record<string, unknown> };
+
+/** O nome do evento, venha no campo que vier. */
+function nomeDoEvento(payload: Payload) {
+  return payload.type ?? payload.event ?? "unknown";
+}
 
 /**
  * Le o corpo do webhook, seja qual for a forma que ele chegue.
@@ -149,12 +229,19 @@ function lerPayload(
 
   const objeto = valor as Record<string, unknown>;
 
-  if (typeof objeto.event === "string") return objeto as Payload;
+  if (typeof objeto.type === "string" || typeof objeto.event === "string") {
+    return objeto as Payload;
+  }
 
   // Sem `event` no topo: pode vir embrulhado. Procura um nivel abaixo.
   for (const chave of Object.keys(objeto)) {
     const dentro = objeto[chave];
-    if (dentro && typeof dentro === "object" && typeof (dentro as Payload).event === "string") {
+    const interno = dentro as Payload | null;
+    if (
+      dentro &&
+      typeof dentro === "object" &&
+      (typeof interno?.type === "string" || typeof interno?.event === "string")
+    ) {
       logWarn({ event: "abacate_webhook_corpo_embrulhado", chaveExterna: chave, ...diagnostico });
       return dentro as Payload;
     }
@@ -235,7 +322,7 @@ export async function POST(req: Request) {
       elapsed,
     });
 
-    evento = payload.event ?? "unknown";
+    evento = nomeDoEvento(payload);
 
     /**
      * O nome do evento deixou de ser o porteiro.
