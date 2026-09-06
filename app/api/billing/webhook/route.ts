@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { assinaturaConfere, webhookSecretConfere } from "@/lib/abacatepay";
 import { tripAccessExpiresAt } from "@/lib/billing";
-import { logError, logInfo, startTimer } from "@/lib/logger";
+import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
 
 type Pedido = {
@@ -79,17 +79,44 @@ export async function POST(req: Request) {
      * Duas conferencias, com pesos bem diferentes.
      *
      * O segredo da query string e so nosso, e e o que de fato autentica a
-     * chamada. A assinatura HMAC usa uma chave publicada na documentacao
-     * da AbacatePay, entao qualquer pessoa consegue forjar uma valida —
-     * ela serve para detectar corpo corrompido no caminho, nao remetente
-     * falso. Por isso as duas sao exigidas, e nunca uma no lugar da outra.
+     * chamada. Ele e obrigatorio.
+     *
+     * A assinatura HMAC usa uma chave que a propria AbacatePay publica na
+     * documentacao — qualquer pessoa consegue forjar uma valida, entao
+     * ela nao prova remetente, so pega corpo corrompido no caminho.
+     *
+     * Ela era obrigatoria tambem, e foi assim que o primeiro pagamento de
+     * verdade se perdeu: a AbacatePay entregou o evento sem o header, nos
+     * respondemos 401 e o acesso nunca liberou. Exigir uma prova fraca ao
+     * ponto de recusar dinheiro que entrou e pior do que nao exigir.
+     *
+     * Agora: sem header, passa e fica registrado. Com header errado,
+     * recusa — porque ai alguem mexeu no corpo.
      */
     if (!webhookSecretConfere(url.searchParams.get("webhookSecret"))) {
+      logWarn({
+        event: "abacate_webhook_segredo_invalido",
+        route: "billing/webhook",
+        durationMs: elapsed(),
+      });
       return NextResponse.json({ error: "Webhook não autorizado." }, { status: 401 });
     }
 
-    if (!assinaturaConfere(raw, req.headers.get("x-webhook-signature"))) {
+    const assinatura = req.headers.get("x-webhook-signature");
+    if (assinatura && !assinaturaConfere(raw, assinatura)) {
+      logWarn({
+        event: "abacate_webhook_assinatura_invalida",
+        route: "billing/webhook",
+        durationMs: elapsed(),
+      });
       return NextResponse.json({ error: "Assinatura inválida." }, { status: 401 });
+    }
+    if (!assinatura) {
+      logInfo({
+        event: "abacate_webhook_sem_assinatura",
+        route: "billing/webhook",
+        durationMs: elapsed(),
+      });
     }
 
     /**
