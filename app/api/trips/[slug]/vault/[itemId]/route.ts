@@ -49,7 +49,7 @@ function buildVaultUpdate(body: Record<string, unknown>) {
 
   if (hasOwn(body, "title")) {
     const title = String(body.title ?? "").trim();
-    if (!title) return { error: "De um nome para guardar no Cofre." };
+    if (!title) return { error: "Dê um nome para guardar no Cofre." };
     if (title.length > MAX_TITLE) return { error: "Nome muito longo para o Cofre." };
     update.title = title;
   }

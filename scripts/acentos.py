@@ -20,7 +20,11 @@ plano gratis" sobreviveram a varreduras que fecharam em zero. Quando achar
 uma nova, adicione aqui em vez de so corrigir o arquivo: a proxima vez que
 ela aparecer, o script pega sozinho.
 
-2. So olha uma linha por vez. Prosa JSX quebrada em varias linhas escapa,
+2. Palavra ambigua fica de fora. "De um nome" precisa virar "Dê", mas
+mapear "De" -> "Dê" estragaria "De acordo" e "De 10 a 20". Verbo no
+imperativo que colide com preposicao so o olho resolve.
+
+3. So olha uma linha por vez. Prosa JSX quebrada em varias linhas escapa,
 porque o padrao exige `<` e `>` na mesma linha. Foi assim que "ideias e
 votacao continuam liberados" sobreviveu — a frase estava partida ao meio.
 Ao revisar texto longo em JSX, leia com o olho tambem.
@@ -106,7 +110,6 @@ DICIONARIO = {
     "criancas": "crianças", "crianca": "criança",
     "refeicao": "refeição", "refeicoes": "refeições",
     "excursao": "excursão", "excursoes": "excursões",
-    "bagagem": "bagagem",
     "facil": "fácil", "Facil": "Fácil", "faceis": "fáceis",
     "rapido": "rápido", "rapida": "rápida", "Rapido": "Rápido",
     "proprio": "próprio", "propria": "própria", "Proprio": "Próprio",

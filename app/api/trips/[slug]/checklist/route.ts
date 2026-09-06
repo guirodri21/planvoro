@@ -32,6 +32,32 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     const { slug } = await ctx.params;
     const body = await req.json().catch(() => ({}));
 
+    /**
+     * Quem pode vem antes do que veio.
+     *
+     * A validacao do corpo rodava primeiro, entao quem nao tem o Passe
+     * recebia os erros de campo antes do 402 — e ia montando o formato da
+     * API pelas respostas, sem ter direito de escrever nada.
+     */
+    const db = supabaseAdmin();
+    const user = await getUserFromRequest(req, db);
+    if (!user) {
+      return NextResponse.json({ error: "Entre na sua conta para criar tarefas." }, { status: 401 });
+    }
+
+    const membership = await memberForUserInTrip(db, slug, user.id);
+    if (!membership) {
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
+    }
+
+    const access = await resolveTripAccess(db, membership.tripId);
+    if (!access.unlocked) {
+      return NextResponse.json(
+        { error: lockedMessage("O checklist", membership.isOrganizer) },
+        { status: 402 }
+      );
+    }
+
     const title = String(body.title ?? "").trim();
     if (!title) {
       return NextResponse.json({ error: "Descreva a tarefa do checklist." }, { status: 400 });
@@ -53,22 +79,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     const notes = String(body.notes ?? "").trim();
     if (notes.length > MAX_NOTES) {
       return NextResponse.json({ error: "Notas muito longas." }, { status: 400 });
-    }
-
-    const db = supabaseAdmin();
-    const user = await getUserFromRequest(req, db);
-    if (!user) {
-      return NextResponse.json({ error: "Entre na sua conta para criar tarefas." }, { status: 401 });
-    }
-
-    const membership = await memberForUserInTrip(db, slug, user.id);
-    if (!membership) {
-      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
-    }
-
-    const access = await resolveTripAccess(db, membership.tripId);
-    if (!access.unlocked) {
-      return NextResponse.json({ error: lockedMessage("O checklist", membership.isOrganizer) }, { status: 402 });
     }
 
     const { data, error } = await db

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkTripCreation } from "@/lib/ai-limits";
 import { getUserFromRequest } from "@/lib/auth";
 import { betaAccessEnabled } from "@/lib/beta";
 import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
@@ -25,7 +26,7 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Entre na sua conta." }, { status: 401 });
     }
 
-    const [assinatura, direitos] = await Promise.all([
+    const [assinatura, direitos, impedimento] = await Promise.all([
       db
         .from("user_subscriptions")
         .select("status, current_period_end")
@@ -36,6 +37,16 @@ export async function GET(req: Request) {
         .select("status, access_expires_at")
         .eq("purchaser_user_id", user.id)
         .in("status", ["paid", "trial"]),
+      /**
+       * O limite de viagens, antes de a pessoa preencher sete passos.
+       *
+       * Ele so era conferido no POST /api/trips, que e a ultima acao do
+       * assistente. Quem ja tinha viagem aberta escolhia destino, datas,
+       * grupo, orcamento, interesses, ritmo e resumo — e so entao ouvia
+       * que nao podia criar. A regra e a mesma; o que muda e a hora de
+       * dizer.
+       */
+      checkTripCreation(db, user.id),
     ]);
 
     const linhas = direitos.data ?? [];
@@ -62,6 +73,8 @@ export async function GET(req: Request) {
       expires_at: assinatura.data?.current_period_end ?? null,
       passes_ativos: passes.length,
       teste_expira_em: (teste?.access_expires_at as string | null) ?? null,
+      pode_criar_viagem: !impedimento,
+      motivo_bloqueio: impedimento,
     });
   } catch {
     return NextResponse.json({ error: "Erro ao ler o plano." }, { status: 500 });

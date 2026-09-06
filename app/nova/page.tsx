@@ -168,6 +168,8 @@ function NovaViagemForm() {
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<SubmitPhase>("idle");
   const [error, setError] = useState("");
+  /** Motivo pelo qual esta conta nao pode abrir mais uma viagem agora. */
+  const [bloqueio, setBloqueio] = useState<string | null>(null);
   const [form, setForm] = useState({
     organizer_name: "",
     destination: destinoInicial,
@@ -345,6 +347,32 @@ function NovaViagemForm() {
     }
   }
 
+  /**
+   * Pergunta o limite antes, nao depois.
+   *
+   * O impedimento so aparecia no POST final, depois de destino, datas,
+   * grupo, orcamento, interesses, ritmo e resumo. Sete passos preenchidos
+   * para ouvir que nao podia. A regra continua a mesma no servidor — isto
+   * so antecipa a conversa.
+   */
+  useEffect(() => {
+    if (!session?.access_token) return;
+
+    let vivo = true;
+    fetch("/api/me/plan", { headers: { Authorization: `Bearer ${session.access_token}` } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (vivo && json && json.pode_criar_viagem === false) {
+          setBloqueio(json.motivo_bloqueio ?? "Você atingiu o limite de viagens do plano grátis.");
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      vivo = false;
+    };
+  }, [session?.access_token]);
+
   if (authLoading) {
     return <div className="card muted">Carregando sua conta...</div>;
   }
@@ -356,6 +384,28 @@ function NovaViagemForm() {
         description="Sua conta vai guardar o papel de organizador, suas preferências e o histórico das viagens que você abrir."
         nextPath="/nova"
       />
+    );
+  }
+
+  if (bloqueio) {
+    return (
+      <div className="wizard-shell">
+        <div className="card" style={{ textAlign: "center", padding: "40px 28px" }}>
+          <p className="eyebrow">Limite do plano</p>
+          <h1 style={{ marginBottom: 10 }}>Você já tem uma viagem aberta</h1>
+          <p className="sub" style={{ maxWidth: "52ch", margin: "0 auto" }}>
+            {bloqueio}
+          </p>
+          <div className="hero-cta" style={{ justifyContent: "center", marginTop: 26 }}>
+            <a className="btn" href="/app">
+              Ver minhas viagens
+            </a>
+            <a className="btn ghost" href="/#precos">
+              Ver planos
+            </a>
+          </div>
+        </div>
+      </div>
     );
   }
 
