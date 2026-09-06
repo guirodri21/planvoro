@@ -207,7 +207,14 @@ export default function AppPage() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Não foi possível iniciar o pagamento.");
-      window.location.href = json.url;
+      /**
+       * Aba nova, e nao a mesma.
+       *
+       * Na mesma aba, quem desiste de pagar precisa voltar e recarregar
+       * para reencontrar o painel. Numa aba separada, fechar basta — e o
+       * contexto de onde a pessoa estava continua intacto atras.
+       */
+      window.open(json.url, "_blank", "noopener");
     } catch (e) {
       setBillingError(e instanceof Error ? e.message : "Não foi possível iniciar o pagamento.");
       setBillingAction("");

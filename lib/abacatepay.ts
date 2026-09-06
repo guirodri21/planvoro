@@ -126,6 +126,8 @@ export type CheckoutNaFonte = {
   status: string;
   amount: number | null;
   paidAmount: number | null;
+  /** Link de pagamento. Vem da API, nunca montado na mao. */
+  url: string | null;
 };
 
 /**
@@ -159,6 +161,7 @@ export async function buscarCheckout(id: string): Promise<CheckoutNaFonte | null
     status: String(d.status ?? ""),
     amount: typeof d.amount === "number" ? d.amount : null,
     paidAmount: typeof d.paidAmount === "number" ? d.paidAmount : null,
+    url: typeof d.url === "string" ? d.url : null,
   };
 }
 

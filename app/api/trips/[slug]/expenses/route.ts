@@ -12,6 +12,36 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     const { slug } = await ctx.params;
     const { payer_member_id, split_member_ids, description, amount } = await req.json();
 
+    /**
+     * Quem pode vem antes do que veio.
+     *
+     * A validacao do corpo rodava primeiro, entao quem nao pagou recebia
+     * "Escolha quem pagou" e "Valor invalido" antes do 402 — e ia
+     * montando o formato da API pelas respostas de erro, campo por campo,
+     * sem ter direito de escrever nada.
+     *
+     * Conferir sessao, participacao e Passe primeiro fecha isso: para quem
+     * nao tem acesso, a rota so sabe dizer 401, 403 ou 402.
+     */
+    const db = supabaseAdmin();
+    const user = await getUserFromRequest(req, db);
+    if (!user) {
+      return NextResponse.json({ error: "Entre na sua conta para registrar gastos." }, { status: 401 });
+    }
+
+    const membership = await memberForUserInTrip(db, slug, user.id);
+    if (!membership) {
+      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
+    }
+
+    const access = await resolveTripAccess(db, membership.tripId);
+    if (!access.unlocked) {
+      return NextResponse.json(
+        { error: lockedMessage("Dividir gastos", membership.isOrganizer) },
+        { status: 402 }
+      );
+    }
+
     const text = String(description ?? "").trim();
     if (!text) {
       return NextResponse.json({ error: "Descreva o gasto." }, { status: 400 });
@@ -35,22 +65,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0 || numericAmount > MAX_AMOUNT) {
       return NextResponse.json({ error: "Valor inválido." }, { status: 400 });
-    }
-
-    const db = supabaseAdmin();
-    const user = await getUserFromRequest(req, db);
-    if (!user) {
-      return NextResponse.json({ error: "Entre na sua conta para registrar gastos." }, { status: 401 });
-    }
-
-    const membership = await memberForUserInTrip(db, slug, user.id);
-    if (!membership) {
-      return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });
-    }
-
-    const access = await resolveTripAccess(db, membership.tripId);
-    if (!access.unlocked) {
-      return NextResponse.json({ error: lockedMessage("Dividir gastos", membership.isOrganizer) }, { status: 402 });
     }
 
     if (!(await memberIdsBelongToTrip(db, membership.tripId, [payerId, ...splitIds]))) {

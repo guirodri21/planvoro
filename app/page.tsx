@@ -426,7 +426,10 @@ export default function Home() {
             <div className="price">R$ 0</div>
             <p className="tiny">Uma viagem ativa por vez</p>
             <div className="plan-compare">
-              Roteiro de 7 dias, com grupo inteiro:{" "}
+              {/* Era "Roteiro de 7 dias" ao lado de um teste de 7 dias:
+                  o mesmo numero com dois significados, um em cima do
+                  outro. Trocado por 5 para desfazer a colisao. */}
+              Roteiro de 5 dias, com grupo inteiro:{" "}
               <b>R$ 0 aqui</b>. Em ferramenta que só gera roteiro, o mesmo custa entre R$ 30 e
               R$ 70 por viagem.
             </div>
@@ -471,8 +474,16 @@ export default function Home() {
               <li>Vale até 90 dias depois da volta</li>
             </ul>
             <a href="/entrar?mode=signup&next=%2Fnova" className="btn ghost" style={{ marginTop: 20 }}>
-              {betaAccessEnabled ? "Usar beta grátis" : "Liberar uma viagem"}
+              {betaAccessEnabled ? "Usar beta grátis" : "Testar 7 dias grátis"}
             </a>
+            {/* O teste era o principal argumento para experimentar o Cofre
+                e nao aparecia em lugar nenhum da home: quem chegava pelo
+                site nao descobria que existe. */}
+            {!betaAccessEnabled && (
+              <p className="tiny" style={{ marginTop: 10, textAlign: "center" }}>
+                Sem cartão. Depois, R$ 29 se quiser continuar.
+              </p>
+            )}
           </div>
 
           <div className={betaAccessEnabled ? "plan" : "plan plan-muted"}>
@@ -525,8 +536,9 @@ export default function Home() {
           <details>
             <summary>Preciso pagar para testar?</summary>
             <p>
-              Não. A beta está grátis para validar o produto com viagens reais. Os preços acima são
-              o que valerá quando a cobrança for ligada.
+              {betaAccessEnabled
+                ? "Não. A beta está grátis para validar o produto com viagens reais. Os preços acima são o que valerá quando a cobrança for ligada."
+                : "Não. Montar o roteiro, chamar o grupo e votar são grátis para sempre, sem cartão. Para experimentar o Cofre, os gastos e o checklist, você tem 7 dias grátis em uma viagem — também sem cartão, e sem cobrança automática quando acabar."}
             </p>
           </details>
           <details>

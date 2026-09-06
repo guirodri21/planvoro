@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { criarCheckout, criarCliente, type BillingPlan } from "@/lib/abacatepay";
+import { buscarCheckout, criarCheckout, criarCliente, type BillingPlan } from "@/lib/abacatepay";
 import { getUserFromRequest } from "@/lib/auth";
 import { betaBlocksCheckoutFor } from "@/lib/beta";
 import { billingOrigin } from "@/lib/billing";
@@ -86,6 +86,45 @@ export async function POST(req: Request) {
      * webhook so traz um ponteiro, e quem responde o que ele libera e o
      * nosso banco.
      */
+    /**
+     * Reaproveita a cobranca pendente, em vez de criar outra.
+     *
+     * Cada clique em "Liberar" criava uma cobranca nova na AbacatePay.
+     * Duas tentativas viravam duas pendentes que nao da para cancelar pelo
+     * painel deles — lixo permanente, e um relatorio de conversao que
+     * conta abandono onde houve so hesitacao.
+     *
+     * A cobranca antiga so vale se ainda estiver esperando pagamento. Se
+     * expirou ou foi cancelada do lado deles, a gente faz outra.
+     */
+    let busca = db
+      .from("billing_checkouts")
+      .select("id, provider_checkout_id")
+      .eq("user_id", user.id)
+      .eq("plan", plan)
+      .eq("status", "pending")
+      .not("provider_checkout_id", "is", null);
+
+    // O Passe e por viagem; o Pro e da conta. Sem essa distincao, a
+    // cobranca pendente de uma viagem seria reaproveitada em outra.
+    busca = tripId ? busca.eq("trip_id", tripId) : busca.is("trip_id", null);
+
+    const { data: anterior } = await busca
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (anterior?.provider_checkout_id) {
+      const naFonte = await buscarCheckout(anterior.provider_checkout_id);
+
+      // A URL vem da API, nunca montada na mao: se eles mudarem o formato
+      // do link, um endereco inventado aqui levaria a pessoa a uma pagina
+      // que nao existe, no meio da compra.
+      if (naFonte?.status === "PENDING" && naFonte.url) {
+        return NextResponse.json({ url: naFonte.url, reaproveitado: true });
+      }
+    }
+
     const { data: pedido, error: erroPedido } = await db
       .from("billing_checkouts")
       .insert({ plan, user_id: user.id, trip_id: tripId, provider: "abacatepay" })
