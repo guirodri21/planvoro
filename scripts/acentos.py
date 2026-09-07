@@ -94,6 +94,8 @@ DICIONARIO = {
     "faca": "faça", "Faca": "Faça",
     "gratis": "grátis", "Gratis": "Grátis",
     "apolice": "apólice", "Apolice": "Apólice",
+    "emergencia": "emergência", "Emergencia": "Emergência",
+    "emergencias": "emergências",
     "necessarios": "necessários", "necessarias": "necessárias",
     "necessario": "necessário", "necessaria": "necessária",
     "media": "média", "medias": "médias",

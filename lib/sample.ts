@@ -111,7 +111,7 @@ export async function checkSampleAllowance(
       allowed: false,
       mayGenerate: false,
       message:
-        "Você já viu várias amostras hoje. Crie uma conta grátis para montar o roteiro completo da sua viagem.",
+        "Você já viu o máximo de amostras de hoje. Crie uma conta grátis para montar o roteiro completo da sua viagem.",
     };
   }
 

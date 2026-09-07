@@ -392,7 +392,10 @@ function NovaViagemForm() {
       <div className="wizard-shell">
         <div className="card" style={{ textAlign: "center", padding: "40px 28px" }}>
           <p className="eyebrow">Limite do plano</p>
-          <h1 style={{ marginBottom: 10 }}>Você já tem uma viagem aberta</h1>
+          {/* Nao afirma quantidade: a tela nao sabe quantas viagens a
+              pessoa tem, e dizer "uma" para quem tem quatro faz o aviso
+              parecer errado justo quando ele esta certo. */}
+          <h1 style={{ marginBottom: 10 }}>Limite de viagens do plano grátis</h1>
           <p className="sub" style={{ maxWidth: "52ch", margin: "0 auto" }}>
             {bloqueio}
           </p>

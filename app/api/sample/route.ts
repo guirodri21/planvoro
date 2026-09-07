@@ -78,7 +78,16 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Muita gente experimentando agora. Tente um destino mais conhecido, ou crie uma conta grátis para montar o roteiro completo.",
+            /**
+             * A mensagem antiga dizia "muita gente experimentando agora,
+             * tente um destino mais conhecido". Duas mentiras numa frase:
+             * nao ha gente nenhuma, e o destino nao tem nada a ver — o
+             * que acabou foi a cota de geracoes gratuitas por visitante.
+             *
+             * Mandar trocar de destino faz a pessoa tentar outro, falhar
+             * de novo e concluir que o produto nao funciona.
+             */
+            "Você já gerou o máximo de amostras gratuitas de hoje. Crie uma conta grátis para montar o roteiro completo — lá o limite é bem maior.",
         },
         { status: 429 }
       );
