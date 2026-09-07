@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { DuplicateTrip } from "@/components/duplicate-trip";
 import { RoteiroShare } from "@/components/roteiro-share";
-import { formatItemCost } from "@/lib/cost";
+import { formatDayTotal, formatItemCost } from "@/lib/cost";
 import { formatBR, getPublicTrip, getTripPublishState, tripDays } from "@/lib/public";
 import { buildItinerarySummary } from "@/lib/share";
 import { SITE_URL } from "@/lib/site";
@@ -61,11 +61,11 @@ export default async function RoteiroPublico({
   const shareUrl = `${SITE_URL}/r/${slug}`;
   const summary = buildItinerarySummary(trip, itinerary, shareUrl);
 
-  const total =
-    itinerary?.itinerary_days.reduce(
-      (s, d) => s + d.itinerary_items.reduce((a, i) => a + (i.cost_estimate ?? 0), 0),
-      0
-    ) ?? 0;
+  // O total da viagem tambem: o custo aparece em tres niveis — item, dia e
+  // viagem — e mostrar euro nos dois primeiros e real no terceiro deixaria
+  // a soma impossivel de refazer de cabeca.
+  const todosItens = itinerary?.itinerary_days.flatMap((d) => d.itinerary_items) ?? [];
+  const total = todosItens.reduce((s, i) => s + (i.cost_estimate ?? 0), 0);
 
   return (
     <>
@@ -77,7 +77,7 @@ export default async function RoteiroPublico({
         <p className="sub" style={{ margin: 0 }}>
           {formatBR(trip.start_date)} a {formatBR(trip.end_date)}
           {trip.is_solo ? " · viagem individual" : ` · ${trip.party_size} pessoas`}
-          {total > 0 && ` · ~R$ ${total.toFixed(0)} por pessoa`}
+          {total > 0 && ` · ${formatDayTotal(todosItens)} por pessoa`}
         </p>
 
         <RoteiroShare summary={summary} url={shareUrl} />
@@ -105,7 +105,7 @@ export default async function RoteiroPublico({
           )}
 
           {itinerary.itinerary_days.map((day) => {
-            const soma = day.itinerary_items.reduce((s, i) => s + (i.cost_estimate ?? 0), 0);
+            const soma = formatDayTotal(day.itinerary_items);
             return (
               <div className="day" key={day.id}>
                 <div className="day-h">
@@ -113,7 +113,7 @@ export default async function RoteiroPublico({
                     {formatBR(day.day_date)}
                     {day.title ? ` · ${day.title}` : ""}
                   </b>
-                  <span className="muted">~R$ {soma.toFixed(0)}</span>
+                  <span className="muted">{soma}</span>
                 </div>
                 {day.itinerary_items.map((item) => (
                   <div className="item" key={item.id}>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { track } from "@/lib/analytics";
-import { formatItemCost } from "@/lib/cost";
+import { formatDayTotal, formatItemCost } from "@/lib/cost";
 
 type SampleItem = {
   start_time: string;
@@ -155,12 +155,12 @@ export default function ExperimentePage() {
 
           <div className="card">
             {dias.map((dia) => {
-              const soma = dia.items.reduce((s, item) => s + (item.cost_estimate ?? 0), 0);
+              const soma = formatDayTotal(dia.items);
               return (
                 <div className="day" key={dia.day_date}>
                   <div className="day-h">
                     <b>{dia.title || dia.day_date}</b>
-                    <span className="muted">~{formatMoney(soma)}</span>
+                    <span className="muted">{soma}</span>
                   </div>
                   {dia.note && <p className="item-d">{dia.note}</p>}
                   {dia.items.map((item, index) => (

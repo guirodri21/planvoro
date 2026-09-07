@@ -28,7 +28,7 @@ import {
   type Vote,
 } from "@/lib/types";
 import { track } from "@/lib/analytics";
-import { formatItemCost } from "@/lib/cost";
+import { formatDayTotal, formatItemCost } from "@/lib/cost";
 import { whatsappShareUrl } from "@/lib/share";
 import { userDisplayName } from "@/lib/user-name";
 import {
@@ -1208,7 +1208,7 @@ function ItineraryView({
         </div>
       )}
       {itinerary.itinerary_days.map((day) => {
-        const total = day.itinerary_items.reduce((sum, item) => sum + (item.cost_estimate ?? 0), 0);
+        const total = formatDayTotal(day.itinerary_items);
         return (
           <div className="day" key={day.id}>
             <div className="day-h">
@@ -1219,7 +1219,7 @@ function ItineraryView({
                 {formatAgendaDay(day.day_date)}
                 {day.title ? ` · ${day.title}` : ""}
               </b>
-              <span className="muted">~R$ {total.toFixed(0)}/pessoa</span>
+              <span className="muted">{total} por pessoa</span>
             </div>
             {day.itinerary_items.map((item) => (
               <ItemRow
