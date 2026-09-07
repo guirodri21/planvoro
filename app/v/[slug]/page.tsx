@@ -1344,7 +1344,7 @@ function ItemRow({
               title={
                 voters.length
                   ? voters.map((vote) => nameById(vote.member_id)).join(", ")
-                  : `Ninguem marcou "${reaction.label}" ainda`
+                  : `Ninguém marcou "${reaction.label}" ainda`
               }
             >
               <span>{reaction.emoji}</span>

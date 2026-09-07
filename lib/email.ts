@@ -38,7 +38,7 @@ function inviteText({
     trip.is_solo
       ? "A viagem comecou no modo solo e agora pode virar um plano de grupo."
       : `Viagem para ${trip.party_size} pessoa${trip.party_size === 1 ? "" : "s"}.`,
-    `Datas: ${trip.start_date} ate ${trip.end_date}`,
+    `Datas: ${trip.start_date} até ${trip.end_date}`,
     "",
   ];
 

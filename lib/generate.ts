@@ -71,7 +71,7 @@ function buildPrompt(
       ];
       if (p.present_from || p.present_to) {
         partes.push(
-          `presente de ${p.present_from ?? trip.start_date} ate ${p.present_to ?? trip.end_date}`
+          `presente de ${p.present_from ?? trip.start_date} até ${p.present_to ?? trip.end_date}`
         );
       }
       return `- ${m.name}: ${partes.join(" | ")}`;

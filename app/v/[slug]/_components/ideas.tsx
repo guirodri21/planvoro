@@ -335,7 +335,7 @@ export function IdeaCard({
                 title={
                   voters.length
                     ? voters.map((voteItem) => nameById(voteItem.member_id)).join(", ")
-                    : `Ninguem marcou "${reaction.label}" ainda`
+                    : `Ninguém marcou "${reaction.label}" ainda`
                 }
               >
                 <span>{reaction.emoji}</span>

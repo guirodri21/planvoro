@@ -79,7 +79,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     if (text.length > MAX_IMPORT_TEXT) {
       return NextResponse.json(
-        { error: "Texto grande demais. Cole ate 12 mil caracteres por importacao." },
+        { error: "Texto grande demais. Cole até 12 mil caracteres por importação." },
         { status: 400 }
       );
     }
@@ -97,7 +97,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     const access = await resolveTripAccess(db, membership.tripId);
     if (!access.unlocked) {
-      return NextResponse.json({ error: lockedMessage("A importacao do Cofre", membership.isOrganizer) }, { status: 402 });
+      return NextResponse.json({ error: lockedMessage("A importação do Cofre", membership.isOrganizer) }, { status: 402 });
     }
 
     logCtx.userId = user.id;

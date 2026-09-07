@@ -172,7 +172,7 @@ function parseJsonObject(text: string) {
   } catch {
     const match = text.match(/\{[\s\S]*\}/);
     if (match) return JSON.parse(match[0]) as RawVaultImport;
-    throw new Error("Não consegui ler a importacao retornada pela IA.");
+    throw new Error("Não consegui ler a importação retornada pela IA.");
   }
 }
 
@@ -280,7 +280,7 @@ export async function importVaultDraftFromText(
     }
   ).catch((error) => {
     if (error instanceof Error && ["AbortError", "TimeoutError"].includes(error.name)) {
-      throw new Error("A importacao demorou demais. Tente um texto ou arquivo menor.");
+      throw new Error("A importação demorou demais. Tente um texto ou arquivo menor.");
     }
     throw error;
   });

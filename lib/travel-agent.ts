@@ -77,7 +77,7 @@ function buildTripContext({
         `interesses: ${compactList(pref.interests)}`,
         `restrições: ${compactList(pref.restrictions)}`,
         `orçamento diario: ${pref.daily_budget ?? "não informado"}`,
-        `presenca: ${pref.present_from ?? trip.start_date} ate ${pref.present_to ?? trip.end_date}`,
+        `presença: ${pref.present_from ?? trip.start_date} até ${pref.present_to ?? trip.end_date}`,
       ].join(" | ");
     })
     .join("\n");

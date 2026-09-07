@@ -89,7 +89,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
 
     if (prefRows.length === 0) {
       return NextResponse.json(
-        { error: "Ninguem preencheu as preferências ainda. O roteiro em grupo depende disso." },
+        { error: "Ninguém preencheu as preferências ainda. O roteiro em grupo depende disso." },
         { status: 400 }
       );
     }

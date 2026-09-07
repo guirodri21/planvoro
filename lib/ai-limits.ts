@@ -35,7 +35,7 @@ const FREE_LIMITS: Record<AiUsageKind, LimitRule> = {
   itinerary_generation: {
     perTripTotal: 15,
     perUserPerDay: 25,
-    label: "geracoes de roteiro",
+    label: "gerações de roteiro",
   },
   agent_question: {
     perUserPerDay: 40,
@@ -51,7 +51,7 @@ const PAID_LIMITS: Record<AiUsageKind, LimitRule> = {
   itinerary_generation: {
     perTripTotal: 80,
     perUserPerDay: 120,
-    label: "geracoes de roteiro",
+    label: "gerações de roteiro",
   },
   agent_question: {
     perUserPerDay: 250,
