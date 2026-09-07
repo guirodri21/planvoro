@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import { track } from "@/lib/analytics";
+import { formatItemCost } from "@/lib/cost";
 
 type SampleItem = {
   start_time: string;
   title: string;
   description: string;
   cost_estimate: number;
+  /** Valor na moeda do destino. Ausente em amostra guardada antes de 06/09. */
+  cost_local?: number | null;
+  cost_currency?: string | null;
   needs_vote?: boolean;
 };
 
@@ -169,8 +173,18 @@ export default function ExperimentePage() {
                         </div>
                         <div className="item-d">{item.description}</div>
                       </div>
+                      {/*
+                        Esta tela ficou de fora quando o custo passou a
+                        mostrar a moeda do destino: eu troquei o workspace
+                        e a pagina publica, e nao esta. Era a mais visivel
+                        das tres — e a unica que alguem sem conta ve.
+                      */}
                       <div className="cost">
-                        {item.cost_estimate ? formatMoney(item.cost_estimate) : "grátis"}
+                        {formatItemCost(
+                          item.cost_estimate,
+                          item.cost_local ?? null,
+                          item.cost_currency ?? null
+                        )}
                       </div>
                     </div>
                   ))}
