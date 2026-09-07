@@ -288,7 +288,8 @@ export async function importVaultDraftFromText(
   if (!res.ok) {
     const detail = await res.text();
     if (res.status === 429) {
-      throw new Error("O importador bateu o limite gratuito do Gemini. Espere um minuto e tente de novo.");
+      // Limite nosso, nao da pessoa. Ver a nota em lib/generate.ts.
+      throw new Error("O importador atingiu o limite de uso do momento. Espere um minuto e tente de novo.");
     }
     throw new Error(`Gemini respondeu ${res.status}: ${detail.slice(0, 240)}`);
   }

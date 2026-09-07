@@ -406,7 +406,17 @@ async function geminiUmaVez(
     const detail = await res.text();
     if (res.status === 429) {
       throw new Error(
-        "Você bateu o limite gratuito do Gemini (15 chamadas por minuto, 1.500 por dia). Espere um minuto e tente de novo."
+        /**
+         * O limite e nosso, e o cliente nao precisa saber de qual
+         * fornecedor nem de qual plano.
+         *
+         * A mensagem antiga dizia "voce bateu o limite gratuito do Gemini
+         * (15 chamadas por minuto, 1.500 por dia)". Tres problemas numa
+         * frase: acusa a pessoa de ter estourado um limite que e nosso,
+         * revela o fornecedor, e conta que quem pagou R$ 29 depende de um
+         * plano gratuito nosso. O detalhe fica no log, onde e util.
+         */
+        "O gerador de roteiros atingiu o limite de uso do momento. Espere um minuto e tente de novo."
       );
     }
     throw new Error(`Gemini respondeu ${res.status}: ${detail.slice(0, 300)}`);
