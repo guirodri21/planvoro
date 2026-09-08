@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { paraReais, taxasDoDia } from "@/lib/fx";
 import { generateItinerary } from "@/lib/generate";
 import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
 import {
@@ -111,6 +112,20 @@ export async function POST(req: Request) {
       dates,
       { thinkingLevel: "MINIMAL", maxOutputTokens: 2500 }
     );
+
+    /**
+     * A amostra usa o mesmo gerador, entao converte do mesmo jeito.
+     *
+     * Sem isto a primeira tela que alguem ve — a unica sem conta — sairia
+     * com custo vazio, porque a IA nao devolve mais valor em real.
+     */
+    const taxas = await taxasDoDia();
+    for (const day of generated.days ?? []) {
+      for (const item of day.items ?? []) {
+        item.cost_estimate =
+          paraReais(item.cost_local ?? 0, item.cost_currency ?? "BRL", taxas) ?? 0;
+      }
+    }
 
     await writeSampleCache(db, key, destination, generated);
     await recordSampleRequest(db, ipHash, key, true);

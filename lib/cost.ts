@@ -30,10 +30,14 @@ function naMoeda(valor: number, codigo: string) {
 /**
  * Custo de um item do roteiro, dito com honestidade.
  *
- * A IA converte moeda sozinha, e converter e inevitavel: orcamento de
- * brasileiro e em real. O que nao pode e apresentar a conversao como
- * preco. Um almoco em Roma aparecia "R$ 120" — sem euro, sem taxa, e sem
- * como conferir num site italiano.
+ * Converter e inevitavel: orcamento de brasileiro e em real. O que nao
+ * pode e apresentar a conversao como preco. Um almoco em Roma aparecia
+ * "R$ 120" — sem euro, sem taxa, e sem como conferir num site italiano.
+ *
+ * A conta deixou de ser da IA em 08/09/2026: ela usava uma taxa diferente
+ * por item no mesmo roteiro. Hoje a conversao vem de lib/fx.ts, com uma
+ * taxa unica por geracao, e o til aqui marca o arredondamento — nao mais
+ * uma cotacao inventada.
  *
  * Regra: no Brasil, so o real. Fora, a moeda local primeiro, porque e ela
  * que vai estar no cardapio, com o real entre parenteses e um til

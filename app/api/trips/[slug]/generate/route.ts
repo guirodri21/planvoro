@@ -5,6 +5,7 @@ import { reserveAiUsage } from "@/lib/ai-limits";
 import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
 import { currentModelName, datasEntre, generateItinerary } from "@/lib/generate";
+import { paraReais, taxasDoDia } from "@/lib/fx";
 import { verifyPlace, type PlaceInfo } from "@/lib/places";
 import type { Idea, IdeaVote, Preference } from "@/lib/types";
 
@@ -177,6 +178,10 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
     const sobraDaFuncao = maxDuration * 1000 - elapsed() - FOLGA_PARA_GRAVAR_MS;
     const deadline = Date.now() + Math.max(0, Math.min(VERIFY_TETO_MS, sobraDaFuncao));
 
+    // Uma taxa por geracao: todos os itens do roteiro sao convertidos
+    // com o mesmo numero, senao o orcamento nao fecha com ele mesmo.
+    const taxas = await taxasDoDia();
+
     let insertedDays = 0;
     for (const day of generated.days) {
       if (existingDates.has(day.day_date)) continue;
@@ -210,11 +215,16 @@ export async function POST(_req: Request, ctx: { params: Promise<{ slug: string 
         title: item.title,
         description: item.description,
         category: item.category,
-        cost_estimate: item.cost_estimate,
         // Sem moeda declarada, assume real: destino no Brasil e o caso
         // comum, e roteiro antigo nao tem esses campos.
-        cost_local: item.cost_local ?? item.cost_estimate,
+        cost_local: item.cost_local ?? item.cost_estimate ?? 0,
         cost_currency: (item.cost_currency ?? "BRL").toUpperCase().slice(0, 3),
+        // A conversao e nossa, com uma taxa por geracao. Ver lib/fx.ts.
+        cost_estimate: paraReais(
+          item.cost_local ?? item.cost_estimate ?? 0,
+          item.cost_currency ?? "BRL",
+          taxas
+        ),
         place_query: item.place_query,
         needs_vote: Boolean(item.needs_vote),
         verified: checked[i].verified,
