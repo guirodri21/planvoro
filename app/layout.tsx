@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
 import Analytics from "@/app/analytics";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { AuthNav } from "@/components/auth-nav";
 import { NavLinks } from "@/components/nav-links";
 import { AuthProvider } from "@/components/auth-provider";
@@ -175,6 +176,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </footer>
         </AuthProvider>
+        <VercelAnalytics />
       </body>
     </html>
   );
