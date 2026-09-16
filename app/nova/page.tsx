@@ -432,7 +432,7 @@ function NovaViagemForm() {
               <label>Seu nome</label>
               <input
                 value={form.organizer_name}
-                placeholder="Guilherme"
+                placeholder="Ana"
                 onChange={(event) => updateForm({ organizer_name: event.target.value })}
               />
 
