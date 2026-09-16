@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { track } from "@/lib/analytics";
+import { metaTrack } from "@/lib/meta-pixel";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
 
 type SampleItem = {
@@ -84,6 +85,8 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
 
       setResult(json);
       track("amostra_entregue", { destino: alvo.toLowerCase() });
+      // Para a Meta, este e o evento que vale: clique que virou roteiro.
+      metaTrack("Lead", { content_name: alvo.toLowerCase() });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao montar a amostra.");
     } finally {
