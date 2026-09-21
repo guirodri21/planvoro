@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { listarRoteirosPublicos } from "@/lib/roteiros-publicos";
 import { supabaseAdmin } from "@/lib/supabase";
 import { SITE_URL } from "@/lib/site";
 
@@ -10,10 +11,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: SITE_URL, priority: 1, changeFrequency: "weekly" },
     { url: `${SITE_URL}/nova`, priority: 0.8, changeFrequency: "monthly" },
     { url: `${SITE_URL}/experimente`, priority: 0.9, changeFrequency: "monthly" },
+    { url: `${SITE_URL}/roteiro`, priority: 0.8, changeFrequency: "weekly" },
     { url: `${SITE_URL}/termos`, priority: 0.3, changeFrequency: "yearly" },
     { url: `${SITE_URL}/privacidade`, priority: 0.3, changeFrequency: "yearly" },
     { url: `${SITE_URL}/contato`, priority: 0.4, changeFrequency: "yearly" },
   ];
+
+  /**
+   * As paginas de destino sao a unica superficie de busca que o site tem.
+   * Elas entram antes das viagens publicas porque sao permanentes: viagem
+   * de usuario pode ser despublicada, destino nao.
+   */
+  const destinos: MetadataRoute.Sitemap = (await listarRoteirosPublicos()).map((r) => ({
+    url: `${SITE_URL}/roteiro/${r.chave}`,
+    lastModified: new Date(r.atualizadoEm),
+    priority: 0.7,
+    changeFrequency: "monthly" as const,
+  }));
 
   try {
     const db = supabaseAdmin();
@@ -31,9 +45,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly" as const,
     }));
 
-    return [...paginasFixas, ...roteiros];
+    return [...paginasFixas, ...destinos, ...roteiros];
   } catch {
     // Sem chaves configuradas, o build não pode quebrar por causa do sitemap.
-    return paginasFixas;
+    return [...paginasFixas, ...destinos];
   }
 }
