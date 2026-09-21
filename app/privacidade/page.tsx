@@ -41,12 +41,14 @@ export default function PrivacidadePage() {
       </p>
       <p>
         <b>Publicidade:</b> enquanto houver campanha no ar, o site carrega o Pixel da Meta
-        (Facebook e Instagram) para medir quantas pessoas que vieram de um anúncio chegaram a
-        gerar um roteiro, e para não mostrar o mesmo anúncio a quem já usou. Ele registra a
-        visita e o momento em que a amostra fica pronta — nunca o destino que você digitou, nem
-        nada do conteúdo da sua viagem. Fora de campanha o Pixel não é carregado e nenhuma
-        requisição sai daqui para a Meta. Você pode bloquear esse tipo de rastreamento nas
-        configurações do seu navegador.
+        (Facebook e Instagram) e a tag de conversão do Google Ads, para medir quantas pessoas que
+        vieram de um anúncio chegaram a gerar um roteiro, e para não mostrar o mesmo anúncio a
+        quem já usou. Os dois registram a visita e o momento em que a amostra fica pronta — nunca
+        o conteúdo da sua viagem. A tag do Google recebe também o nome do destino da amostra,
+        porque é ele que diz qual anúncio valeu a pena; o Pixel da Meta não recebe nem isso.
+        Fora de campanha nenhum dos dois é carregado e nenhuma requisição sai daqui para a Meta
+        ou para o Google Ads. Você pode bloquear esse tipo de rastreamento nas configurações do
+        seu navegador.
       </p>
 
       <h2>3. Por que tratamos</h2>
@@ -75,6 +77,12 @@ export default function PrivacidadePage() {
         </li>
         <li>
           <b>Google (Gemini)</b> — geração de roteiro, agente e leitura de confirmações.
+        </li>
+        <li>
+          <b>Google Ads</b> — medição de anúncios, apenas enquanto houver campanha no ar.
+        </li>
+        <li>
+          <b>Meta</b> — medição de anúncios, apenas enquanto houver campanha no ar.
         </li>
         <li>
           <b>Resend</b> — envio de convites por e-mail.
