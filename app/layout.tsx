@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Image from "next/image";
 import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
 import Analytics from "@/app/analytics";
+import GoogleAds from "@/app/google-ads";
 import MetaPixel from "@/app/meta-pixel";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { AuthNav } from "@/components/auth-nav";
@@ -115,6 +116,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           <Analytics />
           <MetaPixel />
+          <GoogleAds />
           <nav className="topnav">
             <div className="wrap">
               <div className="nv">
