@@ -146,6 +146,25 @@ export default async function RoteiroDoDestino({
       {roteiro.rationale && (
         <div className="card">
           <span className="badge b-ok">por que ficou assim</span>
+          {/*
+            O texto da IA cita "Ana e Bruno" pelo nome — os dois membros
+            ficticios da amostra, definidos em app/api/sample/route.ts.
+            Dentro do produto isso faz sentido: quem pediu a amostra acabou
+            de ver os dois. Aqui nao: quem chega do Google le "para agradar
+            Ana e Bruno" sobre duas pessoas que nunca foram apresentadas, e
+            a pagina parece quebrada.
+
+            Apagar o paragrafo resolveria o constrangimento e jogaria fora
+            os ~500 caracteres de texto unico que dao a esta pagina alguma
+            chance de ranquear. Apresentar os dois custa uma linha e
+            transforma o problema em demonstracao: e exatamente o que o
+            produto faz — equilibrar gente que quer coisas diferentes.
+          */}
+          <p className="sub" style={{ marginTop: 8 }}>
+            Este exemplo foi montado para duas pessoas com gostos diferentes:{" "}
+            <b>Ana</b>, que quer gastronomia e cultura, e <b>Bruno</b>, que prefere natureza e
+            caminhada e é vegetariano. É assim que a IA explicou as escolhas dela:
+          </p>
           <p className="sub" style={{ marginTop: 8 }}>
             {roteiro.rationale}
           </p>
