@@ -42,8 +42,14 @@ function formatMoney(value: number) {
  * cria conta. Quem chega aqui ainda não confia no produto, então o pedido
  * de cadastro só aparece depois que ela já tem algo na tela.
  */
-export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse | null }) {
-  const [destination, setDestination] = useState("");
+export default function ExperimenteClient({
+  exemplo,
+  destinoInicial = "",
+}: {
+  exemplo: SampleResponse | null;
+  destinoInicial?: string;
+}) {
+  const [destination, setDestination] = useState(destinoInicial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SampleResponse | null>(null);

@@ -40,7 +40,23 @@ async function carregarExemplo(): Promise<SampleResponse | null> {
   }
 }
 
-export default async function ExperimentePage() {
-  const exemplo = await carregarExemplo();
-  return <ExperimenteClient exemplo={exemplo} />;
+export default async function ExperimentePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ d?: string }>;
+}) {
+  const [exemplo, { d }] = await Promise.all([carregarExemplo(), searchParams]);
+
+  /**
+   * As paginas de destino mandam gente para ca com ?d=Foz do Iguacu.
+   * Quem chegou lendo um roteiro de Foz ja disse qual e o destino dele;
+   * obrigar a digitar de novo e perder a pessoa no ultimo passo.
+   *
+   * Preenche o campo mas nao gera sozinho: geracao automatica faria o
+   * rastreador do Google e cada link compartilhado consumirem uma chamada
+   * da IA sem ninguem estar olhando.
+   */
+  const destinoInicial = typeof d === "string" ? d.slice(0, 60) : "";
+
+  return <ExperimenteClient exemplo={exemplo} destinoInicial={destinoInicial} />;
 }
