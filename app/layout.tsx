@@ -4,6 +4,7 @@ import { IBM_Plex_Mono, Instrument_Serif, Inter_Tight } from "next/font/google";
 import Analytics from "@/app/analytics";
 import GoogleAds from "@/app/google-ads";
 import MetaPixel from "@/app/meta-pixel";
+import TikTokPixel from "@/app/tiktok-pixel";
 import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { AuthNav } from "@/components/auth-nav";
 import { NavLinks } from "@/components/nav-links";
@@ -117,6 +118,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Analytics />
           <MetaPixel />
           <GoogleAds />
+          <TikTokPixel />
           <nav className="topnav">
             <div className="wrap">
               <div className="nv">
