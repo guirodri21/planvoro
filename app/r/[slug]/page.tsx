@@ -21,7 +21,8 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params;
   const data = await getPublicTrip(slug);
-  if (!data) return { title: "Roteiro não encontrado — Planvoro" };
+  // O "— Planvoro" vem do template do layout; escrever aqui duplicava.
+  if (!data) return { title: "Roteiro não encontrado" };
 
   const { trip } = data;
   const dias = tripDays(trip);
@@ -31,7 +32,7 @@ export async function generateMetadata(
     : `Roteiro de grupo em ${trip.destination} para ${trip.party_size} pessoas, equilibrando as preferências de todo mundo. Monte o seu de graça.`;
 
   return {
-    title: `${title} — Planvoro`,
+    title,
     description,
     alternates: { canonical: `/r/${slug}` },
     openGraph: { title, description, type: "article" },
