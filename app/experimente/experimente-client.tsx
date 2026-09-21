@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { track } from "@/lib/analytics";
+import { googleAdsAmostraEntregue } from "@/lib/google-ads";
 import { metaTrack } from "@/lib/meta-pixel";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
 
@@ -93,6 +94,9 @@ export default function ExperimenteClient({
       track("amostra_entregue", { destino: alvo.toLowerCase() });
       // Para a Meta, este e o evento que vale: clique que virou roteiro.
       metaTrack("Lead", { content_name: alvo.toLowerCase() });
+      // Mesma acao, o outro leilao. Os dois medem a mesma coisa — amostra
+      // na tela — para as campanhas serem comparaveis pelo mesmo criterio.
+      googleAdsAmostraEntregue(alvo.toLowerCase());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao montar a amostra.");
     } finally {
