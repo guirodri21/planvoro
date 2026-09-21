@@ -38,14 +38,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { destino } = await params;
   const roteiro = await lerRoteiroPublico(destino);
-  if (!roteiro) return { title: "Roteiro não encontrado — Planvoro" };
+  if (!roteiro) return { title: "Roteiro não encontrado" };
 
   const dias = roteiro.dias.length;
   const total = custoTotal(roteiro.dias);
 
-  // O title responde a busca com as palavras da busca. "Planvoro" no fim
-  // porque marca desconhecida no comeco so ocupa o espaco que o Google
-  // mostra e nao ajuda ninguem a clicar.
+  // O title responde a busca com as palavras da busca. O "— Planvoro" do
+  // fim quem poe e o template do layout: escrever aqui tambem dava
+  // "... — Planvoro — Planvoro", que o Google corta no meio.
   const title = `Roteiro de ${dias} dias em ${roteiro.destino} — quanto custa cada parada`;
   const description =
     total > 0
@@ -55,7 +55,7 @@ export async function generateMetadata({
       : `Roteiro dia a dia em ${roteiro.destino}, com horário e custo estimado de cada parada. Monte o seu, de graça e sem criar conta.`;
 
   return {
-    title: `${title} — Planvoro`,
+    title,
     description,
     alternates: { canonical: `/roteiro/${roteiro.chave}` },
     openGraph: { title, description, type: "article" },
