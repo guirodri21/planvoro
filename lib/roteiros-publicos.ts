@@ -71,6 +71,45 @@ function montar(linha: LinhaAmostra): RoteiroPublico | null {
   };
 }
 
+/**
+ * Cidade que a linha descreve, para achar duas linhas da mesma cidade.
+ *
+ * "roma" e "Roma, Italia" eram duas paginas do mesmo lugar. Isso nao e
+ * so feio: o Google trata paginas quase iguais como conteudo duplicado,
+ * escolhe uma sozinho e pode enfraquecer as duas. Corta no primeiro
+ * virgula e tira acento, entao "Belem, Para" e "belem" caem no mesmo
+ * balde.
+ *
+ * Fica em codigo, e nao apagando a linha do banco, porque aquelas linhas
+ * tambem servem de cache da amostra: apagar uma faria o proximo pedido
+ * de Roma gastar uma geracao a toa.
+ */
+function mesmaCidade(destino: string) {
+  return destino
+    .split(",")[0]
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+/**
+ * Uma linha por cidade. Ganha o rotulo mais especifico — "Roma, Italia"
+ * na frente de "roma" — porque e ele que vira o title no Google e ajuda
+ * quem busca a saber que e a cidade certa. Empate decide pelo mais novo.
+ */
+function semRepetidos(roteiros: RoteiroPublico[]): RoteiroPublico[] {
+  const porCidade = new Map<string, RoteiroPublico>();
+
+  for (const r of roteiros) {
+    const chave = mesmaCidade(r.destino);
+    const atual = porCidade.get(chave);
+    if (!atual || r.destino.length > atual.destino.length) porCidade.set(chave, r);
+  }
+
+  return [...porCidade.values()].sort((a, b) => b.atualizadoEm.localeCompare(a.atualizadoEm));
+}
+
 /** Todos os roteiros que tem pagina propria, do mais recente para o mais antigo. */
 export async function listarRoteirosPublicos(): Promise<RoteiroPublico[]> {
   try {
@@ -80,12 +119,35 @@ export async function listarRoteirosPublicos(): Promise<RoteiroPublico[]> {
       .order("created_at", { ascending: false })
       .limit(500);
 
-    return ((data ?? []) as LinhaAmostra[]).map(montar).filter((r): r is RoteiroPublico => r !== null);
+    const linhas = ((data ?? []) as LinhaAmostra[])
+      .map(montar)
+      .filter((r): r is RoteiroPublico => r !== null);
+
+    return semRepetidos(linhas);
   } catch {
     // Sem chave configurada o build nao pode quebrar: a rota passa a
     // existir sem paginas, e volta sozinha no proximo revalidate.
     return [];
   }
+}
+
+/**
+ * A chave que deve ficar na URL para esta cidade.
+ *
+ * Tirar a repetida da listagem e do sitemap nao bastava: /roteiro/roma
+ * continuava respondendo, e link que existe acaba indexado. Isto deixa a
+ * pagina perdedora redirecionar para a vencedora, entao a cidade tem um
+ * endereco so.
+ */
+export async function chaveCanonica(chave: string): Promise<string> {
+  const publicos = await listarRoteirosPublicos();
+  if (publicos.some((r) => r.chave === chave)) return chave;
+
+  const atual = await lerRoteiroPublico(chave);
+  if (!atual) return chave;
+
+  const vencedora = publicos.find((r) => mesmaCidade(r.destino) === mesmaCidade(atual.destino));
+  return vencedora?.chave ?? chave;
 }
 
 /** Um roteiro pelo destination_key da URL. `null` quando nao existe. */
