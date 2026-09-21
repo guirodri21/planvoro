@@ -4,6 +4,7 @@ import { useState } from "react";
 import { track } from "@/lib/analytics";
 import { googleAdsAmostraEntregue } from "@/lib/google-ads";
 import { metaTrack } from "@/lib/meta-pixel";
+import { tiktokAmostraEntregue } from "@/lib/tiktok-pixel";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
 
 type SampleItem = {
@@ -97,6 +98,7 @@ export default function ExperimenteClient({
       // Mesma acao, o outro leilao. Os dois medem a mesma coisa — amostra
       // na tela — para as campanhas serem comparaveis pelo mesmo criterio.
       googleAdsAmostraEntregue(alvo.toLowerCase());
+      tiktokAmostraEntregue(alvo.toLowerCase());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao montar a amostra.");
     } finally {
