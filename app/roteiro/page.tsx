@@ -4,7 +4,8 @@ import { custoTotal, listarRoteirosPublicos } from "@/lib/roteiros-publicos";
 export const revalidate = 86400;
 
 export const metadata: Metadata = {
-  title: "Roteiros prontos, com o preço de cada parada — Planvoro",
+  // O "— Planvoro" vem do template do layout; repetir aqui duplicava.
+  title: "Roteiros prontos, com o preço de cada parada",
   description:
     "Roteiros de 2 dias montados pela IA do Planvoro, com horário e custo estimado de cada parada. Escolha um destino ou monte o seu de graça.",
   alternates: { canonical: "/roteiro" },
