@@ -151,6 +151,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <h4>Produto</h4>
                     <a href="/#como">Como funciona</a>
                     <a href="/#roteiro">Roteiro por IA</a>
+                    {/*
+                      As paginas de destino existiam so no sitemap. Pagina
+                      que nenhum link do site alcanca o Google trata como
+                      orfa e rastreia menos — e pessoa nenhuma acha.
+                    */}
+                    <a href="/roteiro">Roteiros prontos</a>
                     <a href="/#precos">Preços</a>
                   </div>
                   <div className="fcol">
