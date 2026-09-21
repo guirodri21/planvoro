@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
-import { custoTotal, lerRoteiroPublico, listarRoteirosPublicos } from "@/lib/roteiros-publicos";
+import {
+  chaveCanonica,
+  custoTotal,
+  lerRoteiroPublico,
+  listarRoteirosPublicos,
+} from "@/lib/roteiros-publicos";
 import { SITE_URL } from "@/lib/site";
 
 /**
@@ -63,6 +68,12 @@ export default async function RoteiroDoDestino({
   params: Promise<{ destino: string }>;
 }) {
   const { destino } = await params;
+
+  // Uma cidade, um endereco: /roteiro/roma manda para /roteiro/roma-italia
+  // em vez de servir a mesma coisa em duas URLs.
+  const canonica = await chaveCanonica(destino);
+  if (canonica !== destino) permanentRedirect(`/roteiro/${canonica}`);
+
   const roteiro = await lerRoteiroPublico(destino);
   if (!roteiro) notFound();
 
