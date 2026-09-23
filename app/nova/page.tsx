@@ -329,18 +329,28 @@ function NovaViagemForm() {
        * Nao da para desfazer a viagem por causa disso (as preferencias ja
        * foram salvas), entao o caminho e avisar do outro lado.
        */
-      const geracaoOk = await fetch(`/api/trips/${slug}/generate`, {
+      const geracao = await fetch(`/api/trips/${slug}/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
       })
-        .then((res) => res.ok)
-        .catch(() => false);
+        .then(async (res) => {
+          if (!res.ok) return "falhou" as const;
+          const json = (await res.json().catch(() => ({}))) as { concluido?: boolean };
+          return json.concluido === false ? ("continuar" as const) : ("ok" as const);
+        })
+        .catch(() => "falhou" as const);
 
+      /**
+       * Viagem com mais de sete dias sai em lotes, e aqui so roda o
+       * primeiro. Antes a viagem abria com uma semana de roteiro e o
+       * resto simplesmente nao existia, sem aviso. `continuar` pede ao
+       * workspace para seguir gerando os lotes que faltam, com progresso.
+       */
       setPhase("opening");
-      router.push(geracaoOk ? `/v/${slug}` : `/v/${slug}?roteiro=falhou`);
+      router.push(geracao === "ok" ? `/v/${slug}` : `/v/${slug}?roteiro=${geracao}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Algo deu errado ao criar a viagem.");
       setPhase("idle");
@@ -462,6 +472,7 @@ function NovaViagemForm() {
                   <input
                     type="date"
                     value={form.end_date}
+                    min={form.start_date || undefined}
                     onChange={(event) => updateForm({ end_date: event.target.value })}
                   />
                 </div>

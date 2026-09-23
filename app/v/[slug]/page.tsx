@@ -4,6 +4,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useRef,
   useState,
   type CSSProperties,
 } from "react";
@@ -36,6 +37,7 @@ import {
   authJsonHeaders,
   buildPublicRouteMessage,
   buildTripInviteMessage,
+  copiarTexto,
   readApiJson,
 } from "./_lib/api";
 import {
@@ -52,6 +54,7 @@ import {
   type GenerationProgress,
   type Payload,
   type WorkspaceTab,
+  isWorkspaceTab,
 } from "./_lib/workspace-types";
 import { TravelVaultView } from "./_components/vault";
 import { ExpensesView } from "./_components/expenses";
@@ -86,6 +89,14 @@ import { TravelModeView, TripAgendaView, TripMapView } from "./_components/trave
 
 
 
+/** Dias corridos entre duas datas "AAAA-MM-DD", contando as duas pontas. */
+function contarDias(inicio: string, fim: string) {
+  const a = Date.parse(`${inicio}T00:00:00Z`);
+  const b = Date.parse(`${fim}T00:00:00Z`);
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b < a) return 1;
+  return Math.round((b - a) / 86_400_000) + 1;
+}
+
 export default function TripPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const { user, session, loading: authLoading } = useAuth();
@@ -105,17 +116,20 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
    * dizendo apenas "Roteiro ainda nao gerado", que parece um passo que
    * falta e nao um erro que aconteceu.
    */
+  const [falhaHerdada, setFalhaHerdada] = useState(false);
+  /** O /nova gerou so o primeiro lote; faltam dias. */
+  const [continuarHerdado, setContinuarHerdado] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!new URLSearchParams(window.location.search).has("roteiro")) return;
+    const roteiro = new URLSearchParams(window.location.search).get("roteiro");
+    if (roteiro === null) return;
 
-    setError(
-      "A primeira tentativa de gerar o roteiro não deu certo. Isso costuma ser sobrecarga momentânea do gerador — tente de novo."
-    );
-    setFalhaNaGeracao(true);
+    if (roteiro === "continuar") setContinuarHerdado(true);
+    else setFalhaHerdada(true);
 
     // Tira o parametro da URL para o aviso nao voltar a cada recarga.
-    window.history.replaceState({}, "", window.location.pathname);
+    // O hash da aba fica: ele e quem lembra onde a pessoa estava.
+    window.history.replaceState({}, "", window.location.pathname + window.location.hash);
   }, []);
   const [progress, setProgress] = useState<GenerationProgress | null>(null);
 
@@ -123,28 +137,110 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     setError("");
     setFalhaNaGeracao(false);
 
-    const res = await fetch(`/api/trips/${slug}`, {
-      headers: authHeaders(accessToken),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      setError(json.error);
-      return;
-    }
+    /**
+     * Rede caida ou resposta que nao e JSON (timeout devolve HTML) faziam
+     * `res.json()` estourar fora de qualquer try. A promessa rejeitava em
+     * silencio e a tela ficava em "Carregando..." para sempre, sem dizer
+     * o que houve nem oferecer saida.
+     */
+    try {
+      const res = await fetch(`/api/trips/${slug}`, {
+        headers: authHeaders(accessToken),
+      });
+      const json = await readApiJson<Payload & { error?: string }>(res);
+      if (!res.ok) {
+        setError(json.error ?? "Não foi possível abrir a viagem.");
+        return;
+      }
 
-    setData(json);
+      setData(json);
+    } catch (e) {
+      setError(
+        e instanceof Error && e.message !== "Failed to fetch"
+          ? e.message
+          : "Sem conexão com o Planvoro agora. Confira a internet e tente de novo."
+      );
+    }
   }, [accessToken, slug]);
 
+  /**
+   * A aba aberta mora no hash da URL (#cofre, #gastos...).
+   *
+   * Sem isso, recarregar a pagina ou voltar de um anexo aberto jogava a
+   * pessoa de volta em "Grupo", e o link mandado no WhatsApp para "olha o
+   * Cofre" abria em outra aba. O botao voltar do celular tambem passa a
+   * andar entre as abas em vez de sair da viagem.
+   */
   useEffect(() => {
-    setTab("grupo");
+    function lerHash() {
+      const hash = window.location.hash.replace("#", "");
+      setTab(isWorkspaceTab(hash) ? hash : "grupo");
+    }
+
+    lerHash();
+    window.addEventListener("hashchange", lerHash);
+    return () => window.removeEventListener("hashchange", lerHash);
   }, [slug]);
+
+  const irParaAba = useCallback((next: WorkspaceTab) => {
+    setTab(next);
+    if (typeof window === "undefined") return;
+    if (window.location.hash !== `#${next}`) {
+      window.history.pushState(null, "", `#${next}`);
+    }
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
-    load();
+    void load();
   }, [authLoading, load]);
 
-  if (error && !data) return <div className="card">{error}</div>;
+  /**
+   * O aviso herdado do /nova so entra depois do primeiro carregamento.
+   *
+   * Antes ele era gravado no mesmo instante em que `load()` comecava — e a
+   * primeira coisa que `load()` faz e limpar o erro. O aviso sumia antes
+   * de aparecer, e a viagem abria muda, como se nada tivesse falhado.
+   */
+  useEffect(() => {
+    if (!falhaHerdada || !data) return;
+    setError(
+      "A primeira tentativa de gerar o roteiro não deu certo. Isso costuma ser sobrecarga momentânea do gerador — tente de novo."
+    );
+    setFalhaNaGeracao(true);
+    setFalhaHerdada(false);
+  }, [data, falhaHerdada]);
+
+  useEffect(() => {
+    if (!continuarHerdado || !data || !accessToken) return;
+    setContinuarHerdado(false);
+    void generate();
+    // `generate` e recriada a cada render; o gatilho aqui e so a chegada
+    // dos dados com o pedido pendente.
+  }, [continuarHerdado, data, accessToken]);
+
+  // A aba do navegador dizia so "Viagem" — com tres viagens abertas, nao
+  // dava para saber qual era qual.
+  const destinoAtual = data?.trip.destination;
+  useEffect(() => {
+    if (destinoAtual) document.title = `${destinoAtual} — Planvoro`;
+  }, [destinoAtual]);
+
+  if (error && !data) {
+    return (
+      <div className="card">
+        <p style={{ marginTop: 0 }}>{error}</p>
+        <div className="invite-actions">
+          <button className="btn" type="button" onClick={() => void load()}>
+            Tentar de novo
+          </button>
+          <a className="btn ghost" href="/app">
+            Minhas viagens
+          </a>
+        </div>
+      </div>
+    );
+  }
   if (!data) {
     return <div className="card muted">{authLoading ? "Carregando sua conta..." : "Carregando..."}</div>;
   }
@@ -175,6 +271,14 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   const me = members.find((member) => member.id === viewer_member_id) ?? null;
   const myPref = preferences.find((pref) => pref.member_id === viewer_member_id) ?? null;
   const plannedIdeaCount = ideas.filter((idea) => idea.status === "planned").length;
+  /**
+   * Roteiro que parou no meio (lote que falhou, aba fechada durante a
+   * geracao). O botao dizia "Regerar roteiro", o que soa como jogar fora o
+   * que existe — e na verdade o servidor continua de onde parou.
+   */
+  const diasDaViagem = contarDias(trip.start_date, trip.end_date);
+  const diasNoRoteiro = itinerary?.itinerary_days.length ?? 0;
+  const roteiroIncompleto = Boolean(itinerary) && diasNoRoteiro < diasDaViagem;
   const inviteUrl =
     typeof window !== "undefined" ? `${window.location.origin}/v/${slug}` : `/v/${slug}`;
   const todayKey = dateKeyFromDate(new Date());
@@ -189,6 +293,8 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
       setError("Entre na sua conta para gerar o roteiro.");
       return;
     }
+
+    if (generating) return;
 
     setGenerating(true);
     setProgress(null);
@@ -214,7 +320,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
           });
         }
 
-        setTab("roteiro");
+        if (round === 0) irParaAba("roteiro");
         await load();
         if (json.concluido !== false) {
           completed = true;
@@ -278,7 +384,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
         <>
           <WorkspaceTabs
             tab={tab}
-            onChange={setTab}
+            onChange={irParaAba}
             groupLabel={trip.is_solo ? "Ajustes" : "Grupo"}
             preferencesCount={preferences.length}
             memberCount={members.length}
@@ -303,7 +409,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                 generating={generating}
                 progress={progress}
                 onGenerate={generate}
-                onGoToTab={setTab}
+                onGoToTab={irParaAba}
               />
               <div className="grid2">
                 <PreferencesCard
@@ -324,6 +430,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                   preferences={preferences}
                   itinerary={itinerary}
                   plannedIdeaCount={plannedIdeaCount}
+                  incompleto={roteiroIncompleto ? { feitos: diasNoRoteiro, total: diasDaViagem } : null}
                   generating={generating}
                   progress={progress}
                   onGenerate={generate}
@@ -356,7 +463,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               me={me}
               slug={slug}
               onChange={load}
-              onGoToRoute={() => setTab("roteiro")}
+              onGoToRoute={() => irParaAba("roteiro")}
             />
           )}
 
@@ -384,7 +491,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               </>
             ) : (
               <div className="grid2">
-                <RouteEmptyState onBackToGroup={() => setTab("grupo")} />
+                <RouteEmptyState onBackToGroup={() => irParaAba("grupo")} />
                 <PlanningCard
                   accessToken={accessToken}
                   slug={slug}
@@ -395,6 +502,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
                   preferences={preferences}
                   itinerary={itinerary}
                   plannedIdeaCount={plannedIdeaCount}
+                  incompleto={roteiroIncompleto ? { feitos: diasNoRoteiro, total: diasDaViagem } : null}
                   generating={generating}
                   progress={progress}
                   onGenerate={generate}
@@ -409,8 +517,8 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               vaultItems={vault_items}
               generating={generating}
               onGenerate={generate}
-              onGoToRoute={() => setTab("roteiro")}
-              onGoToVault={() => setTab("cofre")}
+              onGoToRoute={() => irParaAba("roteiro")}
+              onGoToVault={() => irParaAba("cofre")}
             />
           )}
 
@@ -422,9 +530,9 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               checklistItems={checklist_items}
               generating={generating}
               onGenerate={generate}
-              onGoToAgenda={() => setTab("agenda")}
-              onGoToChecklist={() => setTab("checklist")}
-              onGoToVault={() => setTab("cofre")}
+              onGoToAgenda={() => irParaAba("agenda")}
+              onGoToChecklist={() => irParaAba("checklist")}
+              onGoToVault={() => irParaAba("cofre")}
             />
           )}
 
@@ -457,7 +565,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               vaultItems={vault_items}
               checklistItems={checklist_items}
               onChange={load}
-              onOpenChecklist={() => setTab("checklist")}
+              onOpenChecklist={() => irParaAba("checklist")}
             />
           )}
 
@@ -540,12 +648,25 @@ function WorkspaceTabs({
     { id: "gastos", label: "Gastos" },
   ];
 
+  /**
+   * No celular a barra rola de lado. Quem chegava por um link com #gastos,
+   * ou tocava num aviso do resumo, ficava com a aba ativa escondida fora
+   * da tela — e sem ver qual estava marcada.
+   */
+  const barraRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const ativa = barraRef.current?.querySelector<HTMLElement>(".tab-btn.on");
+    ativa?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [tab]);
+
   return (
-    <div className="workspace-tabs">
+    <div className="workspace-tabs" role="tablist" aria-label="Seções da viagem" ref={barraRef}>
       {tabs.map((item) => (
         <button
           key={item.id}
           type="button"
+          role="tab"
+          aria-selected={tab === item.id}
           className={`tab-btn ${tab === item.id ? "on" : ""}`}
           onClick={() => onChange(item.id)}
         >
@@ -612,14 +733,18 @@ function TripExecutiveSummary({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const daysToTrip = Math.ceil((tripStart.getTime() - today.getTime()) / 86_400_000);
+  // Viagem que ja voltou dizia "viagem iniciada" para sempre.
+  const tripOver = today.getTime() > tripEnd.getTime();
   const timelineLabel =
     daysToTrip > 1
       ? `faltam ${daysToTrip} dias`
       : daysToTrip === 1
-        ? "amanha"
+        ? "amanhã"
         : daysToTrip === 0
           ? "começa hoje"
-          : "viagem iniciada";
+          : tripOver
+            ? "viagem encerrada"
+            : "em viagem";
 
   const preferenceScore = members.length ? Math.round((preferences.length / members.length) * 22) : 0;
   const routeScore = itinerary ? 18 : 0;
@@ -692,7 +817,9 @@ function TripExecutiveSummary({
    * Gerar o roteiro e diferente: e a unica coisa que so acontece a partir
    * daqui, e o proximo passo obvio de quem ainda nao tem roteiro.
    */
-  const podeGerar = !itinerary;
+  const diasPrevistos = contarDias(trip.start_date, trip.end_date);
+  const faltamDias = itinerary ? Math.max(0, diasPrevistos - routeDays) : 0;
+  const podeGerar = !itinerary || faltamDias > 0;
 
   return (
     <section className="trip-command-center">
@@ -735,9 +862,11 @@ function TripExecutiveSummary({
               ? `Montando ${progress.diasGerados}/${progress.diasTotais} dias`
               : generating
                 ? "Gerando roteiro..."
-                : preferences.length
-                  ? "Gerar roteiro"
-                  : "Preencha uma preferência para gerar"}
+                : !preferences.length
+                  ? "Preencha uma preferência para gerar"
+                  : faltamDias > 0
+                    ? `Continuar roteiro · faltam ${faltamDias} dia${faltamDias === 1 ? "" : "s"}`
+                    : "Gerar roteiro"}
           </button>
         )}
       </div>
@@ -823,6 +952,7 @@ function PlanningCard({
   preferences,
   itinerary,
   plannedIdeaCount,
+  incompleto,
   generating,
   progress,
   onGenerate,
@@ -836,6 +966,7 @@ function PlanningCard({
   preferences: Preference[];
   itinerary: Itinerary | null;
   plannedIdeaCount: number;
+  incompleto: { feitos: number; total: number } | null;
   generating: boolean;
   progress: GenerationProgress | null;
   onGenerate: () => void;
@@ -845,6 +976,7 @@ function PlanningCard({
   const [sendingInvites, setSendingInvites] = useState(false);
   const [inviteError, setInviteError] = useState("");
   const [inviteResult, setInviteResult] = useState<{ sent: number; failed: number } | null>(null);
+  const [linkCopiado, setLinkCopiado] = useState(false);
   const whatsappInviteUrl = whatsappShareUrl(buildTripInviteMessage(trip, inviteUrl, me.name));
 
   async function sendInvites() {
@@ -860,8 +992,8 @@ function PlanningCard({
         headers: authJsonHeaders(accessToken),
         body: JSON.stringify({ emails, message }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const json = await readApiJson<{ error?: string; sent: number; failed: number }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível enviar os convites.");
 
       setInviteResult(json);
       setEmails("");
@@ -891,9 +1023,17 @@ function PlanningCard({
             <button
               className="btn ghost full"
               type="button"
-              onClick={() => navigator.clipboard?.writeText(inviteUrl)}
+              onClick={async () => {
+                // Sem retorno visual, a pessoa clicava duas, tres vezes sem
+                // saber se tinha copiado.
+                const ok = await copiarTexto(inviteUrl);
+                if (!ok) return;
+                track("convite_copiado", { canal: "link" });
+                setLinkCopiado(true);
+                setTimeout(() => setLinkCopiado(false), 2000);
+              }}
             >
-              Copiar link
+              {linkCopiado ? "Link copiado ✓" : "Copiar link"}
             </button>
           </div>
           <p className="tiny" style={{ margin: "8px 0 0" }}>
@@ -907,7 +1047,7 @@ function PlanningCard({
             placeholder={"ana@exemplo.com\nbruno@exemplo.com"}
           />
           <p className="tiny" style={{ margin: "8px 0 0" }}>
-            Separe por quebra de linha, virgula ou ponto e virgula.
+            Separe por quebra de linha, vírgula ou ponto e vírgula.
           </p>
           <label>Mensagem opcional</label>
           <textarea
@@ -922,7 +1062,9 @@ function PlanningCard({
               <b>Convites enviados</b>
               <br />
               {inviteResult.sent} enviado{inviteResult.sent === 1 ? "" : "s"}
-              {inviteResult.failed > 0 ? ` · ${inviteResult.failed} falhou` : ""}
+              {inviteResult.failed > 0
+                ? ` · ${inviteResult.failed} ${inviteResult.failed === 1 ? "falhou" : "falharam"}`
+                : ""}
             </div>
           )}
           <button
@@ -933,7 +1075,7 @@ function PlanningCard({
             {sendingInvites ? "Enviando convites..." : "Enviar convites por e-mail"}
           </button>
           <h3 style={{ marginTop: 22 }}>
-            Preferencias preenchidas ({preferences.length} de {members.length})
+            Preferências preenchidas ({preferences.length} de {members.length})
           </h3>
           {members.map((member) => {
             const done = preferences.some((pref) => pref.member_id === member.id);
@@ -954,7 +1096,9 @@ function PlanningCard({
         {progress
           ? `Montando roteiro: ${progress.diasGerados} de ${progress.diasTotais} dias prontos...`
           : generating
-          ? "A IA esta montando o roteiro..."
+          ? "A IA está montando o roteiro..."
+          : incompleto
+            ? `Continuar roteiro (${incompleto.feitos} de ${incompleto.total} dias)`
           : itinerary
             ? plannedIdeaCount
               ? `Regerar com ${plannedIdeaCount} ideia${plannedIdeaCount === 1 ? "" : "s"}`
@@ -965,7 +1109,7 @@ function PlanningCard({
       </button>
       {progress && (
         <p className="sub small" style={{ marginTop: 10, marginBottom: 0 }}>
-          Viagens longas agora sao geradas em lotes para salvar cada parte assim que fica pronta.
+          Viagens longas são geradas em lotes: cada parte fica salva assim que sai pronta.
         </p>
       )}
       {plannedIdeaCount > 0 && (
@@ -976,7 +1120,7 @@ function PlanningCard({
       )}
       {!trip.is_solo && preferences.length > 0 && preferences.length < members.length && (
         <p className="sub small" style={{ marginTop: 10, marginBottom: 0 }}>
-          Da pra gerar agora, mas o roteiro fica melhor quando todo mundo preenche.
+          Dá para gerar agora, mas o roteiro fica melhor quando todo mundo preenche.
         </p>
       )}
     </div>
@@ -988,7 +1132,7 @@ function RouteEmptyState({ onBackToGroup }: { onBackToGroup: () => void }) {
     <div className="card">
       <h2>Seu roteiro ainda não existe</h2>
       <p className="sub">
-        Preencha as preferencias do grupo e gere a primeira versão. Depois essa aba vira o quadro
+        Preencha as preferências do grupo e gere a primeira versão. Depois essa aba vira o quadro
         principal para votar, comentar e alinhar o plano.
       </p>
       <button className="btn ghost" onClick={onBackToGroup}>
@@ -1027,8 +1171,8 @@ function JoinCard({
         headers: authJsonHeaders(accessToken),
         body: JSON.stringify({ name }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível entrar na viagem.");
 
       // "% de convidados que entram" e a metrica que o modulo de
       // analytics diz decidir o rumo do produto. Ela nunca foi coletada.
@@ -1045,7 +1189,7 @@ function JoinCard({
   return (
     <div className="card" style={{ maxWidth: 460 }}>
       <h2>Entrar na viagem</h2>
-      <p className="sub">Sua conta já foi reconhecida. Falta so escolher como seu nome aparece no grupo.</p>
+      <p className="sub">Sua conta já foi reconhecida. Falta só escolher como seu nome aparece no grupo.</p>
       <label>Seu nome no grupo</label>
       <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ana" />
       {err && <div className="err">{err}</div>}
@@ -1078,6 +1222,7 @@ function PreferencesCard({
   const [to, setTo] = useState(pref?.present_to ?? trip.end_date);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     setInterests(pref?.interests ?? []);
@@ -1089,30 +1234,60 @@ function PreferencesCard({
 
   function toggle(list: string[], set: (value: string[]) => void, value: string) {
     set(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
+    setSaved(false);
   }
 
+  const datasInvertidas = Boolean(from && to && from > to);
+
+  /**
+   * Salvar nao olhava a resposta.
+   *
+   * Qualquer falha — sessao expirada, data invalida, rede caida — terminava
+   * em "Salvo ✓", e a pessoa ia embora achando que o grupo ja tinha as
+   * preferencias dela. Se o fetch em si quebrasse, o botao ficava preso em
+   * "Salvando..." para sempre.
+   */
   async function save() {
+    if (loading) return;
+    if (datasInvertidas) {
+      setSaveError("A data de saída precisa ser igual ou depois da chegada.");
+      return;
+    }
+
     setLoading(true);
+    setSaveError("");
+    setSaved(false);
 
-    await fetch(`/api/trips/${slug}/preferences`, {
-      method: "POST",
-      headers: authJsonHeaders(accessToken),
-      body: JSON.stringify({
-        interests,
-        restrictions,
-        daily_budget: budget,
-        present_from: from,
-        present_to: to,
-      }),
-    });
+    try {
+      const res = await fetch(`/api/trips/${slug}/preferences`, {
+        method: "POST",
+        headers: authJsonHeaders(accessToken),
+        body: JSON.stringify({
+          interests,
+          restrictions,
+          daily_budget: budget,
+          present_from: from,
+          present_to: to,
+        }),
+      });
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar suas preferências.");
 
-    // Segundo degrau do funil de convite: entrar e uma coisa, preencher
-    // preferencia e o que faz o roteiro melhorar para o grupo.
-    track("preferencias_salvas", { interesses: interests.length });
+      // Segundo degrau do funil de convite: entrar e uma coisa, preencher
+      // preferencia e o que faz o roteiro melhorar para o grupo.
+      track("preferencias_salvas", { interesses: interests.length });
 
-    setLoading(false);
-    setSaved(true);
-    await onSaved();
+      setSaved(true);
+      await onSaved();
+    } catch (e) {
+      setSaveError(
+        e instanceof Error && e.message !== "Failed to fetch"
+          ? e.message
+          : "Sem conexão agora. Suas escolhas continuam aqui — tente salvar de novo."
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -1149,7 +1324,13 @@ function PreferencesCard({
       </div>
 
       <label>Seu orçamento por dia</label>
-      <select value={budget} onChange={(e) => setBudget(e.target.value)}>
+      <select
+        value={budget}
+        onChange={(e) => {
+          setBudget(e.target.value);
+          setSaved(false);
+        }}
+      >
         {DAILY_BUDGETS.map((item) => (
           <option key={item}>{item}</option>
         ))}
@@ -1158,15 +1339,40 @@ function PreferencesCard({
       <div className="grid2 tight">
         <div>
           <label>Você chega em</label>
-          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+          <input
+            type="date"
+            value={from}
+            min={trip.start_date}
+            max={trip.end_date}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setSaved(false);
+            }}
+          />
         </div>
         <div>
           <label>Você sai em</label>
-          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+          <input
+            type="date"
+            value={to}
+            min={from || trip.start_date}
+            max={trip.end_date}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setSaved(false);
+            }}
+          />
         </div>
       </div>
 
-      <button className="btn full" onClick={save} disabled={loading || !accessToken}>
+      {datasInvertidas && (
+        <p className="tiny" style={{ color: "var(--danger, #b42318)" }}>
+          A data de saída está antes da chegada.
+        </p>
+      )}
+      {saveError && <div className="err">{saveError}</div>}
+
+      <button className="btn full" onClick={save} disabled={loading || !accessToken || datasInvertidas}>
         {loading ? "Salvando..." : saved ? "Salvo ✓" : "Salvar preferências"}
       </button>
     </div>
@@ -1263,6 +1469,7 @@ function ItemRow({
   const [open, setOpen] = useState(item.needs_vote);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [voting, setVoting] = useState(false);
   const [error, setError] = useState("");
 
   const myVote = me ? votes.find((vote) => vote.member_id === me.id)?.value ?? null : null;
@@ -1270,8 +1477,11 @@ function ItemRow({
   const colorById = (id: string) => members.find((member) => member.id === id)?.color ?? "#8B9AAD";
 
   async function vote(value: number) {
-    if (!me || !accessToken) return;
+    // Toque duplo mandava dois votos em sequencia; o segundo desfazia o
+    // primeiro quando a reacao era a mesma.
+    if (!me || !accessToken || voting) return;
 
+    setVoting(true);
     setError("");
 
     try {
@@ -1280,17 +1490,21 @@ function ItemRow({
         headers: authJsonHeaders(accessToken),
         body: JSON.stringify({ value }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível registrar o voto.");
 
       await onChange();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao votar.");
+      // O erro mora dentro da conversa; abrir mostra o motivo.
+      setOpen(true);
+    } finally {
+      setVoting(false);
     }
   }
 
   async function comment() {
-    if (!me || !text.trim() || !accessToken) return;
+    if (!me || !text.trim() || !accessToken || sending) return;
 
     setSending(true);
     setError("");
@@ -1301,8 +1515,8 @@ function ItemRow({
         headers: authJsonHeaders(accessToken),
         body: JSON.stringify({ body: text }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível enviar o comentário.");
 
       setText("");
       await onChange();
@@ -1340,7 +1554,9 @@ function ItemRow({
               key={reaction.value}
               className={`react ${active ? "on" : ""}`}
               onClick={() => vote(reaction.value)}
-              disabled={!me || !accessToken}
+              disabled={!me || !accessToken || voting}
+              aria-pressed={active}
+              aria-label={`${reaction.label}${voters.length ? ` (${voters.length})` : ""}`}
               title={
                 voters.length
                   ? voters.map((vote) => nameById(vote.member_id)).join(", ")
@@ -1353,7 +1569,12 @@ function ItemRow({
           );
         })}
 
-        <button className="react ghost" onClick={() => setOpen((value) => !value)}>
+        <button
+          className="react ghost"
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((value) => !value)}
+        >
           {comments.length > 0 ? `${comments.length} comentário${comments.length > 1 ? "s" : ""}` : "comentar"}
         </button>
       </div>
@@ -1378,8 +1599,10 @@ function ItemRow({
                 value={text}
                 placeholder={`Comentar como ${me.name}...`}
                 onChange={(e) => setText(e.target.value)}
+                maxLength={1000}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") comment();
+                  // Enter confirmando acento/teclado japones nao envia.
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) comment();
                 }}
               />
               <button className="btn sm" onClick={comment} disabled={sending || !text.trim() || !accessToken}>
@@ -1431,10 +1654,14 @@ function AfterItinerary({
   const whatsappInviteUrl = whatsappShareUrl(buildTripInviteMessage(trip, inviteUrl));
   const whatsappPublicUrl = whatsappShareUrl(buildPublicRouteMessage(trip, publicUrl));
 
-  function copy(url: string) {
-    navigator.clipboard?.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const [copiedPublic, setCopiedPublic] = useState(false);
+
+  async function copy(url: string, which: "invite" | "public" = "invite") {
+    const ok = await copiarTexto(url);
+    if (!ok) return;
+    const set = which === "public" ? setCopiedPublic : setCopied;
+    set(true);
+    setTimeout(() => set(false), 2000);
   }
 
   /**
@@ -1537,12 +1764,13 @@ function AfterItinerary({
         ) : (
           <>
         <div className="copybox">{publicUrl}</div>
-        <div style={{ display: "flex", gap: 10 }}>
+        {/* Quatro botoes sem quebra estouravam a largura do celular. */}
+        <div className="public-actions">
           <a className="btn whatsapp full" href={whatsappPublicUrl} target="_blank" rel="noreferrer">
             WhatsApp
           </a>
-          <button className="btn ghost full" onClick={() => copy(publicUrl)}>
-            Copiar
+          <button className="btn ghost full" type="button" onClick={() => copy(publicUrl, "public")}>
+            {copiedPublic ? "Copiado ✓" : "Copiar"}
           </button>
           <a className="btn ghost full" href={`/r/${slug}`} target="_blank" rel="noreferrer">
             Abrir

@@ -53,6 +53,24 @@ export type WorkspaceTab =
   | "agente"
   | "gastos";
 
+const WORKSPACE_TABS: readonly WorkspaceTab[] = [
+  "grupo",
+  "checklist",
+  "ideias",
+  "roteiro",
+  "agenda",
+  "mapa",
+  "viagem",
+  "cofre",
+  "agente",
+  "gastos",
+];
+
+/** Confere se um texto vindo da URL (#cofre) e uma aba que existe. */
+export function isWorkspaceTab(value: string): value is WorkspaceTab {
+  return (WORKSPACE_TABS as readonly string[]).includes(value);
+}
+
 /** Uma linha da agenda: vem do roteiro ou do Cofre, exibida igual. */
 export type TravelTimelineEntry = {
   id: string;

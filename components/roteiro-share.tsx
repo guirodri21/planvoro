@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { track } from "@/lib/analytics";
+import { copiarTexto } from "@/lib/clipboard";
 import { whatsappShareUrl } from "@/lib/share";
 
 /**
@@ -48,14 +49,13 @@ export function RoteiroShare({ summary, url }: { summary: string; url: string })
   }
 
   async function copyLink() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      track("roteiro_compartilhado", { canal: "link" });
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
+    // O roteiro publico quase sempre abre dentro do WhatsApp, cujo
+    // navegador embutido recusa a area de transferencia moderna.
+    const ok = await copiarTexto(url);
+    if (!ok) return;
+    setCopied(true);
+    track("roteiro_compartilhado", { canal: "link" });
+    window.setTimeout(() => setCopied(false), 2000);
   }
 
   return (

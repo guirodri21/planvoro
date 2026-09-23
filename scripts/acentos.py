@@ -93,6 +93,8 @@ DICIONARIO = {
     "peca": "peça", "Peca": "Peça",
     "faca": "faça", "Faca": "Faça",
     "gratis": "grátis", "Gratis": "Grátis",
+    "amanha": "amanhã", "Amanha": "Amanhã",
+    "virgula": "vírgula", "Virgula": "Vírgula",
     "apolice": "apólice", "Apolice": "Apólice",
     "emergencia": "emergência", "Emergencia": "Emergência",
     "ninguem": "ninguém", "Ninguem": "Ninguém",
