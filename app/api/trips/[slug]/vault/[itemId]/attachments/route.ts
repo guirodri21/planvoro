@@ -12,6 +12,7 @@ import {
   normalizeMimeType,
   safeFileName,
 } from "@/lib/vault-attachments";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -120,6 +121,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string; 
 
     return NextResponse.json({ attachment: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/vault/[itemId]/attachments", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao anexar arquivo.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

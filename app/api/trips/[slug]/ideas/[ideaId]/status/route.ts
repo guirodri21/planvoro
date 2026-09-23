@@ -3,6 +3,7 @@ import { getUserFromRequest } from "@/lib/auth";
 import { ideaBelongsToTrip, memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { IdeaStatus } from "@/lib/types";
+import { logError } from "@/lib/logger";
 
 const STATUSES: IdeaStatus[] = ["open", "planned", "dismissed"];
 
@@ -42,6 +43,7 @@ export async function POST(
 
     return NextResponse.json({ idea: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/ideas/[ideaId]/status", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao atualizar a ideia.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

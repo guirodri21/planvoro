@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { lockedMessage, resolveTripAccess } from "@/lib/trip-access";
 import { VAULT_BUCKET } from "@/lib/vault-attachments";
 import { TRIP_VAULT_KINDS, TRIP_VAULT_STATUSES, type TripVaultKind, type TripVaultStatus } from "@/lib/types";
+import { logError } from "@/lib/logger";
 
 const MAX_TITLE = 140;
 const MAX_PROVIDER = 100;
@@ -154,6 +155,7 @@ export async function PATCH(
 
     return NextResponse.json({ item: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/vault/[itemId]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao atualizar do Cofre.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
@@ -215,6 +217,7 @@ export async function DELETE(
 
     return NextResponse.json({ ok: true });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/vault/[itemId]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao remover do Cofre.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

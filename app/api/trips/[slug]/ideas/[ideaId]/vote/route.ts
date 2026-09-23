@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { ideaBelongsToTrip, memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/logger";
 
 /**
  * Voto de uma pessoa numa ideia solta.
@@ -60,6 +61,7 @@ export async function POST(
 
     return NextResponse.json({ ok: true, value });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/ideas/[ideaId]/vote", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao votar na ideia.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

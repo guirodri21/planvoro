@@ -3,6 +3,7 @@ import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip, memberIdsBelongToTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { lockedMessage, resolveTripAccess } from "@/lib/trip-access";
+import { logError } from "@/lib/logger";
 
 const MAX_DESCRIPTION = 160;
 const MAX_AMOUNT = 1_000_000;
@@ -89,6 +90,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     return NextResponse.json({ expense: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/expenses", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao registrar o gasto.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

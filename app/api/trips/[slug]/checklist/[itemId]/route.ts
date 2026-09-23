@@ -4,6 +4,7 @@ import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { lockedMessage, resolveTripAccess } from "@/lib/trip-access";
 import { TRIP_CHECKLIST_STATUSES, type TripChecklistStatus } from "@/lib/types";
+import { logError } from "@/lib/logger";
 
 const STATUSES = new Set<TripChecklistStatus>(
   TRIP_CHECKLIST_STATUSES.map((status) => status.value)
@@ -50,6 +51,7 @@ export async function PATCH(
 
     return NextResponse.json({ item: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/checklist/[itemId]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao atualizar tarefa.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
@@ -82,6 +84,7 @@ export async function DELETE(
 
     return NextResponse.json({ ok: true });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/checklist/[itemId]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao remover tarefa.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

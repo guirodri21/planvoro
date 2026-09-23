@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { itemBelongsToTrip, memberForUserInTrip } from "@/lib/guards";
+import { logError } from "@/lib/logger";
 
 const MAX_LEN = 1000;
 
@@ -42,6 +43,7 @@ export async function POST(
 
     return NextResponse.json({ comment: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/items/[itemId]/comment", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao comentar.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

@@ -3,6 +3,7 @@ import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { isLikelyPixKey } from "@/lib/pix";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/logger";
 
 const MAX_PIX_KEY = 140;
 const MAX_PIX_CITY = 40;
@@ -52,6 +53,7 @@ export async function PUT(req: Request, ctx: { params: Promise<{ slug: string }>
 
     return NextResponse.json({ member: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/pix", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao salvar a chave Pix.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

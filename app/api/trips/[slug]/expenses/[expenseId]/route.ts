@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/logger";
 
 /**
  * Remover um gasto lancado.
@@ -56,6 +57,7 @@ export async function DELETE(
 
     return NextResponse.json({ ok: true });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/expenses/[expenseId]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao remover o gasto.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
