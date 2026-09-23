@@ -456,7 +456,7 @@ export default function Home() {
             <span className="plan-badge">{betaAccessEnabled ? "BETA ATIVA" : "COMECE AQUI"}</span>
             <h3>Grátis</h3>
             <div className="price">R$ 0</div>
-            <p className="tiny">Uma viagem ativa por vez</p>
+            <p className="tiny">Até 2 viagens ativas ao mesmo tempo</p>
             <div className="plan-compare">
               {/* Era "Roteiro de 7 dias" ao lado de um teste de 7 dias:
                   o mesmo numero com dois significados, um em cima do

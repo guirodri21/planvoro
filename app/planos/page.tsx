@@ -202,6 +202,7 @@ function Planos() {
             R$ 0 <small>para sempre</small>
           </p>
           <ul className="feat">
+            <li>Até 2 viagens ativas ao mesmo tempo</li>
             <li>Roteiro por IA com lugares conferidos</li>
             <li>Grupo ilimitado, convidado nunca paga</li>
             <li>Ideias, votação e comentários</li>
