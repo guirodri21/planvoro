@@ -1,5 +1,8 @@
-import type { ReactNode } from "react";
+"use client";
+
+import { useEffect, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
+import { track } from "@/lib/analytics";
 import { BILLING_COPY, TRIAL_DIAS } from "@/lib/billing";
 
 const PASSE = BILLING_COPY.trip_pass.amount / 100;
@@ -23,16 +26,28 @@ export function PaywallGate({
   titulo,
   descricao,
   beneficios,
+  recurso,
   children,
 }: {
   slug: string;
   isOrganizer: boolean;
   icon: IconName;
+  /** Nome curto para o analytics: "cofre", "agente"... */
+  recurso: string;
   titulo: string;
   descricao: string;
   beneficios: string[];
   children: ReactNode;
 }) {
+  // Uma vez por abertura da aba. `organizador` separa quem pode pagar de
+  // quem so pode pedir — misturar os dois derrubaria a taxa sem motivo.
+  useEffect(() => {
+    track("paywall_visto", { recurso, organizador: isOrganizer });
+  }, [recurso, isOrganizer]);
+
+  const clicou = (acao: "liberar" | "testar") => () =>
+    track("paywall_clicado", { recurso, acao });
+
   return (
     <div className="paywall">
       <div className="paywall-preview" aria-hidden="true" inert>
@@ -57,10 +72,18 @@ export function PaywallGate({
         {isOrganizer ? (
           <>
             <div className="paywall-actions">
-              <a className="btn" href={`/planos?viagem=${encodeURIComponent(slug)}`}>
+              <a
+                className="btn"
+                href={`/planos?viagem=${encodeURIComponent(slug)}`}
+                onClick={clicou("liberar")}
+              >
                 Liberar por R$ {PASSE}
               </a>
-              <a className="btn ghost" href={`/planos?viagem=${encodeURIComponent(slug)}`}>
+              <a
+                className="btn ghost"
+                href={`/planos?viagem=${encodeURIComponent(slug)}`}
+                onClick={clicou("testar")}
+              >
                 Testar {TRIAL_DIAS} dias grátis
               </a>
             </div>

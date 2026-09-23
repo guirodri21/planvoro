@@ -418,6 +418,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
       <PaywallGate
         slug={slug}
         isOrganizer={isOrganizer}
+        recurso={id}
         icon={cfg.icon}
         titulo={cfg.titulo}
         descricao={cfg.descricao}
