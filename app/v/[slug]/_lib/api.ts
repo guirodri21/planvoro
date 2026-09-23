@@ -56,3 +56,5 @@ export function buildPublicRouteMessage(trip: Trip, publicUrl: string) {
   return `Roteiro da viagem para ${trip.destination} no Planvoro:
 ${publicUrl}`;
 }
+
+export { copiarTexto } from "@/lib/clipboard";

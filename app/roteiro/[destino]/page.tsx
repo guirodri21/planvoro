@@ -7,7 +7,7 @@ import {
   lerRoteiroPublico,
   listarRoteirosPublicos,
 } from "@/lib/roteiros-publicos";
-import { SITE_URL } from "@/lib/site";
+import { DEFAULT_OG_IMAGE, DEFAULT_OPEN_GRAPH, SITE_URL } from "@/lib/site";
 
 /**
  * A pagina de um destino, escrita para quem chega pelo Google.
@@ -58,7 +58,14 @@ export async function generateMetadata({
     title,
     description,
     alternates: { canonical: `/roteiro/${roteiro.chave}` },
-    openGraph: { title, description, type: "article" },
+    openGraph: {
+      ...DEFAULT_OPEN_GRAPH,
+      title,
+      description,
+      type: "article",
+      url: `/roteiro/${roteiro.chave}`,
+      images: [DEFAULT_OG_IMAGE],
+    },
   };
 }
 

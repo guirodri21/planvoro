@@ -5,7 +5,7 @@ import { RoteiroShare } from "@/components/roteiro-share";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
 import { formatBR, getPublicTrip, getTripPublishState, tripDays } from "@/lib/public";
 import { buildItinerarySummary } from "@/lib/share";
-import { SITE_URL } from "@/lib/site";
+import { DEFAULT_OG_IMAGE, DEFAULT_OPEN_GRAPH, SITE_URL } from "@/lib/site";
 
 
 /**
@@ -22,7 +22,7 @@ export async function generateMetadata(
   const { slug } = await params;
   const data = await getPublicTrip(slug);
   // O "— Planvoro" vem do template do layout; escrever aqui duplicava.
-  if (!data) return { title: "Roteiro não encontrado" };
+  if (!data) return { title: "Roteiro não encontrado", robots: { index: false } };
 
   const { trip } = data;
   const dias = tripDays(trip);
@@ -35,7 +35,7 @@ export async function generateMetadata(
     title,
     description,
     alternates: { canonical: `/r/${slug}` },
-    openGraph: { title, description, type: "article" },
+    openGraph: { ...DEFAULT_OPEN_GRAPH, title, description, type: "article", url: `/r/${slug}`, images: [DEFAULT_OG_IMAGE] },
   };
 }
 

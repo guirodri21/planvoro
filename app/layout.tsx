@@ -13,7 +13,7 @@ import { OfflineBanner } from "@/components/offline-banner";
 import { ServiceWorkerRegistrar } from "@/components/service-worker";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
-import { SITE_URL } from "@/lib/site";
+import { DEFAULT_OPEN_GRAPH, SITE_URL } from "@/lib/site";
 
 const sans = Inter_Tight({
   subsets: ["latin"],
@@ -67,18 +67,9 @@ export const metadata: Metadata = {
     "organizar viagem",
     "dividir gastos viagem",
   ],
-  alternates: {
-    canonical: SITE_URL,
-  },
-  openGraph: {
-    title: "Planvoro — roteiro de viagem com IA, pronto em 1 minuto",
-    description:
-      "Roteiro com IA em 1 minuto, sem conta. Depois, reservas, documentos, grupo e gastos no mesmo lugar.",
-    url: SITE_URL,
-    siteName: "Planvoro",
-    locale: "pt_BR",
-    type: "website",
-  },
+  // Sem `url` e sem `canonical` aqui: o layout raiz e herdado por todas
+  // as paginas, e os dois apontavam o site inteiro para a home.
+  openGraph: DEFAULT_OPEN_GRAPH,
   twitter: {
     card: "summary_large_image",
     title: "Planvoro — roteiro de viagem com IA, pronto em 1 minuto",

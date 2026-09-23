@@ -3,7 +3,8 @@ import { LegalPage } from "@/components/legal-page";
 import { legalCompany, legalDocument, legalPrivacyEmail } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Política de privacidade · Planvoro",
+  title: "Política de privacidade",
+  alternates: { canonical: "/privacidade" },
   description: "Quais dados o Planvoro trata, por quê, com quem compartilha e como você apaga tudo.",
 };
 

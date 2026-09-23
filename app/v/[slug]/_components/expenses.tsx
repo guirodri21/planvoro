@@ -9,7 +9,7 @@ import { track } from "@/lib/analytics";
 import { budgetTone, summarizeBudget } from "@/lib/budget";
 import { PIX_DEFAULT_CITY, buildPixPayload, detectPixKey, pixKeyLabel } from "@/lib/pix";
 import type { Expense, Member, Trip } from "@/lib/types";
-import { authHeaders, authJsonHeaders, readApiJson } from "../_lib/api";
+import { authHeaders, authJsonHeaders, copiarTexto, readApiJson } from "../_lib/api";
 import {
   calculateExpenseBalances,
   calculateSettlements,
@@ -169,14 +169,14 @@ export function PixSettlementRow({
     });
     if (!payload) return;
 
-    try {
-      await navigator.clipboard.writeText(payload);
-      setCopied(true);
-      track("pix_copiado", { valor: settlement.amount });
-      window.setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setCopied(false);
-    }
+    // No navegador embutido do WhatsApp a area de transferencia falha em
+    // silencio; `copiarTexto` cai para um caminho que funciona ali, ou
+    // mostra o codigo para copiar a mao.
+    const ok = await copiarTexto(payload);
+    if (!ok) return;
+    setCopied(true);
+    track("pix_copiado", { valor: settlement.amount });
+    window.setTimeout(() => setCopied(false), 2500);
   }
 
   return (
@@ -413,8 +413,8 @@ export function ExpensesView({
           amount,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar agora. Tente de novo.");
 
       resetForm();
       await onSaved();

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Sem conexão · Planvoro",
+  title: "Sem conexão",
+  robots: { index: false },
 };
 
 export default function OfflinePage() {

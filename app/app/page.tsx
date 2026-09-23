@@ -6,7 +6,7 @@ import { useAuth } from "@/components/auth-provider";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
 import { Confirmar } from "@/components/confirmar";
 import { track } from "@/lib/analytics";
-import { BILLING_COPY } from "@/lib/billing";
+import { BILLING_COPY, TRIAL_DIAS } from "@/lib/billing";
 import { Planos } from "./_components/planos";
 import { PrimeiroAcesso } from "./_components/primeiro-acesso";
 import { supabaseBrowser } from "@/lib/supabase-browser";
@@ -87,6 +87,22 @@ function authJsonHeaders(accessToken: string | null) {
   };
 }
 
+/**
+ * Le a resposta sem quebrar quando ela nao e JSON.
+ *
+ * Timeout da Vercel devolve HTML; `res.json()` estourava com "Unexpected
+ * token <", e era essa a mensagem que aparecia na tela.
+ */
+async function lerJson(res: Response): Promise<{ error?: string } & Record<string, unknown>> {
+  const text = await res.text().catch(() => "");
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { error: "O servidor demorou para responder. Tente de novo em instantes." };
+  }
+}
+
 function formatTripDate(start: string, end: string) {
   return `${dateFormatter.format(new Date(`${start}T00:00:00`))} - ${dateFormatter.format(
     new Date(`${end}T00:00:00`)
@@ -153,6 +169,20 @@ export default function AppPage() {
   const [apagandoViagem, setApagandoViagem] = useState("");
   const [erroApagar, setErroApagar] = useState("");
   const [billingError, setBillingError] = useState("");
+  /**
+   * Viagem que a pessoa veio liberar.
+   *
+   * O botao "Liberar esta viagem", no Cofre, nos Gastos e no Checklist,
+   * manda para `/app?liberar=<slug>`. O painel nunca leu esse parametro:
+   * a pessoa caia na lista geral e precisava achar sozinha a viagem e o
+   * botao certo — no meio de outras viagens e de um cartao do Pro.
+   */
+  const [liberarSlug, setLiberarSlug] = useState<string | null>(null);
+
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("liberar");
+    if (slug) setLiberarSlug(slug);
+  }, []);
 
   async function loadDashboard() {
     if (!session?.access_token) return;
@@ -164,9 +194,9 @@ export default function AppPage() {
       const res = await fetch("/api/me/dashboard", {
         headers: authHeaders(session.access_token),
       });
-      const json = await res.json();
+      const json = await lerJson(res);
       if (!res.ok) throw new Error(json.error ?? "Não foi possível carregar suas viagens.");
-      setData(json);
+      setData(json as unknown as DashboardResponse);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Não foi possível carregar suas viagens.");
     } finally {
@@ -183,6 +213,7 @@ export default function AppPage() {
   const archivedTrips = trips.filter((trip) => !isActiveTrip(trip));
   const continueTrips = activeTrips.slice(0, 3);
   const accountBilling = data?.account_billing ?? null;
+  const liberarTrip = liberarSlug ? trips.find((trip) => trip.slug === liberarSlug) ?? null : null;
   const stats = useMemo(() => {
     const generatedTrips = trips.filter((trip) => trip.latest_itinerary).length;
     const groupTrips = trips.filter((trip) => !trip.is_solo).length;
@@ -192,12 +223,23 @@ export default function AppPage() {
   }, [trips]);
 
   async function startCheckout(plan: "trip_pass" | "pro_annual", tripSlug?: string) {
-    if (!session?.access_token) return;
+    if (!session?.access_token || billingAction) return;
 
     const actionKey = tripSlug ? `${plan}:${tripSlug}` : plan;
     track("checkout_iniciado", { plano: plan });
     setBillingAction(actionKey);
     setBillingError("");
+
+    /**
+     * A aba abre agora, ainda dentro do clique, e recebe o endereco depois.
+     *
+     * `window.open` chamado depois de um `await` ja nao conta como gesto
+     * da pessoa: Safari no iPhone e varios bloqueadores engolem a janela
+     * sem avisar, e o botao ficava em "Abrindo..." para sempre. Se mesmo
+     * assim a aba for bloqueada, o checkout abre nesta mesma aba.
+     */
+    const aba = window.open("", "_blank");
+    if (aba) aba.opener = null;
 
     try {
       const res = await fetch("/api/billing/checkout", {
@@ -205,7 +247,7 @@ export default function AppPage() {
         headers: authJsonHeaders(session.access_token),
         body: JSON.stringify({ plan, trip_slug: tripSlug }),
       });
-      const json = await res.json();
+      const json = await lerJson(res);
       if (!res.ok) throw new Error(json.error ?? "Não foi possível iniciar o pagamento.");
       /**
        * Aba nova, e nao a mesma.
@@ -214,9 +256,17 @@ export default function AppPage() {
        * para reencontrar o painel. Numa aba separada, fechar basta — e o
        * contexto de onde a pessoa estava continua intacto atras.
        */
-      window.open(json.url, "_blank", "noopener");
+      const url = String(json.url ?? "");
+      if (!url) throw new Error("O checkout não devolveu um endereço de pagamento.");
+      if (aba && !aba.closed) {
+        aba.location.href = url;
+      } else {
+        window.location.href = url;
+      }
     } catch (e) {
+      aba?.close();
       setBillingError(e instanceof Error ? e.message : "Não foi possível iniciar o pagamento.");
+    } finally {
       setBillingAction("");
     }
   }
@@ -255,7 +305,7 @@ export default function AppPage() {
         headers: authJsonHeaders(session.access_token),
         body: JSON.stringify({ confirm: "APAGAR" }),
       });
-      const json = await res.json();
+      const json = await lerJson(res);
       if (!res.ok) throw new Error(json.error ?? "Não foi possível apagar a viagem.");
 
       setConfirmarApagar(null);
@@ -267,13 +317,17 @@ export default function AppPage() {
     }
   }
 
-  async function comecarTeste() {
+  async function comecarTeste(slugEscolhido?: string) {
     if (!session?.access_token) return;
 
-    // O teste vale para uma viagem so, entao vai na que a pessoa organiza.
-    // Com mais de uma, a primeira: pedir para escolher agora seria uma
-    // pergunta a mais no caminho de quem so quer experimentar.
-    const alvo = trips.find((trip) => trip.viewer_member?.is_organizer)?.slug;
+    // O teste vale para uma viagem so. Se a pessoa veio pelo "Liberar esta
+    // viagem", e aquela; senao, a primeira que ela organiza — pedir para
+    // escolher agora seria uma pergunta a mais no caminho de quem so quer
+    // experimentar.
+    const alvo =
+      (slugEscolhido &&
+        trips.find((trip) => trip.slug === slugEscolhido && trip.viewer_member?.is_organizer)?.slug) ||
+      trips.find((trip) => trip.viewer_member?.is_organizer)?.slug;
     if (!alvo) {
       setBillingError("Crie uma viagem primeiro para usar o teste grátis.");
       return;
@@ -288,11 +342,12 @@ export default function AppPage() {
         headers: authJsonHeaders(session.access_token),
         body: JSON.stringify({ trip_slug: alvo }),
       });
-      const json = await res.json();
+      const json = await lerJson(res);
       if (!res.ok) throw new Error(json.error ?? "Não foi possível começar o teste.");
 
       track("teste_gratis_iniciado");
       await loadDashboard();
+      if (slugEscolhido) setLiberarSlug(null);
     } catch (e) {
       setBillingError(e instanceof Error ? e.message : "Erro ao começar o teste.");
     } finally {
@@ -334,6 +389,27 @@ export default function AppPage() {
       {error && <div className="err">{error}</div>}
       {billingError && <div className="err">{billingError}</div>}
 
+      {liberarTrip && (
+        <LiberarViagem
+          trip={liberarTrip}
+          proAtivo={Boolean(accountBilling?.is_pro_active)}
+          podeTestar={
+            !betaAccessEnabled &&
+            !accountBilling?.is_pro_active &&
+            !accountBilling?.trial_used &&
+            Boolean(liberarTrip.viewer_member?.is_organizer)
+          }
+          podeComprar={Boolean(accountBilling?.can_checkout) && Boolean(liberarTrip.viewer_member?.is_organizer)}
+          acao={billingAction}
+          onTeste={() => comecarTeste(liberarTrip.slug)}
+          onPasse={() => startCheckout("trip_pass", liberarTrip.slug)}
+          onFechar={() => {
+            setLiberarSlug(null);
+            window.history.replaceState(null, "", "/app");
+          }}
+        />
+      )}
+
       <Planos
         proAtivo={Boolean(accountBilling?.is_pro_active)}
         proExpiraEm={accountBilling?.pro_expires_at ?? null}
@@ -343,7 +419,7 @@ export default function AppPage() {
         testeViagem={accountBilling?.trial_trip ?? null}
         acao={billingAction}
         onPro={() => startCheckout("pro_annual")}
-        onTeste={comecarTeste}
+        onTeste={() => comecarTeste(liberarSlug ?? undefined)}
       />
 
       <div className="grid4 dashboard-stats">
@@ -601,14 +677,112 @@ function TripSection({
                 <span className="tiny">
                   Seu papel: {trip.viewer_member?.is_organizer ? "organizador" : "participante"}
                 </span>
-                <a className="tiny" href={`/r/${trip.slug}`} target="_blank" rel="noreferrer">
-                  Link público
-                </a>
+                {/* Viagem nao publicada levava a uma pagina de "ainda nao
+                    publicado". O link so aparece quando existe o que ver. */}
+                {trip.is_public && (
+                  <a className="tiny" href={`/r/${trip.slug}`} target="_blank" rel="noreferrer">
+                    Link público
+                  </a>
+                )}
               </div>
             </article>
           );
         })}
       </div>
+    </section>
+  );
+}
+
+/**
+ * Cartao de quem chegou por "Liberar esta viagem".
+ *
+ * Mostra so o que resolve aquela viagem, na ordem do que custa menos: o
+ * teste gratis, se ainda existe, e depois o Passe dela.
+ */
+function LiberarViagem({
+  trip,
+  proAtivo,
+  podeTestar,
+  podeComprar,
+  acao,
+  onTeste,
+  onPasse,
+  onFechar,
+}: {
+  trip: DashboardTrip;
+  proAtivo: boolean;
+  podeTestar: boolean;
+  podeComprar: boolean;
+  acao: string;
+  onTeste: () => void;
+  onPasse: () => void;
+  onFechar: () => void;
+}) {
+  const emTeste =
+    trip.billing?.status === "trial" &&
+    Boolean(trip.billing.access_expires_at) &&
+    new Date(trip.billing.access_expires_at as string).getTime() > Date.now();
+  const liberada = betaAccessEnabled || proAtivo || emTeste || Boolean(trip.billing?.is_paid);
+  const organizador = Boolean(trip.viewer_member?.is_organizer);
+  const acaoPasse = `trip_pass:${trip.slug}`;
+
+  return (
+    <section className="card liberar-card" aria-live="polite">
+      <div className="liberar-head">
+        <div>
+          <p className="eyebrow">Liberar viagem</p>
+          <h2>{trip.destination}</h2>
+        </div>
+        <button className="btn ghost sm" type="button" onClick={onFechar} aria-label="Fechar">
+          Fechar
+        </button>
+      </div>
+
+      {liberada ? (
+        <p className="sub">
+          Esta viagem já está liberada: Cofre, gastos e checklist funcionam para o grupo todo.
+        </p>
+      ) : !organizador ? (
+        <p className="sub">
+          Só quem organiza a viagem pode liberar. Você não precisa pagar nada — avise o
+          organizador.
+        </p>
+      ) : (
+        <>
+          <p className="sub">
+            Libera Cofre, gastos e checklist para todo o grupo desta viagem. Roteiro, ideias e
+            votação continuam grátis.
+          </p>
+          <div className="invite-actions">
+            {podeTestar && (
+              <button className="btn" type="button" onClick={onTeste} disabled={Boolean(acao)}>
+                {acao === "trial" ? "Liberando..." : `Testar ${TRIAL_DIAS} dias grátis`}
+              </button>
+            )}
+            {podeComprar && (
+              <button
+                className={`btn ${podeTestar ? "ghost" : ""}`}
+                type="button"
+                onClick={onPasse}
+                disabled={Boolean(acao)}
+              >
+                {acao === acaoPasse
+                  ? "Abrindo checkout..."
+                  : `Passe da viagem · R$ ${BILLING_COPY.trip_pass.amount / 100}`}
+              </button>
+            )}
+          </div>
+          {!podeTestar && !podeComprar && (
+            <p className="tiny">
+              O pagamento ainda não está aberto. Assim que ligarmos, o botão aparece aqui.
+            </p>
+          )}
+        </>
+      )}
+
+      <a className="tiny" href={`/v/${trip.slug}`}>
+        Voltar para a viagem
+      </a>
     </section>
   );
 }

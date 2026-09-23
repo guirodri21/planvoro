@@ -124,6 +124,17 @@ export function VaultAttachmentsBlock({
     setWorkingId(attachment.id);
     setError("");
 
+    /**
+     * A aba abre ja no clique e recebe o endereco quando ele chega.
+     *
+     * `window.open` depois de um `await` nao conta mais como gesto da
+     * pessoa, e o Safari do iPhone bloqueava a janela em silencio: o botao
+     * "Abrir" simplesmente nao fazia nada no celular. Para baixar nao ha
+     * aba — o arquivo vem com Content-Disposition e a pagina fica onde esta.
+     */
+    const aba = download ? null : window.open("", "_blank");
+    if (aba) aba.opener = null;
+
     try {
       const query = download ? "?download=1" : "";
       const res = await fetch(
@@ -133,8 +144,15 @@ export function VaultAttachmentsBlock({
       const json = await readApiJson<{ url?: string; error?: string }>(res);
       if (!res.ok || !json.url) throw new Error(json.error ?? "Não foi possível abrir o anexo.");
 
-      window.open(json.url, "_blank", "noopener,noreferrer");
+      if (download) {
+        window.location.href = json.url;
+      } else if (aba && !aba.closed) {
+        aba.location.href = json.url;
+      } else {
+        window.location.href = json.url;
+      }
     } catch (e) {
+      aba?.close();
       setError(e instanceof Error ? e.message : "Erro ao abrir anexo.");
     } finally {
       setWorkingId("");

@@ -6,7 +6,7 @@
 
 import { useState } from "react";
 import { REACTIONS, type Idea, type IdeaStatus, type IdeaVote, type Member } from "@/lib/types";
-import { authJsonHeaders } from "../_lib/api";
+import { authJsonHeaders, readApiJson } from "../_lib/api";
 import { formatMoney, formatScore } from "../_lib/format";
 import { IDEA_CATEGORIES } from "../_lib/workspace-types";
 
@@ -76,8 +76,8 @@ export function IdeasView({
           estimated_cost: estimatedCost || null,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar agora. Tente de novo.");
 
       setTitle("");
       setNotes("");
@@ -264,8 +264,8 @@ export function IdeaCard({
         headers: authJsonHeaders(accessToken),
         body: JSON.stringify({ value }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar agora. Tente de novo.");
 
       await onChange();
     } catch (e) {
@@ -287,8 +287,8 @@ export function IdeaCard({
         headers: authJsonHeaders(accessToken),
         body: JSON.stringify({ status }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar agora. Tente de novo.");
 
       await onChange();
     } catch (e) {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DEFAULT_OG_IMAGE, DEFAULT_OPEN_GRAPH } from "@/lib/site";
 import { supabaseAdmin } from "@/lib/supabase";
 import ExperimenteClient, { type SampleResponse } from "./experimente-client";
 
@@ -21,6 +22,16 @@ export const metadata: Metadata = {
   title: "Veja um roteiro de 2 dias, sem criar conta",
   description:
     "Um roteiro real montado pelo Planvoro, com horário e custo estimado de cada parada. Troque pelo seu destino e veja o seu em 1 minuto.",
+  // O canonical do layout raiz apontava esta pagina para a home.
+  alternates: { canonical: "/experimente" },
+  openGraph: {
+    ...DEFAULT_OPEN_GRAPH,
+    title: "Veja um roteiro de 2 dias no Planvoro, sem criar conta",
+    description:
+      "Um roteiro real com horário e custo de cada parada. Troque pelo seu destino e veja o seu em 1 minuto.",
+    url: "/experimente",
+    images: [DEFAULT_OG_IMAGE],
+  },
 };
 
 async function carregarExemplo(): Promise<SampleResponse | null> {

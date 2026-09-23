@@ -2,6 +2,7 @@ import { AuthScreen } from "@/components/auth-screen";
 
 export const metadata = {
   title: "Redefinir senha",
+  robots: { index: false },
 };
 
 /**

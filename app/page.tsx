@@ -1,5 +1,18 @@
+import type { Metadata } from "next";
 import Image from "next/image";
+import { DEFAULT_OPEN_GRAPH } from "@/lib/site";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
+
+/**
+ * Canonical e og:url moravam no layout raiz, e todo filho herdava os dois
+ * apontando para a home: /termos, /experimente e cada roteiro publico
+ * diziam ao Google "a versao oficial desta pagina e a home". Agora cada
+ * pagina declara o seu.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: { ...DEFAULT_OPEN_GRAPH, url: "/" },
+};
 
 export default function Home() {
   return (

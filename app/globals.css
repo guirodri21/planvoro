@@ -608,6 +608,20 @@ textarea:focus {
   margin-top: 10px;
 }
 
+/* WhatsApp, Copiar, Abrir e PDF: quatro por linha no computador, dois no
+   celular, em vez de uma fila unica que estourava a tela. */
+.public-actions {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .public-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .auth-shell {
   max-width: 620px;
   margin: 0 auto;
@@ -6413,6 +6427,26 @@ a.tiny {
 .btn-apagar:hover {
   border-color: rgba(180, 52, 42, 0.35);
   color: #b4342a;
+}
+
+/* ================================================ LIBERAR VIAGEM
+   Cartao de quem chega em /app?liberar=<slug>. */
+
+.liberar-card {
+  display: grid;
+  gap: 12px;
+  border-color: rgba(14, 156, 107, 0.36);
+}
+
+.liberar-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.liberar-head h2 {
+  margin: 0;
 }
 
 /*

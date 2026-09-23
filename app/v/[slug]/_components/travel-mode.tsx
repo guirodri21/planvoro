@@ -81,11 +81,11 @@ export function TravelModeView({
   const statusLabel = isDuringTrip
     ? "em andamento"
     : isAfterTrip
-      ? "pos-viagem"
+      ? "pós-viagem"
       : daysToTrip > 1
         ? `faltam ${daysToTrip} dias`
         : daysToTrip === 1
-          ? "amanha"
+          ? "amanhã"
           : "começa hoje";
   const focusEntry = currentEntry ?? nextEntry;
   const firstChecklist = overdueChecklist[0] ?? dueTodayChecklist[0] ?? openChecklist[0] ?? null;
@@ -296,7 +296,7 @@ export function TripAgendaView({
       `${outsideTripDates} ${pluralItens(outsideTripDates)} com data fora do periodo da viagem.`,
     attentionVault > 0 &&
       `${attentionVault} ${pluralItens(attentionVault)} marcado${attentionVault === 1 ? "" : "s"} para conferir.`,
-    entries.length > 0 && routeEntryCount === 0 && "A Agenda ainda depende so do Cofre; gere o roteiro para ver os passeios.",
+    entries.length > 0 && routeEntryCount === 0 && "A Agenda ainda depende só do Cofre; gere o roteiro para ver os passeios.",
   ].filter(Boolean) as string[];
 
   return (
