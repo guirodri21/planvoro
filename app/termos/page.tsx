@@ -3,7 +3,8 @@ import { LegalPage } from "@/components/legal-page";
 import { LEGAL, legalCompany, legalDocument, legalSupportEmail } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Termos de uso · Planvoro",
+  title: "Termos de uso",
+  alternates: { canonical: "/termos" },
   description: "As regras de uso do Planvoro: o que o serviço faz, o que não faz e o que cabe a cada lado.",
 };
 

@@ -3,7 +3,8 @@ import { LegalPage } from "@/components/legal-page";
 import { legalPrivacyEmail, legalSupportEmail } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Contato e suporte · Planvoro",
+  title: "Contato e suporte",
+  alternates: { canonical: "/contato" },
   description: "Como falar com o Planvoro: suporte, privacidade e o que enviar para agilizar.",
 };
 
