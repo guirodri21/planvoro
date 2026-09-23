@@ -1564,11 +1564,14 @@ function ItineraryView({
   slug: string;
   onChange: () => Promise<void> | void;
 }) {
+  const podeEditar = Boolean(me?.is_organizer && accessToken);
+
   return (
     <div className="card">
       <h2>Roteiro</h2>
       <p className="sub">
         Versão {itinerary.version} · reaja e comente em qualquer item para o grupo decidir junto
+        {podeEditar ? " · como organizador, você edita, reordena e adiciona itens" : ""}
       </p>
       {itinerary.rationale && (
         <div className="note" style={{ marginBottom: 18 }}>
@@ -1591,7 +1594,7 @@ function ItineraryView({
               </b>
               <span className="muted">{total} por pessoa</span>
             </div>
-            {day.itinerary_items.map((item) => (
+            {day.itinerary_items.map((item, index) => (
               <ItemRow
                 key={item.id}
                 accessToken={accessToken}
@@ -1602,8 +1605,14 @@ function ItineraryView({
                 me={me}
                 slug={slug}
                 onChange={onChange}
+                podeEditar={podeEditar}
+                primeiro={index === 0}
+                ultimo={index === day.itinerary_items.length - 1}
               />
             ))}
+            {podeEditar && (
+              <AddItemButton accessToken={accessToken as string} slug={slug} dayId={day.id} onChange={onChange} />
+            )}
           </div>
         );
       })}
@@ -1620,6 +1629,9 @@ function ItemRow({
   me,
   slug,
   onChange,
+  podeEditar = false,
+  primeiro = false,
+  ultimo = false,
 }: {
   accessToken: string | null;
   item: Item;
@@ -1629,8 +1641,34 @@ function ItemRow({
   me: Member | null;
   slug: string;
   onChange: () => Promise<void> | void;
+  podeEditar?: boolean;
+  primeiro?: boolean;
+  ultimo?: boolean;
 }) {
   const [open, setOpen] = useState(item.needs_vote);
+  const [editando, setEditando] = useState(false);
+  const [movendo, setMovendo] = useState(false);
+
+  async function mover(direcao: "up" | "down") {
+    if (!accessToken || movendo) return;
+    setMovendo(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/trips/${slug}/items/${item.id}`, {
+        method: "PATCH",
+        headers: authJsonHeaders(accessToken),
+        body: JSON.stringify({ move: direcao }),
+      });
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível mover o item.");
+      await onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao mover.");
+      setOpen(true);
+    } finally {
+      setMovendo(false);
+    }
+  }
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const [voting, setVoting] = useState(false);
@@ -1691,6 +1729,22 @@ function ItemRow({
     setSending(false);
   }
 
+  if (editando && accessToken) {
+    return (
+      <div className="item item-col">
+        <ItemForm
+          accessToken={accessToken}
+          slug={slug}
+          item={item}
+          onDone={async (mudou) => {
+            setEditando(false);
+            if (mudou) await onChange();
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="item item-col">
       <div className="item-main">
@@ -1741,6 +1795,34 @@ function ItemRow({
         >
           {comments.length > 0 ? `${comments.length} comentário${comments.length > 1 ? "s" : ""}` : "comentar"}
         </button>
+
+        {podeEditar && (
+          <span className="item-tools">
+            <button
+              className="react ghost"
+              type="button"
+              onClick={() => mover("up")}
+              disabled={primeiro || movendo}
+              aria-label={`Subir ${item.title}`}
+              title="Subir"
+            >
+              ↑
+            </button>
+            <button
+              className="react ghost"
+              type="button"
+              onClick={() => mover("down")}
+              disabled={ultimo || movendo}
+              aria-label={`Descer ${item.title}`}
+              title="Descer"
+            >
+              ↓
+            </button>
+            <button className="react ghost" type="button" onClick={() => setEditando(true)}>
+              editar
+            </button>
+          </span>
+        )}
       </div>
 
       {open && (
@@ -1789,6 +1871,167 @@ function ItemRow({
 
 
 
+
+/**
+ * Formulario de item do roteiro: o mesmo para criar e para editar.
+ *
+ * Custo e em real, como a soma do dia. Trocar o nome tira o selo de
+ * "verificado" no servidor — ele era do lugar antigo.
+ */
+function ItemForm({
+  accessToken,
+  slug,
+  item,
+  dayId,
+  onDone,
+}: {
+  accessToken: string;
+  slug: string;
+  item?: Item;
+  dayId?: string;
+  onDone: (mudou: boolean) => void | Promise<void>;
+}) {
+  const [title, setTitle] = useState(item?.title ?? "");
+  const [startTime, setStartTime] = useState(item?.start_time ?? "");
+  const [cost, setCost] = useState(item?.cost_estimate != null ? String(item.cost_estimate) : "");
+  const [description, setDescription] = useState(item?.description ?? "");
+  const [saving, setSaving] = useState(false);
+  const [confirmarRemocao, setConfirmarRemocao] = useState(false);
+  const [error, setError] = useState("");
+
+  async function enviar(method: "POST" | "PATCH" | "DELETE") {
+    if (saving) return;
+    setSaving(true);
+    setError("");
+    try {
+      const url =
+        method === "POST"
+          ? `/api/trips/${slug}/days/${dayId}/items`
+          : `/api/trips/${slug}/items/${item?.id}`;
+      const res = await fetch(url, {
+        method,
+        headers: authJsonHeaders(accessToken),
+        body:
+          method === "DELETE"
+            ? undefined
+            : JSON.stringify({
+                title,
+                start_time: startTime,
+                cost_estimate: cost,
+                description,
+              }),
+      });
+      const json = await readApiJson<{ error?: string }>(res);
+      if (!res.ok) throw new Error(json.error ?? "Não foi possível salvar.");
+      await onDone(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao salvar.");
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form
+      className="item-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void enviar(item ? "PATCH" : "POST");
+      }}
+    >
+      <div className="item-form-grid">
+        <div>
+          <label>O quê</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Jantar no restaurante X"
+            maxLength={120}
+            autoFocus
+          />
+        </div>
+        <div>
+          <label>Horário</label>
+          <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+        </div>
+        <div>
+          <label>Custo por pessoa (R$)</label>
+          <input
+            inputMode="decimal"
+            value={cost}
+            onChange={(e) => setCost(e.target.value)}
+            placeholder="0"
+          />
+        </div>
+      </div>
+      <label>Observação</label>
+      <textarea
+        rows={2}
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        maxLength={600}
+        placeholder="Endereço, reserva, dica..."
+      />
+      {error && <div className="err">{error}</div>}
+      <div className="item-form-actions">
+        <button className="btn sm" type="submit" disabled={saving || title.trim().length < 2}>
+          {saving ? "Salvando..." : item ? "Salvar" : "Adicionar ao dia"}
+        </button>
+        <button className="btn ghost sm" type="button" onClick={() => onDone(false)} disabled={saving}>
+          Cancelar
+        </button>
+        {item &&
+          (confirmarRemocao ? (
+            <button className="btn sm btn-perigo" type="button" onClick={() => enviar("DELETE")} disabled={saving}>
+              Confirmar remoção
+            </button>
+          ) : (
+            <button className="item-remover" type="button" onClick={() => setConfirmarRemocao(true)}>
+              Remover item
+            </button>
+          ))}
+      </div>
+      {item && confirmarRemocao && (
+        <p className="tiny">Os votos e comentários deste item saem junto.</p>
+      )}
+    </form>
+  );
+}
+
+function AddItemButton({
+  accessToken,
+  slug,
+  dayId,
+  onChange,
+}: {
+  accessToken: string;
+  slug: string;
+  dayId: string;
+  onChange: () => Promise<void> | void;
+}) {
+  const [aberto, setAberto] = useState(false);
+
+  if (!aberto) {
+    return (
+      <button className="item-add" type="button" onClick={() => setAberto(true)}>
+        + Adicionar item neste dia
+      </button>
+    );
+  }
+
+  return (
+    <div className="item item-col">
+      <ItemForm
+        accessToken={accessToken}
+        slug={slug}
+        dayId={dayId}
+        onDone={async (mudou) => {
+          setAberto(false);
+          if (mudou) await onChange();
+        }}
+      />
+    </div>
+  );
+}
 
 /**
  * O gatilho de crescimento: a pessoa acabou de ver valor sozinha.
