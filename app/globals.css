@@ -7431,3 +7431,251 @@ section {
 .pain-list .card .small {
   margin-bottom: 0;
 }
+
+/* ================================================ NOVA VIAGEM (/nova)
+   Revisto em 23/09/2026. Cabecalho curto, etapas clicaveis e uma barra
+   de progresso fina; no celular, o formulario vem primeiro e a previa
+   so aparece quando a criacao comeca. */
+
+.wizard-shell {
+  max-width: 1180px;
+}
+
+.wizard-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: end;
+  gap: 12px 32px;
+  margin: 8px 0 22px;
+}
+
+.wizard-head h1 {
+  margin-top: 10px;
+  font-size: clamp(30px, 3.4vw, 44px);
+  line-height: 1.05;
+}
+
+.wizard-head .sub {
+  max-width: 52ch;
+  margin: 0;
+  font-size: 15px;
+}
+
+/* Etapas: lista de botoes, com barra de progresso por cima. */
+.wizard-progress {
+  display: block;
+  margin: 0 0 18px;
+}
+
+.wizard-progress ol {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wizard-progress-bar {
+  height: 4px;
+  margin-bottom: 12px;
+  border-radius: 999px;
+  background: rgba(16, 24, 22, 0.08);
+  overflow: hidden;
+}
+
+.wizard-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--brand), var(--accent));
+  transition: width 0.3s var(--ease);
+}
+
+button.wizard-step {
+  width: 100%;
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    border-color 0.15s var(--ease),
+    background-color 0.15s var(--ease);
+}
+
+button.wizard-step:disabled {
+  cursor: default;
+}
+
+button.wizard-step:not(:disabled):hover {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+button.wizard-step.atual {
+  border-color: rgba(16, 185, 129, 0.45);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+.wizard-count {
+  margin: 0 0 6px;
+  color: var(--brand-strong);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.wizard-card {
+  min-height: 0;
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+}
+
+.wizard-aside {
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: none;
+}
+
+.wizard-panel h2 {
+  font-size: clamp(24px, 2.4vw, 32px);
+}
+
+.wizard-suggest {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.chip.sm {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.wizard-duration {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 4px;
+  margin: 14px 0 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-size: 13.5px;
+}
+
+.wizard-hint {
+  margin: 18px 0 0;
+  color: var(--text-soft);
+  font-size: 13.5px;
+}
+
+.wizard-hint::before {
+  content: "→ ";
+  color: var(--brand);
+  font-weight: 700;
+}
+
+.option-card {
+  min-height: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .wizard-head {
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 16px;
+  }
+
+  .wizard-progress ol {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .wizard-progress ol::-webkit-scrollbar {
+    display: none;
+  }
+
+  .wizard-progress li {
+    flex: 0 0 auto;
+  }
+
+  button.wizard-step {
+    min-width: 0;
+    width: auto;
+  }
+
+  /* So o numero nas etapas que nao sao a atual: sete rotulos nao cabem, e
+     a barra de progresso e o "Etapa 3 de 7" ja dizem onde a pessoa esta. */
+  button.wizard-step:not(.atual) b {
+    display: none;
+  }
+
+  /* A previa repete o que a pessoa acabou de digitar e empurrava o botao
+     de continuar para longe. Volta quando a criacao comeca, para mostrar
+     o andamento. */
+  .wizard-layout:not(.is-creating) .wizard-aside {
+    display: none;
+  }
+
+  /* relative, nao static: o brilho decorativo (::after) e absoluto e,
+     sem uma caixa posicionada, escapava 46px para fora da tela. */
+  .wizard-layout.is-creating .wizard-aside {
+    position: relative;
+    top: auto;
+    order: -1;
+  }
+}
+
+@media (max-width: 560px) {
+  .wizard-head h1 {
+    font-size: 28px;
+  }
+
+  .wizard-head .sub {
+    font-size: 14px;
+  }
+
+  .wizard-card {
+    padding: 20px 16px;
+  }
+}
+
+.plan-preview h2 {
+  font-size: clamp(26px, 2.4vw, 34px);
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  /* Criando no celular: so o que importa agora e o andamento. Prontidao,
+     tipo, ritmo e interesses a pessoa acabou de conferir no resumo. */
+  .wizard-layout.is-creating .plan-readiness,
+  .wizard-layout.is-creating .plan-preview-grid,
+  .wizard-layout.is-creating .plan-signal-cloud {
+    display: none;
+  }
+
+  .wizard-layout.is-creating .wizard-aside {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .wizard-card .option-card {
+    padding: 14px 16px;
+  }
+
+  .wizard-card .option-card span {
+    margin-top: 4px;
+  }
+}
