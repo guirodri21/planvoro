@@ -9,6 +9,7 @@ import {
   type CSSProperties,
 } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
+import { Icon, type IconName } from "@/components/icons";
 import { DuplicateTrip } from "@/components/duplicate-trip";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -342,20 +343,36 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     setGenerating(false);
   }
 
+  /**
+   * Layout em duas colunas: a viagem e a navegacao numa lateral fixa, o
+   * conteudo da aba ocupando o resto da largura.
+   *
+   * Antes tudo empilhava no centro — cabecalho, uma parede de dez abas e
+   * o conteudo — e cada troca de aba empurrava a pessoa de volta ao topo
+   * para achar a proxima. Na lateral a navegacao fica sempre a vista, e o
+   * conteudo ganha a largura inteira da tela. No celular a lateral vira
+   * um cabecalho compacto com a barra de abas rolando de lado.
+   */
+  const hasWorkspace = Boolean(user && me);
+
   return (
-    <>
-      <div className="card">
-        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 14 }}>
-          <div>
-            <h1 style={{ marginBottom: 4 }}>{trip.destination}</h1>
-            <p className="sub" style={{ margin: 0 }}>
-              {formatTripDate(trip.start_date)} a {formatTripDate(trip.end_date)} ·{" "}
+    <div className={`app-shell ws-shell ${hasWorkspace ? "" : "ws-shell-solo"}`}>
+      <aside className="ws-sidebar" aria-label="Viagem">
+        <div className="ws-trip">
+          <a className="ws-back" href="/app">
+            ← Minhas viagens
+          </a>
+          <h1>{trip.destination}</h1>
+          <p className="ws-trip-dates">
+            {formatTripDate(trip.start_date)} a {formatTripDate(trip.end_date)}
+          </p>
+          <div className="ws-trip-tags">
+            <span>
               {trip.is_solo || trip.party_size === 1
-                ? "viagem individual"
-                : `${trip.party_size} pessoas`}{" "}
-              ·{" "}
-              {trip.budget_band ?? "orçamento livre"}
-            </p>
+                ? "Viagem individual"
+                : `${trip.party_size} pessoas`}
+            </span>
+            <span>{trip.budget_band ?? "Orçamento livre"}</span>
           </div>
           <div className="avatars">
             {members.map((member) => (
@@ -370,18 +387,8 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             ))}
           </div>
         </div>
-      </div>
 
-      {!user ? (
-        <AuthRequiredCard
-          title="Entre para acessar a viagem"
-          description="Agora o Planvoro usa conta para ligar você aos votos, comentários, preferências e gastos dessa viagem."
-          nextPath={`/v/${slug}`}
-        />
-      ) : !me ? (
-        <JoinCard accessToken={accessToken} slug={slug} userName={userDisplayName(user)} onJoined={load} />
-      ) : (
-        <>
+        {hasWorkspace && (
           <WorkspaceTabs
             tab={tab}
             onChange={irParaAba}
@@ -392,7 +399,20 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             ideaCount={ideas.length}
             travelPulseCount={travelPulseCount}
           />
+        )}
+      </aside>
 
+      <div className="ws-content">
+      {!user ? (
+        <AuthRequiredCard
+          title="Entre para acessar a viagem"
+          description="Agora o Planvoro usa conta para ligar você aos votos, comentários, preferências e gastos dessa viagem."
+          nextPath={`/v/${slug}`}
+        />
+      ) : !me ? (
+        <JoinCard accessToken={accessToken} slug={slug} userName={userDisplayName(user)} onJoined={load} />
+      ) : (
+        <>
           {locked && <TripLockedNotice slug={slug} isOrganizer={Boolean(me?.is_organizer)} />}
 
           {tab === "grupo" && (
@@ -601,7 +621,8 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
           )}
         </div>
       )}
-    </>
+      </div>
+    </div>
   );
 }
 
@@ -635,46 +656,87 @@ function WorkspaceTabs({
    * Agora so aparece numero onde ele significa "tem coisa esperando por
    * voce". O resto e rotulo, e o conteudo esta a um clique.
    */
-  const tabs: Array<{ id: WorkspaceTab; label: string; alerta?: number }> = [
-    { id: "grupo", label: groupLabel, alerta: Math.max(0, memberCount - preferencesCount) },
-    { id: "checklist", label: "Checklist", alerta: checklistOpenCount },
-    { id: "ideias", label: "Ideias", alerta: ideaCount },
-    { id: "roteiro", label: "Roteiro" },
-    { id: "agenda", label: "Agenda" },
-    { id: "mapa", label: "Mapa" },
-    { id: "viagem", label: "Modo viagem", alerta: travelPulseCount },
-    { id: "cofre", label: "Cofre" },
-    { id: "agente", label: "Agente" },
-    { id: "gastos", label: "Gastos" },
+  const grupos: Array<{
+    titulo: string;
+    itens: Array<{ id: WorkspaceTab; label: string; icon: IconName; alerta?: number }>;
+  }> = [
+    {
+      titulo: "Planejar",
+      itens: [
+        {
+          id: "grupo",
+          label: groupLabel,
+          icon: "grupo",
+          alerta: Math.max(0, memberCount - preferencesCount),
+        },
+        { id: "ideias", label: "Ideias", icon: "ideias", alerta: ideaCount },
+        { id: "roteiro", label: "Roteiro", icon: "roteiro" },
+        { id: "mapa", label: "Mapa", icon: "mapa" },
+      ],
+    },
+    {
+      titulo: "Organizar",
+      itens: [
+        { id: "cofre", label: "Cofre", icon: "cofre" },
+        { id: "checklist", label: "Checklist", icon: "checklist", alerta: checklistOpenCount },
+        { id: "gastos", label: "Gastos", icon: "gastos" },
+      ],
+    },
+    {
+      titulo: "Durante a viagem",
+      itens: [
+        { id: "agenda", label: "Agenda", icon: "agenda" },
+        { id: "viagem", label: "Modo viagem", icon: "viagem", alerta: travelPulseCount },
+        { id: "agente", label: "Agente", icon: "agente" },
+      ],
+    },
   ];
 
   /**
    * No celular a barra rola de lado. Quem chegava por um link com #gastos,
    * ou tocava num aviso do resumo, ficava com a aba ativa escondida fora
    * da tela — e sem ver qual estava marcada.
+   *
+   * Rola so a propria barra, e so quando ela transborda: `scrollIntoView`
+   * tambem mexia na pagina, e no computador — com a navegacao na lateral —
+   * cada troca de aba dava um pulo vertical.
    */
-  const barraRef = useRef<HTMLDivElement>(null);
+  const barraRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const ativa = barraRef.current?.querySelector<HTMLElement>(".tab-btn.on");
-    ativa?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    const barra = barraRef.current;
+    const ativa = barra?.querySelector<HTMLElement>(".ws-nav-item.on");
+    if (!barra || !ativa || barra.scrollWidth <= barra.clientWidth) return;
+    barra.scrollTo({
+      left: ativa.offsetLeft - barra.clientWidth / 2 + ativa.clientWidth / 2,
+      behavior: "smooth",
+    });
   }, [tab]);
 
   return (
-    <div className="workspace-tabs" role="tablist" aria-label="Seções da viagem" ref={barraRef}>
-      {tabs.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          role="tab"
-          aria-selected={tab === item.id}
-          className={`tab-btn ${tab === item.id ? "on" : ""}`}
-          onClick={() => onChange(item.id)}
-        >
-          <span>{item.label}</span>
-          {item.alerta ? <em className="tab-alerta">{item.alerta}</em> : null}
-        </button>
+    <nav className="ws-nav" aria-label="Seções da viagem" ref={barraRef}>
+      {grupos.map((grupo) => (
+        <div className="ws-nav-group" key={grupo.titulo}>
+          <span className="ws-nav-title">{grupo.titulo}</span>
+          {grupo.itens.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              aria-current={tab === item.id ? "page" : undefined}
+              className={`ws-nav-item ${tab === item.id ? "on" : ""}`}
+              onClick={() => onChange(item.id)}
+            >
+              <Icon name={item.icon} />
+              <span>{item.label}</span>
+              {item.alerta ? (
+                <em className="tab-alerta" aria-label={`${item.alerta} pendente(s)`}>
+                  {item.alerta}
+                </em>
+              ) : null}
+            </button>
+          ))}
+        </div>
       ))}
-    </div>
+    </nav>
   );
 }
 
