@@ -474,7 +474,7 @@ function NovaViagemForm() {
             <a className="btn" href="/app">
               Ver minhas viagens
             </a>
-            <a className="btn ghost" href="/#precos">
+            <a className="btn ghost" href="/planos">
               Ver planos
             </a>
           </div>

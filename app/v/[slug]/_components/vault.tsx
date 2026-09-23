@@ -654,7 +654,7 @@ export function TravelVaultView({
             fica preso.
           </div>
           {me.is_organizer ? (
-            <a className="btn full" href={`/app?liberar=${slug}`}>
+            <a className="btn full" href={`/planos?viagem=${slug}`}>
               Liberar esta viagem
             </a>
           ) : (

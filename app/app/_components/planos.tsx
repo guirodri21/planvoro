@@ -109,7 +109,7 @@ export function Planos({
 
         {/* A tabela completa mora na home. Levar para la custa um clique e
             evita manter dois lugares dizendo quanto custa cada plano. */}
-        <a className="btn ghost" href="/#precos" onClick={() => track("planos_abertos")}>
+        <a className="btn ghost" href="/planos" onClick={() => track("planos_abertos")}>
           Ver planos
         </a>
       </div>
