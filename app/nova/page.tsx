@@ -133,6 +133,25 @@ function tripDuration(startDate: string, endDate: string) {
   return Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
 }
 
+/** Atalhos de destino no primeiro passo. So preenchem o campo. */
+const DESTINOS_SUGERIDOS = ["Lisboa", "Buenos Aires", "Rio de Janeiro", "Santiago", "Salvador", "Paris"];
+
+const longDateFormatter = new Intl.DateTimeFormat("pt-BR", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
+function formatLongDate(value: string) {
+  if (!value) return "";
+  return longDateFormatter.format(new Date(`${value}T12:00:00`));
+}
+
+function hojeISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 /** Limite generoso, so para nao aceitar um destino colado de um livro. */
 const MAX_DESTINO_NA_URL = 60;
 
@@ -166,6 +185,8 @@ function NovaViagemForm() {
   const destinoInicial = (params.get("destino") ?? "").trim().slice(0, MAX_DESTINO_NA_URL);
   const { session, user, loading: authLoading } = useAuth();
   const [step, setStep] = useState(0);
+  /** Etapa mais longe ja alcancada: da para voltar e pular ate ela. */
+  const [maxStep, setMaxStep] = useState(0);
   const [phase, setPhase] = useState<SubmitPhase>("idle");
   const [error, setError] = useState("");
   /** Motivo pelo qual esta conta nao pode abrir mais uma viagem agora. */
@@ -244,7 +265,10 @@ function NovaViagemForm() {
       );
     }
     if (step === 2) {
-      return isSolo || (Number.isFinite(form.party_size) && form.party_size >= 2);
+      return (
+        isSolo ||
+        (Number.isFinite(form.party_size) && form.party_size >= 2 && form.party_size <= 40)
+      );
     }
     if (step === 3) {
       return Boolean(form.budget_band && form.daily_budget);
@@ -255,15 +279,52 @@ function NovaViagemForm() {
     return true;
   }
 
+  /**
+   * Por que o "Continuar" esta desligado.
+   *
+   * O botao so ficava cinza, sem dizer o que faltava. Quem apagou o nome
+   * sem perceber, ou pos a volta antes da ida, ficava clicando num botao
+   * morto.
+   */
+  function motivoBloqueio(): string {
+    if (step === 0) {
+      if (form.organizer_name.trim().length < 2) return "Diga seu nome (pelo menos 2 letras).";
+      if (form.destination.trim().length < 2) return "Diga para onde você vai.";
+    }
+    if (step === 1) {
+      if (!form.start_date || !form.end_date) return "Escolha a data de ida e a de volta.";
+      if (durationDays === 0) return "A volta não pode ser antes da ida.";
+    }
+    if (step === 2 && !isSolo) {
+      if (!Number.isFinite(form.party_size) || form.party_size < 2) return "Grupo precisa de pelo menos 2 pessoas.";
+      if (form.party_size > 40) return "O limite é de 40 pessoas por viagem.";
+    }
+    if (step === 4) {
+      if (!interests.length) return "Escolha pelo menos um interesse.";
+      if (!styles.length) return "Escolha pelo menos um estilo de viagem.";
+    }
+    return "";
+  }
+
+  function irPara(next: number) {
+    setError("");
+    setStep(next);
+    // No celular o formulario fica abaixo do cabecalho; sem isto a etapa
+    // nova abria no meio da tela, com o titulo dela fora de vista.
+    if (typeof window !== "undefined") {
+      document.querySelector(".wizard-card")?.scrollIntoView({ block: "start", behavior: "smooth" });
+    }
+  }
+
   function goNext() {
     if (!currentStepValid()) return;
-    setError("");
-    setStep((current) => Math.min(current + 1, STEPS.length - 1));
+    const next = Math.min(step + 1, STEPS.length - 1);
+    setMaxStep((current) => Math.max(current, next));
+    irPara(next);
   }
 
   function goBack() {
-    setError("");
-    setStep((current) => Math.max(current - 1, 0));
+    irPara(Math.max(step - 1, 0));
   }
 
   async function submit() {
@@ -424,19 +485,46 @@ function NovaViagemForm() {
 
   return (
     <div className="wizard-shell">
-      <div className="wizard-hero">
-        <p className="eyebrow">Nova viagem</p>
-        <h1>Monte a base da viagem antes da IA começar.</h1>
+      {/*
+        Cabecalho curto. O anterior tinha titulo de 72px e tres linhas de
+        explicacao, e o formulario so comecava na segunda tela do celular.
+      */}
+      <div className="wizard-head">
+        <div>
+          <p className="eyebrow">Nova viagem</p>
+          <h1>Vamos montar sua viagem</h1>
+        </div>
         <p className="sub">
-          Um onboarding curto, com preview vivo do plano. Quando você confirma, o Planvoro abre o
-          workspace com roteiro inicial, preferências salvas e próximos passos para organizar o grupo.
+          Sete perguntas rápidas, cerca de um minuto. No fim, a IA monta o primeiro roteiro e você
+          pode ajustar tudo depois.
         </p>
       </div>
 
-      <WizardProgress step={step} />
+      <WizardProgress
+        step={step}
+        maxStep={isSubmitting ? -1 : maxStep}
+        onGo={(alvo) => {
+          // Para frente so com a etapa atual valida: senao dava para pular
+          // uma data apagada direto para o resumo.
+          if (alvo > step && !currentStepValid()) return;
+          irPara(alvo);
+        }}
+      />
 
-      <div className="wizard-layout">
-        <section className="wizard-card">
+      <div className={`wizard-layout ${isSubmitting ? "is-creating" : ""}`}>
+        <form
+          className="wizard-card"
+          noValidate
+          onSubmit={(event) => {
+            // Enter avanca a etapa. Na ultima nao: criar a viagem gasta uma
+            // geracao de roteiro, e precisa de um clique de proposito.
+            event.preventDefault();
+            if (step < STEPS.length - 1) goNext();
+          }}
+        >
+          <p className="wizard-count">
+            Etapa {step + 1} de {STEPS.length}
+          </p>
           {step === 0 && (
             <WizardPanel title="Para onde você vai?" description="Comece pelo básico. Você pode editar tudo depois.">
               <label>Seu nome</label>
@@ -451,8 +539,22 @@ function NovaViagemForm() {
                 autoFocus
                 value={form.destination}
                 placeholder="Lisboa, Portugal"
+                maxLength={80}
                 onChange={(event) => updateForm({ destination: event.target.value })}
               />
+              <div className="wizard-suggest">
+                <span className="tiny">Sugestões:</span>
+                {DESTINOS_SUGERIDOS.map((destino) => (
+                  <button
+                    key={destino}
+                    type="button"
+                    className={`chip sm ${form.destination === destino ? "on" : ""}`}
+                    onClick={() => updateForm({ destination: destino })}
+                  >
+                    {destino}
+                  </button>
+                ))}
+              </div>
             </WizardPanel>
           )}
 
@@ -479,6 +581,25 @@ function NovaViagemForm() {
               </div>
               {form.start_date && form.end_date && new Date(form.end_date) < new Date(form.start_date) && (
                 <div className="err">A volta não pode ser antes da ida.</div>
+              )}
+              {durationDays > 0 && (
+                <p className="wizard-duration">
+                  <b>
+                    {durationDays} dia{durationDays === 1 ? "" : "s"}
+                  </b>
+                  {durationDays > 1 ? ` · ${durationDays - 1} noite${durationDays === 2 ? "" : "s"}` : ""}
+                </p>
+              )}
+              {form.start_date && form.start_date < hojeISO() && (
+                <p className="tiny">
+                  Essa data já passou. Tudo bem se for para registrar uma viagem que já aconteceu.
+                </p>
+              )}
+              {durationDays > 21 && (
+                <p className="tiny">
+                  Viagens longas têm o roteiro gerado em partes de uma semana. Pode levar alguns
+                  minutos, e você acompanha o progresso na própria viagem.
+                </p>
               )}
             </WizardPanel>
           )}
@@ -607,11 +728,21 @@ function NovaViagemForm() {
             <WizardPanel title="Tudo pronto para lançar?" description="Confira o plano. Depois abrimos a central completa da viagem.">
               <div className="summary-grid">
                 <SummaryItem label="Destino" value={form.destination || "Não informado"} />
-                <SummaryItem label="Datas" value={`${form.start_date || "ida"} até ${form.end_date || "volta"}`} />
-                <SummaryItem label="Quem vai" value={`${selectedKind.label} · ${isSolo ? 1 : form.party_size} pessoa(s)`} />
+                {/* Era "2026-11-10 até 2026-11-14": formato de banco na tela. */}
+                <SummaryItem
+                  label="Datas"
+                  value={`${formatLongDate(form.start_date)} a ${formatLongDate(form.end_date)} · ${durationDays} dia${durationDays === 1 ? "" : "s"}`}
+                />
+                <SummaryItem
+                  label="Quem vai"
+                  value={`${selectedKind.label} · ${isSolo ? 1 : form.party_size} ${isSolo || form.party_size === 1 ? "pessoa" : "pessoas"}`}
+                />
                 <SummaryItem label="Orçamento" value={`${form.budget_band} · ${form.daily_budget}`} />
                 <SummaryItem label="Ritmo" value={form.pace} />
                 <SummaryItem label="Interesses" value={[...interests, ...styles].slice(0, 6).join(", ")} />
+                {restrictions.length > 0 && (
+                  <SummaryItem label="Cuidados" value={restrictions.join(", ")} />
+                )}
               </div>
 
               <div className="launch-preview">
@@ -649,12 +780,18 @@ function NovaViagemForm() {
 
           {error && <div className="err">{error}</div>}
 
+          {!isSubmitting && motivoBloqueio() && step < STEPS.length - 1 && (
+            <p className="wizard-hint" role="status">
+              {motivoBloqueio()}
+            </p>
+          )}
+
           <div className="wizard-actions">
             <button className="btn ghost" type="button" onClick={goBack} disabled={step === 0 || isSubmitting}>
               Voltar
             </button>
             {step < STEPS.length - 1 ? (
-              <button className="btn" type="button" onClick={goNext} disabled={!currentStepValid() || isSubmitting}>
+              <button className="btn" type="submit" disabled={!currentStepValid() || isSubmitting}>
                 Continuar
               </button>
             ) : (
@@ -671,7 +808,7 @@ function NovaViagemForm() {
               </button>
             )}
           </div>
-        </section>
+        </form>
 
         <aside className="wizard-aside">
           <TripPlanPreview
@@ -787,16 +924,47 @@ function TripPlanPreview({
   );
 }
 
-function WizardProgress({ step }: { step: number }) {
+/**
+ * Etapas clicaveis.
+ *
+ * Eram so indicadores: para corrigir a data vista no resumo, a pessoa
+ * apertava "Voltar" cinco vezes. Agora qualquer etapa ja visitada abre
+ * direto. Durante a criacao (`maxStep` -1) nada e clicavel.
+ */
+function WizardProgress({
+  step,
+  maxStep,
+  onGo,
+}: {
+  step: number;
+  maxStep: number;
+  onGo: (step: number) => void;
+}) {
   return (
-    <div className="wizard-progress" aria-label="Progresso de criação da viagem">
-      {STEPS.map((label, index) => (
-        <div className={`wizard-step ${index <= step ? "on" : ""}`} key={label}>
-          <span>{index + 1}</span>
-          <b>{label}</b>
-        </div>
-      ))}
-    </div>
+    <nav className="wizard-progress" aria-label="Etapas da criação da viagem">
+      <div className="wizard-progress-bar" aria-hidden="true">
+        <span style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+      </div>
+      <ol>
+        {STEPS.map((label, index) => {
+          const alcancavel = index <= maxStep && index !== step;
+          return (
+            <li key={label}>
+              <button
+                type="button"
+                className={`wizard-step ${index <= step ? "on" : ""} ${index === step ? "atual" : ""}`}
+                aria-current={index === step ? "step" : undefined}
+                disabled={!alcancavel}
+                onClick={() => onGo(index)}
+              >
+                <span>{index < step ? "✓" : index + 1}</span>
+                <b>{label}</b>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
   );
 }
 
