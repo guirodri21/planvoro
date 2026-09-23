@@ -1,6 +1,6 @@
 # Planvoro - Geral da SaaS e proximos passos
 
-Atualizado em: 01/09/2026
+Atualizado em: 23/09/2026
 
 Este arquivo e o handoff operacional do Planvoro. Ele resume o que a SaaS e, o que ja existe no codigo, o estado atual de deploy e o que deve ser feito em seguida.
 
@@ -80,17 +80,12 @@ GitHub:
 https://github.com/guirodri21/planvoro
 ```
 
-Branch remota ativa:
+Branch de producao: `main`. A Vercel esta ligada ao GitHub e todo
+merge na `main` vira deploy de producao sozinho. O fluxo e branch propria
+a partir da `main`, PR e merge (detalhes na secao 9 e no `CLAUDE.md`).
 
-```text
-claude/consegye-ver-planvoro-ysh8r9
-```
-
-Comando correto de push:
-
-```bash
-git push origin HEAD:claude/consegye-ver-planvoro-ysh8r9
-```
+A branch `claude/consegye-ver-planvoro-ysh8r9` e historica: nao usar
+como destino de push nem de deploy.
 
 Producao:
 
@@ -396,17 +391,17 @@ git add -- <arquivos>
 git commit -m "tipo(planvoro): mensagem curta"
 ```
 
-Push correto:
+Push da branch de trabalho e PR para a `main`:
 
 ```bash
-git push origin HEAD:claude/consegye-ver-planvoro-ysh8r9
+git fetch origin main
+git merge origin/main   # a branch precisa conter a main inteira
+git push -u origin <sua-branch>
 ```
 
-Deploy producao:
-
-```bash
-vercel --prod --yes
-```
+Deploy producao: acontece sozinho no merge do PR na `main`. Nao publicar
+com `vercel --prod` a partir de branch que nao contenha a `main` — o
+deploy substitui o que esta no ar e apaga o que so a `main` tem.
 
 Inspecionar deploy:
 
@@ -588,18 +583,14 @@ IA:
 
 Vercel:
 
-- Producao atual roda em `https://planvoro-app.vercel.app`.
-- Projeto esta linkado no CLI.
-- Deploy de app deve ser feito com `vercel --prod --yes`.
+- Producao roda em `https://planvoro.com.br` (e em `www` e
+  `planvoro-app.vercel.app`, que nao pode ser removida).
+- Deploy de producao acontece sozinho a cada merge na `main`.
 
 Git:
 
-- Branch local chama `master`, mas a branch remota ativa tem outro nome.
-- Usar push explicito:
-
-```bash
-git push origin HEAD:claude/consegye-ver-planvoro-ysh8r9
-```
+- Branch de producao: `main`.
+- Trabalhar em branch propria, abrir PR para a `main` e fazer merge.
 
 ## 12. Definition of done para proximas entregas
 
@@ -610,8 +601,7 @@ Uma entrega so deve ser considerada pronta quando:
 - Nao ha secrets no diff.
 - O diff foi revisado.
 - Commit foi criado.
-- Push foi feito.
-- Se afetar app em producao, deploy Vercel foi feito.
+- Push foi feito e o PR entrou na `main`.
 - O deploy ficou `READY`.
 - O usuario recebeu resumo curto do que mudou e o que testar.
 
@@ -632,11 +622,9 @@ negocio.
    Rate Limits: ele vem em 2 e-mails por hora, e quem esquece descobre na
    terceira conta criada.
 
-2. **Preencher `lib/legal.ts`.** Faltam `city`, `jurisdiction` e
-   `document`. Com CNPJ a recomendacao inverte em relacao ao que estava
-   escrito no proprio arquivo: CNPJ e registro publico e deve ser
-   publicado. A regra antiga valia para CPF, que exposto em pagina publica
-   vira materia-prima para fraude de identidade.
+2. ~~Preencher `lib/legal.ts`.~~ Feito em 05/09: nome, CNPJ, cidade e
+   e-mails preenchidos. `jurisdiction` fica vazio de proposito (eleger foro
+   contra consumidor e clausula abusiva pelo CDC).
 
 3. **Chave da AbacatePay.** Toda conta comeca em Dev mode, onde os
    pagamentos sao simulados — da para validar o fluxo inteiro antes da
@@ -663,7 +651,7 @@ cliente completa a compra e nada e cobrado.
 ```text
 Continuar o Planvoro em C:\Users\guiro\Downloads\planvoro_1\planvoro-app.
 Leia primeiro PLANVORO-PROXIMOS-PASSOS.md.
-Rodar o push dos commits locais antes de comecar.
+Trabalhar em branch a partir da main e entregar por PR para a main.
 Nao expor secrets. Rodar npx tsc --noEmit e npm run build antes de
 considerar pronto.
 ```

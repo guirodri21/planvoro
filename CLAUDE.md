@@ -54,53 +54,53 @@ npm run build
 
 ## Git e deploy
 
-A branch local chama `master`, mas a branch remota ativa e:
+A producao sai da branch `main`. A Vercel esta ligada ao GitHub: todo
+push ou merge na `main` vira deploy de producao sozinho, sem
+`vercel --prod`.
 
-```text
-claude/consegye-ver-planvoro-ysh8r9
-```
-
-Push correto:
-
-```bash
-git push origin HEAD:claude/consegye-ver-planvoro-ysh8r9
-```
-
-Deploy producao:
+Por isso, nunca publicar a partir de uma branch que nao contenha a `main`
+inteira: o deploy substituiria o que esta no ar e apagaria o que so a
+`main` tem. Antes de publicar, trazer a `main`:
 
 ```bash
-vercel --prod --yes
+git fetch origin main
+git merge origin/main
 ```
 
-URL de producao:
+Fluxo de entrega:
+
+1. Trabalhar numa branch propria, criada a partir da `main`.
+2. Rodar `npx tsc --noEmit` e `npm run build`.
+3. Commit e push da branch.
+4. Abrir PR para a `main` e fazer o merge. O deploy acontece no merge.
+5. Conferir na Vercel se o deploy de producao ficou `READY`.
+
+A branch `claude/consegye-ver-planvoro-ysh8r9` e historica. Nao usar como
+destino de push nem de deploy.
+
+URLs de producao (as tres apontam para o mesmo deploy):
 
 ```text
+https://planvoro.com.br
+https://www.planvoro.com.br
 https://planvoro-app.vercel.app
 ```
 
+`planvoro-app.vercel.app` nao pode ser removida: ha links de confirmacao
+de e-mail ja enviados que apontam para ela.
+
 ## Proxima tarefa recomendada
 
-Testar em producao o que foi entregue em 26/08/2026: anexos do Cofre,
-limites de uso da IA, exclusao de conta e acabamento mobile. Nada disso
-foi exercitado por uma pessoa ainda, so por tipagem e build.
+Testar logado, de preferencia no celular, o que entrou em 23/09/2026
+(PR #2). Nada disso foi clicado por uma pessoa, so passou por tipagem e
+build:
 
-Depois, na ordem:
+- salvar preferencias e ver erro quando o servidor recusa;
+- abrir anexo do Cofre no iPhone (Safari);
+- "Liberar esta viagem" levando ao cartao em `/app?liberar=<slug>`;
+- viagem com mais de 7 dias gerando o roteiro inteiro, em lotes;
+- aba do workspace no hash da URL (`#cofre`), recarregar e voltar.
 
-1. Preencher `lib/legal.ts` (razao social, CNPJ, foro, e-mails). Enquanto
-   estiver em branco, as paginas legais se declaram em preparacao.
-2. AbacatePay. O codigo esta pronto; falta criar a chave de Dev, os dois
-   produtos (sem ciclo) e validar o webhook ponta a ponta.
-
-Ha commits locais ainda nao enviados. Rodar o push antes de comecar:
-
-```bash
-git push origin HEAD:claude/consegye-ver-planvoro-ysh8r9
-```
-
-Depois de cada entrega:
-
-- rodar `npx tsc --noEmit`;
-- rodar `npm run build`;
-- criar commit;
-- fazer push;
-- se afetar producao, fazer deploy Vercel.
+Depois, o que bloqueia o lancamento esta na secao 13 de
+`PLANVORO-PROXIMOS-PASSOS.md`: SMTP do Resend no Supabase e a chave da
+AbacatePay (dois produtos sem ciclo e webhook validado ponta a ponta).
