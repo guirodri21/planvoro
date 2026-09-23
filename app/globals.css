@@ -34,6 +34,10 @@
 
 html {
   scroll-behavior: smooth;
+  /* O menu do topo e fixo. Sem isto, ancora (#precos, #ativas) e campo
+     focado paravam escondidos atras dele — no /nova a barra de etapas
+     sumia assim que o cursor entrava no destino. */
+  scroll-padding-top: 104px;
 }
 
 body {
@@ -6476,4 +6480,621 @@ a.tiny {
   .hero .hero-cta {
     margin-top: 20px;
   }
+}
+
+/* ===================================================== AREAS LOGADAS
+   Workspace da viagem e painel /app em duas colunas: navegacao numa
+   lateral fixa, conteudo ocupando o resto da largura.
+
+   Antes as duas telas empilhavam tudo no centro, numa coluna de no
+   maximo 1560px com recuo duplo (wrap + main). Aqui elas ganham a largura
+   da tela e um visual mais seco: fundo liso, cartoes brancos com borda
+   fina, sem vidro fosco nem sombras grandes competindo com o conteudo. */
+
+.wrap.main:has(> .app-shell) {
+  max-width: min(100%, 1840px);
+  padding-top: 24px;
+}
+
+/* Fundo quadriculado e manchas coloridas combinam com a vitrine, mas
+   dentro do produto so disputam atencao com os dados. */
+body:has(.app-shell)::before,
+body:has(.app-shell)::after {
+  display: none;
+}
+
+body:has(.app-shell) {
+  background: #f4f6f5;
+}
+
+.app-shell {
+  --side-w: 272px;
+  --stick-top: 92px;
+  display: grid;
+  grid-template-columns: var(--side-w) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.app-shell .card,
+.app-shell .trip-board,
+.app-shell .dashboard-section,
+.app-shell .dashboard-empty,
+.app-shell .trip-command-center,
+.app-shell .billing-panel {
+  background: #fff;
+  border: 1px solid rgba(16, 24, 22, 0.08);
+  border-radius: 18px;
+  box-shadow: 0 1px 2px rgba(16, 24, 22, 0.04);
+  backdrop-filter: none;
+}
+
+.app-shell .trip-command-center::after {
+  display: none;
+}
+
+.app-shell .card {
+  padding: 22px 24px;
+}
+
+/* ---------- Lateral */
+
+.ws-sidebar,
+.dash-sidebar {
+  position: sticky;
+  top: var(--stick-top);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(100dvh - var(--stick-top) - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  border: 1px solid rgba(16, 24, 22, 0.08);
+  border-radius: 20px;
+  background: #fff;
+  scrollbar-width: thin;
+}
+
+.ws-trip {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(16, 24, 22, 0.07);
+}
+
+.ws-back {
+  align-self: flex-start;
+  margin-bottom: 4px;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  font-weight: 600;
+  transition: color 0.16s var(--ease);
+}
+
+.ws-back:hover {
+  color: var(--brand-strong);
+}
+
+.ws-trip h1 {
+  font-size: 24px;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.ws-trip-dates {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 13.5px;
+}
+
+.ws-trip-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ws-trip-tags span {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--sand);
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ws-trip .avatars {
+  margin-top: 4px;
+}
+
+.ws-trip .av {
+  width: 28px;
+  height: 28px;
+  box-shadow: none;
+}
+
+/* ---------- Navegacao */
+
+.ws-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ws-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ws-nav-title {
+  padding: 0 10px 4px;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ws-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 0.14s var(--ease),
+    color 0.14s var(--ease);
+}
+
+.ws-nav-item svg {
+  flex: 0 0 auto;
+  opacity: 0.85;
+}
+
+.ws-nav-item:hover {
+  background: var(--sand);
+  color: var(--text);
+}
+
+.ws-nav-item.on {
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.ws-nav-item.on svg {
+  opacity: 1;
+}
+
+.ws-nav-item .tab-alerta {
+  margin-left: auto;
+}
+
+/* ---------- Conteudo */
+
+.ws-content,
+.dash-main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.ws-content > .card,
+.ws-content > .grid2,
+.ws-content > .grid3,
+.dash-main > .card {
+  margin-bottom: 0;
+}
+
+.ws-content .grid2 > .card,
+.ws-content .grid3 > .card {
+  margin-bottom: 0;
+}
+
+.ws-content .trip-command-center {
+  margin-top: 0;
+}
+
+/* Na largura nova, preferencias e convite cabem lado a lado com folga,
+   e o roteiro fica legivel sem virar uma linha de 1500px. */
+.ws-content .item-d {
+  max-width: 90ch;
+}
+
+/* ---------- Painel /app */
+
+.dash-hello h1 {
+  font-size: 26px;
+}
+
+.dash-hello .eyebrow {
+  margin-bottom: 10px;
+}
+
+.dash-hello .sub {
+  margin: 6px 0 0;
+}
+
+.dash-sidebar > .btn {
+  gap: 8px;
+}
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.dash-stats > div {
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--sand);
+}
+
+.dash-stats dt {
+  color: var(--text-faint);
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.dash-stats dd {
+  margin: 4px 0 0;
+  color: var(--text);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+}
+
+/* O cartao de plano, na lateral, empilha em vez de dividir em duas
+   colunas estreitas. */
+.dash-sidebar .billing-panel {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  padding: 16px;
+  background: linear-gradient(160deg, #eef8f3, #fff);
+  border-color: rgba(14, 156, 107, 0.18);
+}
+
+.dash-sidebar .billing-panel h2 {
+  font-size: 17px;
+}
+
+.dash-sidebar .billing-panel .eyebrow {
+  margin-bottom: 8px;
+}
+
+.dash-sidebar .billing-panel .sub {
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.dash-sidebar .billing-actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.dash-sidebar .billing-actions .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.dash-main .trip-board,
+.dash-main .dashboard-section {
+  padding: 22px 24px;
+  scroll-margin-top: var(--stick-top);
+}
+
+.dash-main .trip-list {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr));
+}
+
+/* Rotulo "PREFERENCIAS" em caixa alta nao cabia na coluna e vazava. */
+.dash-main .trip-meta-grid .stat-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.dash-main .trip-meta-grid > div {
+  min-width: 0;
+  min-height: 0;
+}
+
+.dash-main .trip-card-main {
+  flex-wrap: wrap;
+}
+
+.dash-main .trip-card-actions {
+  justify-content: flex-start;
+}
+
+.dash-main .next-step-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+
+.dash-main .next-step-card {
+  min-height: 0;
+  box-shadow: none;
+  background: var(--sand);
+  border-color: transparent;
+}
+
+.dash-main .next-step-card:hover {
+  background: #fff;
+  border-color: rgba(16, 185, 129, 0.28);
+  box-shadow: 0 8px 24px -16px rgba(16, 24, 22, 0.3);
+}
+
+.dash-main .next-step-card strong {
+  font-size: 18px;
+}
+
+.dash-main .trip-card {
+  background: #fff;
+  border-color: rgba(16, 24, 22, 0.08);
+  transition:
+    border-color 0.16s var(--ease),
+    box-shadow 0.16s var(--ease);
+}
+
+.dash-main .trip-card:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 10px 30px -22px rgba(16, 24, 22, 0.35);
+}
+
+/* ---------- Telas medias: lateral mais estreita */
+
+@media (max-width: 1280px) {
+  .app-shell {
+    --side-w: 240px;
+    gap: 20px;
+  }
+}
+
+/* ---------- Tablet e celular: a lateral vira cabecalho */
+
+@media (max-width: 1024px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .dash-sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 16px;
+  }
+
+  /* A lateral some como caixa: cabecalho e barra de secoes viram itens
+     do proprio grid. So assim a barra consegue ficar presa no topo
+     durante toda a rolagem — presa dentro da lateral, ela soltava assim
+     que o cabecalho saia da tela. */
+  .ws-sidebar {
+    display: contents;
+  }
+
+  .ws-trip {
+    padding: 16px;
+    border: 1px solid rgba(16, 24, 22, 0.08);
+    border-radius: 18px;
+    background: #fff;
+  }
+
+  .ws-trip h1 {
+    font-size: 22px;
+  }
+
+  /* Barra de secoes que rola de lado e acompanha a rolagem da pagina,
+     para trocar de aba sem voltar ao topo. */
+  .ws-sidebar .ws-nav {
+    position: sticky;
+    top: var(--stick-top-mobile, 90px);
+    z-index: 40;
+    flex-direction: row;
+    gap: 6px;
+    margin: -8px -18px 0;
+    padding: 8px 18px;
+    background: rgba(244, 246, 245, 0.94);
+    backdrop-filter: blur(10px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  .ws-sidebar .ws-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ws-sidebar .ws-nav-group {
+    display: contents;
+  }
+
+  .ws-sidebar .ws-nav-title {
+    display: none;
+  }
+
+  .ws-sidebar .ws-nav-item {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 1px solid rgba(16, 24, 22, 0.1);
+    border-radius: 999px;
+    background: #fff;
+    scroll-snap-align: center;
+  }
+
+  .ws-sidebar .ws-nav-item.on {
+    border-color: rgba(14, 156, 107, 0.35);
+  }
+
+  .ws-sidebar .ws-nav-item .tab-alerta {
+    margin-left: 2px;
+  }
+
+  /* Painel: a lateral se desfaz e as partes entram na ordem de
+     importancia — saudacao, criar, numeros, as viagens e so depois o
+     plano. Antes o cartao do plano ficava entre a pessoa e as viagens
+     dela, uma tela inteira de rolagem no celular. */
+  .dash-sidebar {
+    display: contents;
+  }
+
+  .dash-hello {
+    order: 0;
+  }
+
+  .dash-sidebar > .btn.full {
+    order: 1;
+    justify-self: start;
+    width: auto;
+  }
+
+  .dash-stats {
+    order: 2;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .dash-stats > div {
+    background: #fff;
+    border: 1px solid rgba(16, 24, 22, 0.08);
+  }
+
+  .dash-main {
+    order: 3;
+  }
+
+  .dash-sidebar .billing-panel {
+    order: 4;
+  }
+
+  .dash-sidebar .dash-nav,
+  .dash-sidebar > .btn.ghost {
+    display: none;
+  }
+
+  .dash-hello h1 {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 640px) {
+  .wrap.main:has(> .app-shell) {
+    padding-top: 16px;
+  }
+
+  /* Menu do topo tem 80px no celular (medido em 390px de largura). */
+  .app-shell {
+    --stick-top-mobile: 84px;
+  }
+
+  /* O menu do topo ja tem "Criar viagem" no celular; repetir o botao
+     largo logo abaixo so empurrava as viagens para baixo. */
+  .dash-sidebar > .btn.full {
+    display: none;
+  }
+
+  .dash-main .trip-board-head {
+    flex-wrap: wrap;
+  }
+
+  .app-shell .card,
+  .dash-main .trip-board,
+  .dash-main .dashboard-section {
+    padding: 18px 16px;
+  }
+
+
+  .dash-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dash-main .trip-list,
+  .dash-main .next-step-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dash-hello h1 {
+    font-size: 24px;
+  }
+}
+
+.dash-main .trip-meta-grid > div {
+  border-color: transparent;
+  background: var(--sand);
+  border-radius: 12px;
+}
+
+.dash-main .trip-board-head .badge {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+/* ---------- Escala tipografica dentro do workspace
+   Cada aba trazia o proprio titulo de vitrine — "Cofre de reservas e
+   documentos" em 58px ocupava meia tela ao lado da lateral. Dentro do
+   produto os titulos ficam numa escala so, e os numeros dos resumos
+   quebram em vez de vazar da caixa. */
+
+.ws-shell .ws-content h2 {
+  font-size: clamp(22px, 1.6vw, 28px);
+  line-height: 1.12;
+}
+
+.ws-shell .ws-content h3 {
+  font-size: 18px;
+}
+
+.ws-shell .ws-content .stat-label {
+  letter-spacing: 0.05em;
+}
+
+.ws-shell .ws-content .stat-value {
+  font-size: clamp(22px, 2vw, 30px);
+}
+
+.ws-shell .ws-content .vault-summary {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+}
+
+.ws-shell .ws-content .vault-summary > div {
+  min-width: 0;
+  min-height: 0;
+  border-color: transparent;
+  border-radius: 12px;
+  background: var(--sand);
+}
+
+.ws-shell .ws-content :is(.vault-summary, .command-meta, .vault-meta-grid, .trip-meta-grid) strong {
+  overflow-wrap: anywhere;
+}
+
+.ws-shell .ws-content .vault-summary strong {
+  font-size: 17px;
+}
+
+/* Caixas de numero do resumo, mais leves: fundo liso em vez de borda +
+   sombra dentro de um cartao que ja tem borda. */
+.ws-shell .ws-content .command-meta > div {
+  border-color: transparent;
+  background: var(--sand);
+  box-shadow: none;
 }

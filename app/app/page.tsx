@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
+import { Icon } from "@/components/icons";
 import { useAuth } from "@/components/auth-provider";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
 import { Confirmar } from "@/components/confirmar";
@@ -364,28 +365,88 @@ export default function AppPage() {
     );
   }
 
+  /**
+   * Painel em duas colunas.
+   *
+   * Cabecalho, plano, quatro numeros e as viagens vinham empilhados no
+   * centro: a primeira viagem so aparecia depois de uma tela inteira de
+   * rolagem. Agora quem voce e, o plano e os numeros moram na lateral, e a
+   * coluna principal comeca direto pelo que a pessoa veio fazer — abrir
+   * uma viagem.
+   */
   return (
-    <div className="dashboard-shell">
-      <div className="dashboard-head">
-        <div>
+    <div className="app-shell dash-shell">
+      <aside className="dash-sidebar" aria-label="Sua conta">
+        <div className="dash-hello">
           <p className="eyebrow">Área do usuário</p>
           <h1>Minhas viagens</h1>
-          <p className="sub">
-            Oi, {userDisplayName(user)}. Aqui ficam as viagens que você criou ou entrou pelo
-            convite.
-          </p>
+          <p className="sub">Oi, {userDisplayName(user)}.</p>
         </div>
 
-        <div className="dashboard-actions">
-          <button className="btn ghost" type="button" onClick={loadDashboard} disabled={loading}>
-            {loading ? "Atualizando..." : "Atualizar"}
-          </button>
-          <a className="btn" href="/nova">
-            Criar viagem
-          </a>
-        </div>
-      </div>
+        <a className="btn full" href="/nova">
+          <Icon name="mais" />
+          Criar viagem
+        </a>
 
+        <nav className="ws-nav dash-nav" aria-label="Seções do painel">
+          <div className="ws-nav-group">
+            <span className="ws-nav-title">Viagens</span>
+            <a className="ws-nav-item" href="#ativas">
+              <Icon name="viagem" />
+              <span>Ativas</span>
+              {activeTrips.length > 0 && <em className="tab-alerta">{activeTrips.length}</em>}
+            </a>
+            {archivedTrips.length > 0 && (
+              <a className="ws-nav-item" href="#finalizadas">
+                <Icon name="arquivo" />
+                <span>Finalizadas</span>
+                <em className="tab-alerta">{archivedTrips.length}</em>
+              </a>
+            )}
+            <a className="ws-nav-item" href="/historico">
+              <Icon name="agenda" />
+              <span>Histórico</span>
+            </a>
+          </div>
+        </nav>
+
+        <dl className="dash-stats">
+          <div>
+            <dt>Viagens ativas</dt>
+            <dd>{stats.activeTrips}</dd>
+          </div>
+          <div>
+            <dt>Em grupo</dt>
+            <dd>{stats.groupTrips}</dd>
+          </div>
+          <div>
+            <dt>Roteiros gerados</dt>
+            <dd>{stats.generatedTrips}</dd>
+          </div>
+          <div>
+            <dt>Gastos registrados</dt>
+            <dd>{moneyFormatter.format(stats.totalExpenses)}</dd>
+          </div>
+        </dl>
+
+        <Planos
+          proAtivo={Boolean(accountBilling?.is_pro_active)}
+          proExpiraEm={accountBilling?.pro_expires_at ?? null}
+          podeComprar={Boolean(accountBilling?.can_checkout)}
+          temTeste={Boolean(accountBilling?.trial_used)}
+          testeExpiraEm={accountBilling?.trial_expires_at ?? null}
+          testeViagem={accountBilling?.trial_trip ?? null}
+          acao={billingAction}
+          onPro={() => startCheckout("pro_annual")}
+          onTeste={() => comecarTeste(liberarSlug ?? undefined)}
+        />
+
+        <button className="btn ghost sm full" type="button" onClick={loadDashboard} disabled={loading}>
+          {loading ? "Atualizando..." : "Atualizar lista"}
+        </button>
+      </aside>
+
+      <div className="dash-main">
       {error && <div className="err">{error}</div>}
       {billingError && <div className="err">{billingError}</div>}
 
@@ -409,41 +470,6 @@ export default function AppPage() {
           }}
         />
       )}
-
-      <Planos
-        proAtivo={Boolean(accountBilling?.is_pro_active)}
-        proExpiraEm={accountBilling?.pro_expires_at ?? null}
-        podeComprar={Boolean(accountBilling?.can_checkout)}
-        temTeste={Boolean(accountBilling?.trial_used)}
-        testeExpiraEm={accountBilling?.trial_expires_at ?? null}
-        testeViagem={accountBilling?.trial_trip ?? null}
-        acao={billingAction}
-        onPro={() => startCheckout("pro_annual")}
-        onTeste={() => comecarTeste(liberarSlug ?? undefined)}
-      />
-
-      <div className="grid4 dashboard-stats">
-        <div className="card stat-card">
-          <span className="stat-label">Viagens ativas</span>
-          <strong className="stat-value">{stats.activeTrips}</strong>
-          <span className="tiny">Planejamento em andamento</span>
-        </div>
-        <div className="card stat-card">
-          <span className="stat-label">Em grupo</span>
-          <strong className="stat-value">{stats.groupTrips}</strong>
-          <span className="tiny">Com convite e colaboração</span>
-        </div>
-        <div className="card stat-card">
-          <span className="stat-label">Roteiros gerados</span>
-          <strong className="stat-value">{stats.generatedTrips}</strong>
-          <span className="tiny">Versões prontas para revisar</span>
-        </div>
-        <div className="card stat-card">
-          <span className="stat-label">Gastos registrados</span>
-          <strong className="stat-value">{moneyFormatter.format(stats.totalExpenses)}</strong>
-          <span className="tiny">Somando todas as viagens</span>
-        </div>
-      </div>
 
       {!data && loading ? (
         <div className="card muted">Buscando suas viagens...</div>
@@ -489,6 +515,7 @@ export default function AppPage() {
           )}
 
           <TripSection
+            id="ativas"
             title="Viagens ativas"
             description="Continue de onde parou ou acompanhe o grupo."
             badge={`${activeTrips.length} ativa${activeTrips.length === 1 ? "" : "s"}`}
@@ -501,6 +528,7 @@ export default function AppPage() {
 
           {archivedTrips.length > 0 && (
             <TripSection
+              id="finalizadas"
               title="Viagens finalizadas"
               description="Histórico para consultar roteiros, gastos e decisões depois da volta."
               badge={`${archivedTrips.length} no histórico`}
@@ -534,11 +562,13 @@ export default function AppPage() {
           }}
         />
       )}
+      </div>
     </div>
   );
 }
 
 function TripSection({
+  id,
   title,
   description,
   badge,
@@ -548,6 +578,7 @@ function TripSection({
   startCheckout,
   onApagar,
 }: {
+  id?: string;
   title: string;
   description: string;
   badge: string;
@@ -559,7 +590,7 @@ function TripSection({
 }) {
   if (trips.length === 0) {
     return (
-      <section className="trip-board">
+      <section className="trip-board" id={id}>
         <div className="trip-board-head">
           <div>
             <h2>{title}</h2>
@@ -575,7 +606,7 @@ function TripSection({
   }
 
   return (
-    <section className="trip-board">
+    <section className="trip-board" id={id}>
       <div className="trip-board-head">
         <div>
           <h2>{title}</h2>
