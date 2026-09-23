@@ -72,8 +72,13 @@ export const AI_LIMITS = FREE_LIMITS;
  * Viagem com passe pago nao ocupa vaga: quem pagou nao pode ficar preso
  * a uma viagem so. E o que faz a escada aparecer sozinha — na segunda
  * viagem simultanea a pessoa escolhe entre pagar o passe ou assinar.
+ *
+ * Eram 1 ate 23/09/2026. Com a cobranca ligada, quem ja tinha duas
+ * viagens abertas nao conseguia nem criar a terceira para experimentar,
+ * e ia embora antes de chegar a ver o que o Passe libera. Duas deixam
+ * espaco para planejar uma viagem enquanto outra acontece.
  */
-export const FREE_ACTIVE_TRIPS = 1;
+export const FREE_ACTIVE_TRIPS = 2;
 
 /** Teto do Pro. Alto o bastante para nao incomodar, baixo o bastante
  *  para um script nao criar viagem infinita. */
@@ -173,7 +178,7 @@ export async function checkTripCreation(
 
   // "a viagem atual" no singular soa errado para quem tem quatro abertas,
   // e sugere que existe uma so para liberar.
-  return "O plano grátis cobre uma viagem ativa por vez. Libere uma delas com o Passe, assine o Pro para ter ilimitadas, ou espere alguma terminar.";
+  return `O plano grátis cobre ${FREE_ACTIVE_TRIPS} viagens ativas ao mesmo tempo. Libere uma delas com o Passe, assine o Pro para ter ilimitadas, ou espere alguma terminar.`;
 }
 
 async function countEvents(

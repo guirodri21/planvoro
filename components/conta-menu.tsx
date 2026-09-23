@@ -154,7 +154,7 @@ export function ContaMenu({
           ? "Passe pago, por viagem"
           : plano.teste_expira_em
             ? `Uma viagem, até ${data(plano.teste_expira_em)}`
-            : "Uma viagem ativa por vez";
+            : "Até 2 viagens ativas";
 
   return (
     <div className="conta" ref={caixa}>
