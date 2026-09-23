@@ -18,7 +18,7 @@ concurrency:
 jobs:
   verificar:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +39,35 @@ jobs:
       # Sem as chaves de producao: o build nao pode depender delas (o
       # sitemap ja cai no plano B sem banco). Se um dia depender, e aqui
       # que aparece — antes do deploy.
+      #
+      # O Supabase aponta para um endereco falso. Nao e segredo nem banco
+      # de verdade: e so para o navegador dos testes abaixo ter um cliente
+      # de login, que eles respondem com uma sessao de mentira.
       - name: Build
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_SUPABASE_URL: http://sb.local
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: fake
+
+      # Testes de ponta a ponta: abrem as telas num Chromium de verdade,
+      # no computador e no celular, com as APIs simuladas (e2e/).
+      - name: Navegador dos testes
+        run: npx playwright install --with-deps chromium
+
+      - name: Testes de ponta a ponta
+        run: npm run e2e
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+
+      # Quando falha, o relatorio traz print e o
+      # trace (passo a passo) de cada teste — baixe em "Artifacts" na pagina do job.
+      - name: Relatorio dos testes
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-e2e
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
