@@ -145,6 +145,12 @@ export type Evento =
   | "limite_atingido"
   | "erro_api"
   // dinheiro
+  // Funil da cobranca: viu o recurso trancado -> clicou para liberar ->
+  // abriu /planos -> iniciou o checkout. Sem o primeiro degrau nao da
+  // para saber se a oferta nao converte ou se ninguem chega a ve-la.
+  | "paywall_visto"
+  | "paywall_clicado"
+  | "planos_vistos"
   | "planos_abertos"
   | "teste_gratis_iniciado"
   | "checkout_iniciado"

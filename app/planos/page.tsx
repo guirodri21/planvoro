@@ -91,6 +91,12 @@ function Planos() {
     void carregar();
   }, [carregar]);
 
+  // De onde a pessoa veio: com ?viagem= e quase sempre de um recurso
+  // trancado; sem, do menu ou da home.
+  useEffect(() => {
+    track("planos_vistos", { origem: viagemPedida ? "viagem" : "direto" });
+  }, [viagemPedida]);
+
   const organizadas = useMemo(
     () => (painel?.trips ?? []).filter((trip) => trip.viewer_member?.is_organizer),
     [painel]

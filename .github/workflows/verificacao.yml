@@ -1,0 +1,45 @@
+# Verificacao automatica de todo PR e de todo push na main.
+#
+# A producao sai da main pela Vercel, sem nenhuma checagem no caminho: um
+# erro de tipagem ou um build quebrado so aparecia quando o deploy falhava
+# — ou pior, quando passava e quebrava uma tela. Aqui roda o mesmo que o
+# CLAUDE.md pede antes de toda entrega, so que sem depender de lembrar.
+name: Verificacao
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: verificacao-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+
+      - name: Tipagem
+        run: npx tsc --noEmit
+
+      - name: Acentos no texto que a pessoa le
+        run: python3 scripts/acentos.py app components lib --checar
+
+      # Sem as chaves de producao: o build nao pode depender delas (o
+      # sitemap ja cai no plano B sem banco). Se um dia depender, e aqui
+      # que aparece — antes do deploy.
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"

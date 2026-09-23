@@ -32,6 +32,7 @@ Ao revisar texto longo em JSX, leia com o olho tambem.
 Uso:
     python scripts/acentos.py app             # relatorio
     python scripts/acentos.py app --corrigir  # aplica
+    python scripts/acentos.py app --checar    # falha se achar (CI)
 """
 import io
 import os
@@ -251,6 +252,11 @@ def main():
                     total += 1
 
     print("\ntotal:", total)
+
+    # Na verificacao automatica dos PRs: achado vira falha, senao o
+    # relatorio passa despercebido num log que ninguem abre.
+    if "--checar" in sys.argv and total:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
