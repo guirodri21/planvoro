@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { TripMap } from "@/components/trip-map";
+import { TripMap, mapsUrl, type MapPoint } from "@/components/trip-map";
 import { formatKm, suggestRoute, type GeoPoint } from "@/lib/route-order";
 import type { Itinerary, Trip, TripChecklistItem, TripVaultItem } from "@/lib/types";
 import { buildTravelTimeline } from "../_lib/timeline";
@@ -468,7 +468,9 @@ export function TripAgendaView({
  */
 export function TripMapView({ itinerary }: { itinerary: Itinerary | null }) {
   const days = itinerary?.itinerary_days ?? [];
+  /** -1 = todos os dias no mesmo mapa. */
   const [dayIndex, setDayIndex] = useState(0);
+  const [activeId, setActiveId] = useState<string | null>(null);
 
   const daysWithPoints = days.map((day) => ({
     day,
@@ -525,98 +527,232 @@ export function TripMapView({ itinerary }: { itinerary: Itinerary | null }) {
     );
   }
 
-  const safeIndex = Math.min(dayIndex, mappable.length - 1);
-  const active = mappable[safeIndex];
-  const route = suggestRoute(active.points);
+  const safeIndex = dayIndex < 0 ? -1 : Math.min(dayIndex, mappable.length - 1);
+  const todos = safeIndex === -1;
+  const active = todos ? null : mappable[safeIndex];
+  const route = active ? suggestRoute(active.points) : null;
+
+  /**
+   * Pontos que vao para o mapa.
+   *
+   * No dia: numerados na ordem da visita, na cor da marca. Em "Todos os
+   * dias": cada dia com a sua cor e o pino com o numero do dia, para ver
+   * de relance se dois dias cruzam a cidade para o mesmo bairro.
+   */
+  const pontosDoMapa: MapPoint[] = todos
+    ? mappable.flatMap((entry, diaIndex) =>
+        entry.points.map((point) => ({
+          ...point,
+          label: String(diaIndex + 1),
+          color: corDoDia(diaIndex),
+          group: entry.day.id,
+          subtitle: `Dia ${diaIndex + 1}${point.startTime ? ` · ${point.startTime}` : ""}`,
+        }))
+      )
+    : (route?.current ?? []).map((point, index) => ({
+        ...point,
+        label: String(index + 1),
+        color: corDoDia(safeIndex),
+        group: "dia",
+        subtitle: point.startTime ?? undefined,
+      }));
+
+  const totalLugares = mappable.reduce((soma, entry) => soma + entry.points.length, 0);
 
   return (
-    <div className="map-layout">
-      <div className="card map-card">
-        <div className="map-head">
+    <div className="map-shell">
+      <div className="card map-toolbar">
+        <div className="map-toolbar-head">
           <div>
-            <span className="stat-label">
-              {mappable.length === days.length
-                ? `Dia ${safeIndex + 1} de ${days.length}`
-                : `Dia ${safeIndex + 1} de ${mappable.length} com lugares no mapa`}
-            </span>
-            <h2>{active.day.title || formatVaultDate(`${active.day.day_date}T12:00:00`)}</h2>
+            <span className="stat-label">Mapa da viagem</span>
+            <h2>
+              {todos
+                ? "Todos os dias"
+                : active?.day.title || formatVaultDate(`${active?.day.day_date}T12:00:00`)}
+            </h2>
           </div>
-          <div className="map-nav">
-            <button
-              className="btn ghost sm"
-              type="button"
-              onClick={() => setDayIndex((i) => Math.max(0, i - 1))}
-              disabled={safeIndex === 0}
-            >
-              Anterior
-            </button>
-            <button
-              className="btn ghost sm"
-              type="button"
-              onClick={() => setDayIndex((i) => Math.min(mappable.length - 1, i + 1))}
-              disabled={safeIndex >= mappable.length - 1}
-            >
-              Próximo
-            </button>
-          </div>
+          <p className="tiny">
+            {todos
+              ? `${totalLugares} lugares em ${mappable.length} dia${mappable.length === 1 ? "" : "s"}`
+              : active && route
+                ? active.points.length === 1
+                  ? "1 lugar neste dia"
+                  : `${active.points.length} lugares · ${formatKm(route.currentKm)} em linha reta`
+                : ""}
+          </p>
         </div>
 
-        <TripMap points={route.current} />
-
-        <p className="tiny">
-          {active.points.length === 1
-            ? "1 lugar no mapa neste dia"
-            : `${active.points.length} lugares no mapa · ${formatKm(route.currentKm)} de deslocamento em linha reta`}
-        </p>
-
-        {naoConferidos > 0 && (
-          <p className="tiny map-aviso">
-            {naoConferidos === 1
-              ? "1 lugar do roteiro ainda não foi conferido"
-              : `${naoConferidos} lugares do roteiro ainda não foram conferidos`}{" "}
-            — a conferência de endereço aceita uma consulta por segundo e não alcançou todos. Não
-            quer dizer que não existam.
-          </p>
-        )}
+        {/* Um chip por dia, no lugar de "Anterior/Próximo": em viagem de
+            dez dias, chegar ao sétimo eram seis cliques. */}
+        <div className="map-days" role="tablist" aria-label="Escolher o dia no mapa">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={todos}
+            className={`map-day ${todos ? "on" : ""}`}
+            onClick={() => {
+              setDayIndex(-1);
+              setActiveId(null);
+            }}
+          >
+            Todos
+          </button>
+          {mappable.map((entry, index) => (
+            <button
+              key={entry.day.id}
+              type="button"
+              role="tab"
+              aria-selected={index === safeIndex}
+              title={entry.day.title ?? undefined}
+              className={`map-day ${index === safeIndex ? "on" : ""}`}
+              onClick={() => {
+                setDayIndex(index);
+                setActiveId(null);
+              }}
+            >
+              <i style={{ background: corDoDia(index) }} aria-hidden="true" />
+              Dia {days.indexOf(entry.day) + 1}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="card">
-        <span className="badge b-ok">ordem do dia</span>
-        <h3>Como está hoje</h3>
-        <ol className="map-order">
-          {route.current.map((point) => (
-            <li key={point.id}>
-              <strong>{point.title}</strong>
-              {point.startTime && <span className="tiny">{point.startTime}</span>}
-            </li>
-          ))}
-        </ol>
+      <div className="map-layout">
+        <div className="card map-card">
+          <TripMap points={pontosDoMapa} activeId={activeId} onSelect={setActiveId} />
 
-        {route.worthIt ? (
-          <div className="note">
-            <b>Dá para andar {formatKm(route.savedKm)} a menos</b>
-            <br />
-            Visitando nesta ordem: {route.suggested.map((point) => point.title).join(" → ")}.
-            {route.fixedCount > 0 && (
-              <>
-                {" "}
-                Confira antes: {route.fixedCount} item{route.fixedCount === 1 ? "" : "s"} tem
-                horário marcado e talvez não possa mudar de lugar.
-              </>
-            )}
-          </div>
-        ) : (
+          {naoConferidos > 0 && (
+            <p className="tiny map-aviso">
+              {naoConferidos === 1
+                ? "1 lugar do roteiro ainda não foi conferido"
+                : `${naoConferidos} lugares do roteiro ainda não foram conferidos`}{" "}
+              — a conferência de endereço aceita uma consulta por segundo e não alcançou todos. Não
+              quer dizer que não existam.
+            </p>
+          )}
+        </div>
+
+        <div className="card map-side">
+          {todos ? (
+            mappable.map((entry, diaIndex) => (
+              <div className="map-group" key={entry.day.id}>
+                <button
+                  type="button"
+                  className="map-group-head"
+                  onClick={() => {
+                    setDayIndex(diaIndex);
+                    setActiveId(null);
+                  }}
+                >
+                  <i style={{ background: corDoDia(diaIndex) }} aria-hidden="true" />
+                  <strong>Dia {days.indexOf(entry.day) + 1}</strong>
+                  <span>{entry.day.title}</span>
+                </button>
+                <ListaDeLugares
+                  pontos={entry.points}
+                  cor={corDoDia(diaIndex)}
+                  activeId={activeId}
+                  onSelect={setActiveId}
+                  rotulo={String(diaIndex + 1)}
+                />
+              </div>
+            ))
+          ) : route ? (
+            <>
+              <span className="stat-label">Ordem do dia</span>
+              <ListaDeLugares
+                pontos={route.current}
+                cor={corDoDia(safeIndex)}
+                activeId={activeId}
+                onSelect={setActiveId}
+                numerar
+              />
+
+              {route.worthIt ? (
+                <div className="note">
+                  <b>Dá para andar {formatKm(route.savedKm)} a menos</b>
+                  <br />
+                  Visitando nesta ordem: {route.suggested.map((point) => point.title).join(" → ")}.
+                  {route.fixedCount > 0 && (
+                    <>
+                      {" "}
+                      Confira antes: {route.fixedCount} item{route.fixedCount === 1 ? "" : "s"} tem
+                      horário marcado e talvez não possa mudar de lugar.
+                    </>
+                  )}
+                </div>
+              ) : (
+                <p className="tiny">
+                  A ordem atual já está boa: reorganizar economizaria pouco para o trabalho de
+                  remarcar tudo.
+                </p>
+              )}
+            </>
+          ) : null}
+
           <p className="tiny">
-            A ordem atual já está boa: reorganizar economizaria pouco para o trabalho de remarcar
-            tudo.
+            Distâncias em linha reta, não por rua. Servem para perceber travessia desnecessária da
+            cidade, não para calcular tempo de trajeto.
           </p>
-        )}
-
-        <p className="tiny">
-          Distâncias em linha reta, não por rua. Servem para perceber travessia desnecessária da
-          cidade, não para calcular tempo de trajeto.
-        </p>
+        </div>
       </div>
     </div>
+  );
+}
+
+const CORES_DOS_DIAS = [
+  "#0e9c6b",
+  "#0891b2",
+  "#7c3aed",
+  "#db2777",
+  "#ea580c",
+  "#ca8a04",
+  "#2563eb",
+  "#dc2626",
+];
+
+function corDoDia(index: number) {
+  return CORES_DOS_DIAS[Math.max(0, index) % CORES_DOS_DIAS.length];
+}
+
+/**
+ * Lista ao lado do mapa. Tocar num lugar centraliza o mapa nele; o link
+ * abre o endereco no Google Maps, que e o que a pessoa quer na rua.
+ */
+function ListaDeLugares({
+  pontos,
+  cor,
+  activeId,
+  onSelect,
+  numerar = false,
+  rotulo = "•",
+}: {
+  pontos: GeoPoint[];
+  cor: string;
+  activeId: string | null;
+  onSelect: (id: string) => void;
+  numerar?: boolean;
+  /** O que vai no pino quando a lista nao e numerada (o dia, em "Todos"). */
+  rotulo?: string;
+}) {
+  return (
+    <ol className="map-list">
+      {pontos.map((point, index) => (
+        <li key={point.id} className={activeId === point.id ? "on" : ""}>
+          <button type="button" onClick={() => onSelect(point.id)}>
+            <span className="map-list-pin" style={{ background: cor }}>
+              {numerar ? index + 1 : rotulo}
+            </span>
+            <span className="map-list-text">
+              <strong>{point.title}</strong>
+              {point.startTime && <small>{point.startTime}</small>}
+            </span>
+          </button>
+          <a href={mapsUrl(point)} target="_blank" rel="noreferrer" aria-label={`Abrir ${point.title} no Google Maps`}>
+            Maps ↗
+          </a>
+        </li>
+      ))}
+    </ol>
   );
 }

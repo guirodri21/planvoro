@@ -20,6 +20,7 @@ export function NavLinks() {
       ? [
           { href: "/app", label: "Minhas viagens" },
           { href: "/historico", label: "Histórico" },
+          { href: "/planos", label: "Planos" },
           { href: "/#faq", label: "Dúvidas" },
         ]
       : [

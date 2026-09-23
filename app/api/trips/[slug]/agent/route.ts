@@ -4,6 +4,7 @@ import { memberForUserInTrip } from "@/lib/guards";
 import { reserveAiUsage } from "@/lib/ai-limits";
 import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
+import { lockedMessage, resolveTripAccess } from "@/lib/trip-access";
 import { answerTravelAgentQuestion } from "@/lib/travel-agent";
 import type { Itinerary } from "@/lib/types";
 
@@ -35,6 +36,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     logCtx.userId = user.id;
     logCtx.tripId = membership.tripId;
+
+    // O agente e recurso do Passe, como Cofre e gastos. Confere antes de
+    // reservar cota de IA: pergunta barrada nao pode gastar a do dia.
+    const access = await resolveTripAccess(db, membership.tripId);
+    if (!access.unlocked) {
+      return NextResponse.json(
+        { error: lockedMessage("Perguntar ao agente", membership.isOrganizer) },
+        { status: 402 }
+      );
+    }
 
     const limitMessage = await reserveAiUsage(db, {
       kind: "agent_question",

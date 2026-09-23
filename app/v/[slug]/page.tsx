@@ -59,6 +59,7 @@ import {
   isWorkspaceTab,
 } from "./_lib/workspace-types";
 import { TravelVaultView } from "./_components/vault";
+import { PaywallGate } from "./_components/paywall";
 import { ExpensesView } from "./_components/expenses";
 import { TravelAgentView } from "./_components/agent";
 import { TripChecklistView } from "./_components/checklist";
@@ -356,6 +357,79 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
    */
   const hasWorkspace = Boolean(user && me);
 
+  /**
+   * Recursos do Passe trancados.
+   *
+   * Aba sem nada salvo vira vitrine: o recurso aparece desfocado por tras
+   * da oferta. Aba com coisa salva continua legivel e so perde a escrita —
+   * o que a pessoa guardou nunca fica refem da cobranca.
+   */
+  const isOrganizer = Boolean(me?.is_organizer);
+  const paywalls: Partial<
+    Record<WorkspaceTab, { icon: IconName; titulo: string; descricao: string; beneficios: string[]; temDados: boolean }>
+  > = {
+    cofre: {
+      icon: "cofre",
+      titulo: "Guarde todas as reservas num lugar só",
+      descricao:
+        "Voo, hotel, ingressos, seguro e documentos com código, horário e anexo — para o grupo inteiro achar em segundos.",
+      beneficios: [
+        "Anexe PDF, print ou comprovante",
+        "Cole o e-mail da reserva e a IA preenche",
+        "Alertas de check-in e o que falta conferir",
+      ],
+      temDados: vault_items.length > 0,
+    },
+    checklist: {
+      icon: "checklist",
+      titulo: "Ninguém descobre pendência na véspera",
+      descricao: "Tarefas com prazo e responsável, sugeridas a partir do roteiro e das reservas.",
+      beneficios: ["Sugestões prontas por tipo de viagem", "Prazo e responsável por tarefa", "Aviso do que vence hoje"],
+      temDados: checklist_items.length > 0,
+    },
+    gastos: {
+      icon: "gastos",
+      titulo: "Divida os gastos sem planilha",
+      descricao: "Registre quem pagou o quê e o Planvoro calcula o acerto com o menor número de transferências.",
+      beneficios: ["Saldo por pessoa em tempo real", "Pix copia e cola para acertar", "Orçamento por pessoa com alerta"],
+      temDados: expenses.length > 0,
+    },
+    viagem: {
+      icon: "viagem",
+      titulo: "Modo viagem: o que fazer agora",
+      descricao: "No dia, a tela mostra a próxima parada, as reservas daquele dia e o que ainda está pendente.",
+      beneficios: ["Próximo passo com horário", "Reservas do dia à mão", "Pendências que vencem hoje"],
+      temDados: false,
+    },
+    agente: {
+      icon: "agente",
+      titulo: "Um agente que conhece a sua viagem",
+      descricao:
+        "Pergunte o que falta, o que fazer com chuva ou como dividir um dia — ele lê o roteiro, as reservas e o grupo.",
+      beneficios: ["Respostas com o contexto da viagem", "Cria tarefas para o grupo", "Aponta o que falta reservar"],
+      temDados: false,
+    },
+  };
+
+  function comPaywall(id: WorkspaceTab, conteudo: React.ReactNode) {
+    const cfg = paywalls[id];
+    if (!locked || !cfg || cfg.temDados) return conteudo;
+    return (
+      <PaywallGate
+        slug={slug}
+        isOrganizer={isOrganizer}
+        icon={cfg.icon}
+        titulo={cfg.titulo}
+        descricao={cfg.descricao}
+        beneficios={cfg.beneficios}
+      >
+        {conteudo}
+      </PaywallGate>
+    );
+  }
+
+  const mostrarAvisoTranca = locked && Boolean(paywalls[tab]?.temDados);
+
   return (
     <div className={`app-shell ws-shell ${hasWorkspace ? "" : "ws-shell-solo"}`}>
       <aside className="ws-sidebar" aria-label="Viagem">
@@ -399,7 +473,18 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             checklistOpenCount={checklist_items.filter((item) => item.status === "open").length}
             ideaCount={ideas.length}
             travelPulseCount={travelPulseCount}
+            locked={locked}
           />
+        )}
+
+        {/* Lembrete discreto e permanente de que ha mais para liberar. So
+            para quem pode liberar: convidado nao recebe oferta. */}
+        {hasWorkspace && locked && isOrganizer && (
+          <a className="ws-upsell" href={`/planos?viagem=${encodeURIComponent(slug)}`}>
+            <strong>Viagem no plano grátis</strong>
+            <span>Libere Cofre, gastos, checklist, modo viagem e agente para o grupo todo.</span>
+            <em>Ver opções →</em>
+          </a>
         )}
       </aside>
 
@@ -414,7 +499,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
         <JoinCard accessToken={accessToken} slug={slug} userName={userDisplayName(user)} onJoined={load} />
       ) : (
         <>
-          {locked && <TripLockedNotice slug={slug} isOrganizer={Boolean(me?.is_organizer)} />}
+          {mostrarAvisoTranca && <TripLockedNotice slug={slug} isOrganizer={isOrganizer} />}
 
           {tab === "grupo" && (
             <div className="group-stack">
@@ -460,7 +545,9 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             </div>
           )}
 
-          {tab === "checklist" && (
+          {tab === "checklist" &&
+            comPaywall(
+              "checklist",
             <TripChecklistView
               accessToken={accessToken}
               slug={slug}
@@ -473,7 +560,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               locked={locked}
               onChange={load}
             />
-          )}
+            )}
 
           {tab === "ideias" && (
             <IdeasView
@@ -543,7 +630,9 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
             />
           )}
 
-          {tab === "viagem" && (
+          {tab === "viagem" &&
+            comPaywall(
+              "viagem",
             <TravelModeView
               trip={trip}
               itinerary={itinerary}
@@ -555,11 +644,13 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               onGoToChecklist={() => irParaAba("checklist")}
               onGoToVault={() => irParaAba("cofre")}
             />
-          )}
+            )}
 
           {tab === "mapa" && <TripMapView itinerary={itinerary} />}
 
-          {tab === "cofre" && (
+          {tab === "cofre" &&
+            comPaywall(
+              "cofre",
             <TravelVaultView
               accessToken={accessToken}
               slug={slug}
@@ -571,9 +662,11 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               locked={locked}
               onChange={load}
             />
-          )}
+            )}
 
-          {tab === "agente" && (
+          {tab === "agente" &&
+            comPaywall(
+              "agente",
             <TravelAgentView
               accessToken={accessToken}
               slug={slug}
@@ -588,9 +681,11 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               onChange={load}
               onOpenChecklist={() => irParaAba("checklist")}
             />
-          )}
+            )}
 
-          {tab === "gastos" && (
+          {tab === "gastos" &&
+            comPaywall(
+              "gastos",
             <ExpensesView
               accessToken={accessToken}
               expenses={expenses}
@@ -601,7 +696,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               locked={locked}
               onSaved={load}
             />
-          )}
+            )}
         </>
       )}
 
@@ -636,6 +731,7 @@ function WorkspaceTabs({
   checklistOpenCount,
   ideaCount,
   travelPulseCount,
+  locked,
 }: {
   tab: WorkspaceTab;
   onChange: (tab: WorkspaceTab) => void;
@@ -645,6 +741,7 @@ function WorkspaceTabs({
   checklistOpenCount: number;
   ideaCount: number;
   travelPulseCount: number;
+  locked: boolean;
 }) {
   /**
    * Abas.
@@ -659,7 +756,7 @@ function WorkspaceTabs({
    */
   const grupos: Array<{
     titulo: string;
-    itens: Array<{ id: WorkspaceTab; label: string; icon: IconName; alerta?: number }>;
+    itens: Array<{ id: WorkspaceTab; label: string; icon: IconName; alerta?: number; pago?: boolean }>;
   }> = [
     {
       titulo: "Planejar",
@@ -678,17 +775,17 @@ function WorkspaceTabs({
     {
       titulo: "Organizar",
       itens: [
-        { id: "cofre", label: "Cofre", icon: "cofre" },
-        { id: "checklist", label: "Checklist", icon: "checklist", alerta: checklistOpenCount },
-        { id: "gastos", label: "Gastos", icon: "gastos" },
+        { id: "cofre", label: "Cofre", icon: "cofre", pago: true },
+        { id: "checklist", label: "Checklist", icon: "checklist", alerta: checklistOpenCount, pago: true },
+        { id: "gastos", label: "Gastos", icon: "gastos", pago: true },
       ],
     },
     {
       titulo: "Durante a viagem",
       itens: [
         { id: "agenda", label: "Agenda", icon: "agenda" },
-        { id: "viagem", label: "Modo viagem", icon: "viagem", alerta: travelPulseCount },
-        { id: "agente", label: "Agente", icon: "agente" },
+        { id: "viagem", label: "Modo viagem", icon: "viagem", alerta: travelPulseCount, pago: true },
+        { id: "agente", label: "Agente", icon: "agente", pago: true },
       ],
     },
   ];
@@ -728,7 +825,11 @@ function WorkspaceTabs({
             >
               <Icon name={item.icon} />
               <span>{item.label}</span>
-              {item.alerta ? (
+              {locked && item.pago ? (
+                <span className="ws-nav-lock" title="Recurso do Passe" aria-label="Recurso do Passe">
+                  <Icon name="cofre" size={13} />
+                </span>
+              ) : item.alerta ? (
                 <em className="tab-alerta" aria-label={`${item.alerta} pendente(s)`}>
                   {item.alerta}
                 </em>
@@ -986,7 +1087,7 @@ function TripLockedNotice({ slug, isOrganizer }: { slug: string; isOrganizer: bo
         pode ser removido — nada fica preso aqui dentro.
       </p>
       {isOrganizer ? (
-        <a className="btn" href={`/app?liberar=${slug}`}>
+        <a className="btn" href={`/planos?viagem=${encodeURIComponent(slug)}`}>
           Liberar esta viagem
         </a>
       ) : (

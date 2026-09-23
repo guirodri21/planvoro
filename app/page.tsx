@@ -505,15 +505,21 @@ export default function Home() {
               <li>Só o organizador paga</li>
               <li>Vale até 90 dias depois da volta</li>
             </ul>
-            <a href="/entrar?mode=signup&next=%2Fnova" className="btn ghost" style={{ marginTop: 20 }}>
-              {betaAccessEnabled ? "Usar beta grátis" : "Testar 7 dias grátis"}
+            {/* Fora da beta, os botoes pagos levam a /planos, onde da para
+                comprar na hora — com ou sem viagem criada. */}
+            <a
+              href={betaAccessEnabled ? "/entrar?mode=signup&next=%2Fnova" : "/planos"}
+              className="btn ghost"
+              style={{ marginTop: 20 }}
+            >
+              {betaAccessEnabled ? "Usar beta grátis" : "Liberar uma viagem"}
             </a>
             {/* O teste era o principal argumento para experimentar o Cofre
                 e nao aparecia em lugar nenhum da home: quem chegava pelo
                 site nao descobria que existe. */}
             {!betaAccessEnabled && (
               <p className="tiny" style={{ marginTop: 10, textAlign: "center" }}>
-                Sem cartão. Depois, R$ 29 se quiser continuar.
+                Ou teste 7 dias grátis, sem cartão.
               </p>
             )}
           </div>
@@ -545,7 +551,11 @@ export default function Home() {
               <li>Recursos novos primeiro</li>
               <li>Sem mensalidade</li>
             </ul>
-            <a href="/entrar?mode=signup&next=%2Fapp" className="btn ghost" style={{ marginTop: 20 }}>
+            <a
+              href={betaAccessEnabled ? "/entrar?mode=signup&next=%2Fapp" : "/planos"}
+              className="btn ghost"
+              style={{ marginTop: 20 }}
+            >
               {betaAccessEnabled ? "Entrar na beta" : "Assinar o Pro"}
             </a>
           </div>
