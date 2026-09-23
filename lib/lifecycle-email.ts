@@ -199,3 +199,33 @@ export function emailChamarGrupo(para: string, trip: { destination: string; slug
     "chamar_grupo"
   );
 }
+
+/**
+ * Aviso unico de fim da beta, para quem organizava viagem antes da
+ * cobranca. Disparado a mao pela rota /api/admin/aviso-beta.
+ */
+export function emailFimDaBeta(para: string, dados: { nome: string; destino: string; slug: string }) {
+  return enviar(
+    para,
+    "O Planvoro saiu da beta — sua viagem continua salva",
+    {
+      etiqueta: "Fim da beta",
+      titulo: `Oi, ${dados.nome}! Obrigado por testar o Planvoro`,
+      paragrafos: [
+        `Foi com as viagens de quem entrou cedo, como a sua para ${dados.destino}, que a gente ajustou roteiro, grupo, Cofre e gastos.`,
+        "A beta terminou e o Planvoro agora tem planos. O que muda para você:",
+        "• Continua grátis para sempre: roteiro por IA, grupo, convites, ideias, votação, mapa e página pública, com até 2 viagens ativas ao mesmo tempo.",
+        "• Agora faz parte do Passe da viagem: Cofre de reservas, gastos com acerto por Pix, checklist, modo viagem e agente.",
+        "• Nada foi apagado. O que você e o grupo salvaram continua lá e visível; só não dá para adicionar coisas novas nessas áreas sem liberar a viagem.",
+        "Se quiser continuar usando tudo, você tem 7 dias grátis numa viagem, sem cartão. Depois, o Passe custa R$ 29 por viagem (pagamento único, vale para o grupo todo) ou R$ 79 por ano no Pro, para viagens ilimitadas. Convidado nunca paga.",
+        "Qualquer dúvida, é só responder este e-mail. Equipe Planvoro",
+      ],
+      botao: {
+        texto: "Ver minha viagem e as opções →",
+        url: absoluteUrl(`/planos?viagem=${encodeURIComponent(dados.slug)}`),
+      },
+      porque: "Você recebeu este e-mail porque organiza uma viagem no Planvoro criada durante a beta.",
+    },
+    "fim_da_beta"
+  );
+}
