@@ -8531,3 +8531,129 @@ button.wizard-step.atual {
     padding: 20px 18px;
   }
 }
+
+/* ================================================ EDICAO DO ROTEIRO */
+
+.item-tools {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.item-tools .react {
+  min-width: 34px;
+}
+
+.item-add {
+  width: 100%;
+  min-height: 44px;
+  margin: 6px 0 2px;
+  border: 1px dashed rgba(16, 24, 22, 0.18);
+  border-radius: 12px;
+  background: none;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.item-add:hover {
+  border-color: rgba(14, 156, 107, 0.45);
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.item-form {
+  display: grid;
+  gap: 6px;
+  padding: 14px;
+  border: 1px solid rgba(14, 156, 107, 0.3);
+  border-radius: 14px;
+  background: #f8fcfa;
+}
+
+.item-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 0.8fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.item-form label {
+  margin-top: 4px;
+}
+
+.item-form input,
+.item-form textarea {
+  margin-bottom: 0;
+  background: #fff;
+}
+
+.item-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.item-remover {
+  margin-left: auto;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--text-faint);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.item-remover:hover {
+  color: var(--danger);
+  text-decoration: underline;
+}
+
+.btn.btn-perigo {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .item-form-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .item-form-grid > div:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .item-tools {
+    margin-left: 0;
+  }
+}
+
+/* Custo em duas moedas ("ARS 16.000,00 (~R$ 80,00)") dividia a linha com
+   o titulo e, no celular, espremia o nome do lugar a uma palavra por
+   linha. Em tela estreita o custo desce para baixo do titulo. */
+@media (max-width: 640px) {
+  .item-main {
+    flex-wrap: wrap;
+    gap: 6px 12px;
+  }
+
+  .item-main .item-b {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .item-main > .cost {
+    flex-basis: 100%;
+    padding-left: 60px;
+    white-space: normal;
+  }
+
+  .item-t .badge {
+    white-space: nowrap;
+  }
+}

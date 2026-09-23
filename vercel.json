@@ -1,9 +1,15 @@
 {
-  "regions": ["gru1"],
+  "regions": [
+    "gru1"
+  ],
   "crons": [
     {
       "path": "/api/keepalive",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/lembretes",
+      "schedule": "0 12 * * *"
     }
   ]
 }
