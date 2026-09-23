@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { Icon } from "@/components/icons";
 import { DEFAULT_OPEN_GRAPH } from "@/lib/site";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
 
@@ -26,10 +27,9 @@ export default function Home() {
               <span className="dot-live" />{" "}
               {betaAccessEnabled ? "Beta aberta · tudo liberado, sem cobrança" : "Roteiro pronto sem criar conta"}
             </div>
-            <h1 className="h1">
-              O roteiro sai em 1 minuto.
-              <br />
-              A viagem fica organizada até o fim.
+            <h1 className="h1 hero-title">
+              O roteiro sai em 1&nbsp;minuto.{" "}
+              <span className="hero-title-soft">A viagem fica organizada até o fim.</span>
             </h1>
             <p className="lead">
               Diga para onde vai e a IA monta o roteiro dia a dia, com horários, custo e
@@ -49,15 +49,22 @@ export default function Home() {
               </a>
               <span className="cta-selo">sem conta · 1 minuto · grátis</span>
             </div>
-            <p className="tiny" style={{ marginTop: 14 }}>
+            <p className="tiny hero-alt">
               Ou{" "}
               <a href="/entrar?mode=signup&next=%2Fnova" className="linklike">
                 criar minha viagem de verdade
               </a>
-              {betaAccessEnabled
-                ? " — durante a beta, todos os recursos estão liberados e ninguém paga nada."
-                : " — também grátis, e funciona no celular."}
+              {betaAccessEnabled ? " — na beta, tudo liberado e ninguém paga nada." : " — também grátis."}
             </p>
+
+            {/* Tres garantias curtas no lugar de uma frase comprida em letra
+                miuda: e o que quem chega pela primeira vez quer saber antes
+                de clicar, e ninguem lia a versao em paragrafo. */}
+            <ul className="hero-trust">
+              <li>Sem cartão de crédito</li>
+              <li>Lugares conferidos no mapa</li>
+              <li>Funciona no celular</li>
+            </ul>
           </div>
 
           <div className="mock command-mock">
@@ -159,7 +166,7 @@ export default function Home() {
             </div>
             <div className="row">
               <span>Lugares marcados para conferência</span>
-              <span className="small muted">premium</span>
+              <span className="small muted">incluso</span>
             </div>
             <div className="row">
               <span>Link público para compartilhar</span>
@@ -179,7 +186,7 @@ export default function Home() {
             </p>
             <div className="row" style={{ marginTop: 14 }}>
               <span>Entrada com conta em segundos</span>
-              <span className="small muted">e-mail e senha</span>
+              <span className="small muted">Google ou e-mail</span>
             </div>
             <div className="row">
               <span>Votação quando o grupo se divide</span>
@@ -224,7 +231,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="pain-list">
             <div className="card">
               <h3>Ninguém lê 200 mensagens</h3>
               <p className="small" style={{ marginTop: 7 }}>
@@ -266,28 +273,36 @@ export default function Home() {
 
         <div className="grid3 product-grid" style={{ marginTop: 36 }}>
           <div className="card product-card">
-            <span className="product-number">01</span>
+            <span className="product-icon">
+              <Icon name="casa" size={20} />
+            </span>
             <h3>Central da viagem</h3>
             <p className="small">
               Roteiro, grupo, cofre, agenda, checklist e gastos conectados no mesmo link.
             </p>
           </div>
           <div className="card product-card">
-            <span className="product-number">02</span>
+            <span className="product-icon">
+              <Icon name="agenda" size={20} />
+            </span>
             <h3>Agenda inteligente</h3>
             <p className="small">
               O dia a dia fica claro, com horários, deslocamentos, custos estimados e observações.
             </p>
           </div>
           <div className="card product-card">
-            <span className="product-number">03</span>
+            <span className="product-icon">
+              <Icon name="cofre" size={20} />
+            </span>
             <h3>Cofre de reservas</h3>
             <p className="small">
               Guarde voo, hotel, ingressos, seguro, documentos, links e status de confirmação.
             </p>
           </div>
           <div className="card product-card">
-            <span className="product-number">04</span>
+            <span className="product-icon">
+              <Icon name="checklist" size={20} />
+            </span>
             <h3>Checklist acionável</h3>
             <p className="small">
               Tarefas por prioridade, responsável e prazo para ninguém descobrir pendência na
@@ -295,14 +310,18 @@ export default function Home() {
             </p>
           </div>
           <div className="card product-card">
-            <span className="product-number">05</span>
+            <span className="product-icon">
+              <Icon name="agente" size={20} />
+            </span>
             <h3>Agente de viagem</h3>
             <p className="small">
               A IA lê o contexto da viagem e sugere próximos passos, alertas e tarefas prontas.
             </p>
           </div>
           <div className="card product-card">
-            <span className="product-number">06</span>
+            <span className="product-icon">
+              <Icon name="gastos" size={20} />
+            </span>
             <h3>Gastos e acertos</h3>
             <p className="small">
               Registre quem pagou o quê e veja um resumo simples de quem deve quanto para quem.
@@ -542,10 +561,18 @@ export default function Home() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" style={{ maxWidth: 820, margin: "0 auto" }}>
-        <p className="eyebrow">Dúvidas</p>
-        <h2 className="h2">Perguntas, respostas</h2>
-        <div style={{ marginTop: 28 }}>
+      <section id="faq" className="faq">
+        <div className="faq-head">
+          <p className="eyebrow">Dúvidas</p>
+          <h2 className="h2">Perguntas, respostas</h2>
+          <p className="lead">
+            Não achou o que procurava?{" "}
+            <a href="/contato" className="linklike">
+              Fale com a gente
+            </a>
+          </p>
+        </div>
+        <div className="faq-list">
           <details>
             <summary>Preciso pagar para testar?</summary>
             <p>
@@ -603,9 +630,9 @@ export default function Home() {
           <details>
             <summary>Tem Pix?</summary>
             <p>
-              Hoje o Planvoro calcula quem deve quanto para quem e organiza o resumo do acerto.
-              Pix integrado ainda não está ativo; por enquanto ele ajuda o grupo a fechar as contas
-              sem reconstruir tudo de memória.
+              Tem. Na aba de gastos, o Planvoro calcula quem deve quanto para quem e, se quem vai
+              receber cadastrou a chave, gera o Pix copia e cola com o valor certo. O dinheiro vai
+              direto de uma pessoa para a outra — o Planvoro não intermedia nada.
             </p>
           </details>
           <details>
