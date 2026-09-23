@@ -607,35 +607,30 @@ Uma entrega so deve ser considerada pronta quando:
 
 ## 13. Proxima tarefa recomendada para o Claude
 
-Revisado em 03/09/2026. O roteiro anterior — testar anexos, limites,
-exclusao de conta e mobile — foi executado com conta real e passou. O que
-sobrou nao e codigo: e configuracao em painel de terceiro e decisao de
-negocio.
+Revisado em 23/09/2026. Nada mais bloqueia o lancamento: a cobranca esta
+ligada em producao e a beta acabou.
 
-### Bloqueia o lancamento
+### Ja resolvido
 
-1. **SMTP do Resend no Supabase.** Sem isso o convite por e-mail nao
-   entrega para ninguem alem do dono da conta Resend. O dominio
-   `planvoro.com.br` ja esta verificado no Resend; falta apontar o
-   Supabase para `smtp.resend.com`, porta 465, usuario `resend`, senha =
-   `RESEND_API_KEY`. Depois de ligar, subir o limite em Authentication >
-   Rate Limits: ele vem em 2 e-mails por hora, e quem esquece descobre na
-   terceira conta criada.
+1. ~~SMTP do Resend no Supabase.~~ Ja estava configurado (confirmado pelo
+   dono em 23/09): e-mails de login e convite saem pelo Resend, com
+   dominio `planvoro.com.br`.
+2. ~~Preencher `lib/legal.ts`.~~ Feito em 05/09. `jurisdiction` fica vazio
+   de proposito (eleger foro contra consumidor e clausula abusiva pelo CDC).
+3. ~~Chave da AbacatePay.~~ Chave de producao ligada; compra real testada
+   pelo dono em 23/09. `NEXT_PUBLIC_PLANVORO_BETA_ACCESS=false` desde
+   23/09 (nessa ordem: chave de producao antes de desligar a beta).
+4. Aviso de fim da beta enviado em 23/09 para o unico organizador com
+   viagem da beta (marcado em `app_metadata.aviso_beta_enviado`).
 
-2. ~~Preencher `lib/legal.ts`.~~ Feito em 05/09: nome, CNPJ, cidade e
-   e-mails preenchidos. `jurisdiction` fica vazio de proposito (eleger foro
-   contra consumidor e clausula abusiva pelo CDC).
+### O que protege a producao agora
 
-3. **Chave da AbacatePay.** Toda conta comeca em Dev mode, onde os
-   pagamentos sao simulados — da para validar o fluxo inteiro antes da
-   aprovacao do CNPJ. Faltam a chave, os dois produtos (sem ciclo) e o
-   webhook.
-
-### Ordem que nao pode ser invertida
-
-Trocar a chave da AbacatePay de Dev para producao **antes** de
-`NEXT_PUBLIC_PLANVORO_BETA_ACCESS` virar `false`. Na ordem contraria, o
-cliente completa a compra e nada e cobrado.
+- CI em todo PR: tipagem, acentos, build e testes de ponta a ponta
+  (Playwright, `e2e/`, computador e celular, APIs simuladas).
+- Alerta de erro por e-mail (`lib/alertas.ts`): primeira falha de cada
+  tipo por hora manda e-mail na hora; resumo diario no cron das 12h (UTC).
+  Destino: `ALERTA_EMAIL` ou o e-mail de suporte de `lib/legal.ts`.
+  Nao cobre erro que acontece so no navegador.
 
 ### Nao testado por uma pessoa
 
