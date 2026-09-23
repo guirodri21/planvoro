@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { TRIAL_DIAS, trialExpiresAt } from "@/lib/billing";
 import { memberForUserInTrip } from "@/lib/guards";
-import { logInfo } from "@/lib/logger";
+import { logInfo, logError } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -92,6 +92,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ expires_at: expiraEm, days: TRIAL_DIAS });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/billing/trial", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao começar o teste.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

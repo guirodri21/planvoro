@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/logger";
 
 /**
  * O plano gratuito do Supabase pausa o projeto depois de 7 dias sem atividade.
@@ -17,6 +18,7 @@ export async function GET() {
     if (error) throw error;
     return NextResponse.json({ ok: true, trips: count ?? 0, at: new Date().toISOString() });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/keepalive", error: e });
     const msg = e instanceof Error ? e.message : "erro";
     return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }

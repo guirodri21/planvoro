@@ -3,6 +3,7 @@ import { getUserFromRequest } from "@/lib/auth";
 import { betaBlocksCheckoutFor } from "@/lib/beta";
 import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/logger";
 
 type MemberRow = {
   id: string;
@@ -206,6 +207,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ trips, account_billing: accountBilling });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/me/dashboard", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao carregar suas viagens.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

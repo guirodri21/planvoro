@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/logger";
 
 const COLORS = ["#4ade80", "#22d3ee", "#f472b6", "#fbbf24", "#a78bfa", "#fb7185", "#38bdf8", "#34d399"];
 
@@ -57,6 +58,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     return NextResponse.json({ member });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/join", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao entrar na viagem.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

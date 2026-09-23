@@ -4,6 +4,7 @@ import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { lockedMessage, resolveTripAccess } from "@/lib/trip-access";
 import { TRIP_VAULT_KINDS, TRIP_VAULT_STATUSES, type TripVaultKind, type TripVaultStatus } from "@/lib/types";
+import { logError } from "@/lib/logger";
 
 const MAX_TITLE = 140;
 const MAX_PROVIDER = 100;
@@ -116,6 +117,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     return NextResponse.json({ item: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/vault", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao salvar no Cofre.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/logger";
 
 const MAX_TITLE = 120;
 const MAX_NOTES = 800;
@@ -67,6 +68,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     return NextResponse.json({ idea: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/ideas", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao salvar a ideia.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

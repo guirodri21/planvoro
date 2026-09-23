@@ -4,6 +4,7 @@ import { checkTripCreation } from "@/lib/ai-limits";
 import { emailPrimeiraViagem } from "@/lib/lifecycle-email";
 import { slugify } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase";
+import { logError } from "@/lib/logger";
 
 /** Teto por pessoa. Valor invalido vira nulo, nao zero: um orcamento de
  *  R$ 0 dispararia alerta de estouro no primeiro cafe. */
@@ -106,6 +107,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ slug: trip.slug, member_id: member.id, is_solo: trip.is_solo });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao criar a viagem.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

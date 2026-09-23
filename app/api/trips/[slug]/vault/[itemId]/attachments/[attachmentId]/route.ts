@@ -3,6 +3,7 @@ import { getUserFromRequest } from "@/lib/auth";
 import { memberForUserInTrip, vaultItemForTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { VAULT_BUCKET } from "@/lib/vault-attachments";
+import { logError } from "@/lib/logger";
 
 export const runtime = "nodejs";
 
@@ -73,6 +74,7 @@ export async function GET(req: Request, ctx: Ctx) {
 
     return NextResponse.json({ url: data.signedUrl, expires_in: SIGNED_URL_TTL_SECONDS });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/vault/[itemId]/attachments/[attachmentId]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao abrir anexo.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
@@ -107,6 +109,7 @@ export async function DELETE(req: Request, ctx: Ctx) {
 
     return NextResponse.json({ ok: true });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/vault/[itemId]/attachments/[attachmentId]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao remover anexo.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

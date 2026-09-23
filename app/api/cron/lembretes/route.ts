@@ -4,6 +4,7 @@ import {
   emailDoUsuario,
   emailTesteAcabando,
 } from "@/lib/lifecycle-email";
+import { resumoDiarioDeErros } from "@/lib/alertas";
 import { logError, logInfo } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -14,7 +15,7 @@ const HORA = 3_600_000;
 const DIA = 24 * HORA;
 
 /**
- * Lembretes diarios, chamados pelo cron da Vercel (vercel.json).
+ * Lembretes diarios e resumo de erros, chamados pelo cron da Vercel (vercel.json).
  *
  * Roda uma vez por dia e cada consulta olha uma janela de exatamente 24
  * horas. E isso que evita e-mail repetido sem precisar de tabela de
@@ -93,8 +94,17 @@ export async function GET(req: Request) {
       }
     }
 
-    logInfo({ event: "lembretes_enviados", route: "cron/lembretes", testes, grupos });
-    return NextResponse.json({ ok: true, testes, grupos });
+    // 3. Resumo dos erros de producao das ultimas 24h. Separado: falha
+    // aqui nao pode derrubar os lembretes, que ja sairam.
+    let erros = 0;
+    try {
+      erros = await resumoDiarioDeErros();
+    } catch (e) {
+      logError({ event: "resumo_erros_falhou", route: "cron/lembretes", error: e });
+    }
+
+    logInfo({ event: "lembretes_enviados", route: "cron/lembretes", testes, grupos, erros });
+    return NextResponse.json({ ok: true, testes, grupos, erros });
   } catch (e) {
     logError({ event: "lembretes_falharam", route: "cron/lembretes", error: e });
     return NextResponse.json({ error: "Falha nos lembretes." }, { status: 500 });

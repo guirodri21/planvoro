@@ -9,6 +9,7 @@ import {
   type TripChecklistCategory,
   type TripChecklistStatus,
 } from "@/lib/types";
+import { logError } from "@/lib/logger";
 
 const MAX_TITLE = 160;
 const MAX_NOTES = 900;
@@ -99,6 +100,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ slug: string }
 
     return NextResponse.json({ item: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]/checklist", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao salvar tarefa.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }

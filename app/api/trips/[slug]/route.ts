@@ -4,6 +4,7 @@ import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveTripAccess } from "@/lib/trip-access";
 import { VAULT_BUCKET } from "@/lib/vault-attachments";
+import { logError } from "@/lib/logger";
 
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   try {
@@ -160,6 +161,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
       trip_access: await resolveTripAccess(db, trip.id),
     });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao carregar a viagem.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
@@ -229,6 +231,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
 
     return NextResponse.json({ trip: data });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao atualizar a viagem.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
@@ -296,6 +299,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ slug: string
 
     return NextResponse.json({ deleted: true, anexos: attachments?.length ?? 0 });
   } catch (e) {
+    logError({ event: "api_falhou", route: "/api/trips/[slug]", error: e });
     const msg = e instanceof Error ? e.message : "Erro ao apagar a viagem.";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
