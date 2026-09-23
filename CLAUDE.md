@@ -52,6 +52,15 @@ npx tsc --noEmit
 npm run build
 ```
 
+Testes de ponta a ponta (Playwright, pasta `e2e/`). Rodam no CI em todo PR,
+no computador e no celular, com as APIs simuladas — sem banco e sem chaves.
+Mexeu em tela, rode antes; mudou texto ou fluxo de proposito, ajuste o teste:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=http://sb.local NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=fake npm run build
+npm run e2e   # no container da Claude: PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome
+```
+
 ## Git e deploy
 
 A producao sai da branch `main`. A Vercel esta ligada ao GitHub: todo
