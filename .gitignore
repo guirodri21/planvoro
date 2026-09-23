@@ -36,3 +36,7 @@ desktop.ini
 *.tsbuildinfo
 next-env.d.ts
 supabase/.temp
+
+# testes de ponta a ponta (Playwright)
+test-results
+playwright-report
