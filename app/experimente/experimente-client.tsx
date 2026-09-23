@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { track } from "@/lib/analytics";
+import { googleAdsAmostraEntregue } from "@/lib/google-ads";
+import { metaTrack } from "@/lib/meta-pixel";
+import { tiktokAmostraEntregue } from "@/lib/tiktok-pixel";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
 
 type SampleItem = {
@@ -22,7 +25,7 @@ type SampleDay = {
   items: SampleItem[];
 };
 
-type SampleResponse = {
+export type SampleResponse = {
   destination?: string;
   itinerary?: { rationale: string; days: SampleDay[] };
   error?: string;
@@ -41,11 +44,31 @@ function formatMoney(value: number) {
  * cria conta. Quem chega aqui ainda não confia no produto, então o pedido
  * de cadastro só aparece depois que ela já tem algo na tela.
  */
-export function ExperimenteClient() {
-  const [destination, setDestination] = useState("");
+export default function ExperimenteClient({
+  exemplo,
+  destinoInicial = "",
+}: {
+  exemplo: SampleResponse | null;
+  destinoInicial?: string;
+}) {
+  const [destination, setDestination] = useState(destinoInicial);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SampleResponse | null>(null);
+
+  /**
+   * O que a pessoa ve antes de digitar qualquer coisa.
+   *
+   * A home promete "Ver um roteiro agora" e esta pagina entregava um campo
+   * vazio. Medido no PostHog entre 07 e 16/09/2026: 32 visitantes reais
+   * chegaram ate aqui e nenhum pediu amostra. Quem clica para VER nao
+   * quer preencher formulario — quer ver.
+   *
+   * Entao a tela abre com um roteiro de verdade, vindo do cache, e o
+   * campo passa a ser o segundo passo: "agora faca com o seu destino".
+   */
+  const mostrando = result ?? exemplo;
+  const ehExemplo = !result && !!exemplo;
 
   async function gerar(destino: string) {
     const alvo = destino.trim();
@@ -70,6 +93,12 @@ export function ExperimenteClient() {
 
       setResult(json);
       track("amostra_entregue", { destino: alvo.toLowerCase() });
+      // Para a Meta, este e o evento que vale: clique que virou roteiro.
+      metaTrack("Lead", { content_name: alvo.toLowerCase() });
+      // Mesma acao, o outro leilao. Os dois medem a mesma coisa — amostra
+      // na tela — para as campanhas serem comparaveis pelo mesmo criterio.
+      googleAdsAmostraEntregue(alvo.toLowerCase());
+      tiktokAmostraEntregue(alvo.toLowerCase());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erro ao montar a amostra.");
     } finally {
@@ -77,17 +106,21 @@ export function ExperimenteClient() {
     }
   }
 
-  const dias = result?.itinerary?.days ?? [];
+  const dias = mostrando?.itinerary?.days ?? [];
 
   return (
     <div className="sample-shell">
       <header className="sample-head">
         <p className="eyebrow">Sem conta, sem cartão</p>
-        <h1>Veja um roteiro antes de decidir qualquer coisa</h1>
+        <h1>
+          {ehExemplo
+            ? `Dois dias em ${exemplo?.destination ?? "Buenos Aires"}, como o Planvoro monta`
+            : "Veja um roteiro antes de decidir qualquer coisa"}
+        </h1>
         <p className="sub">
-          Diga o destino e a IA monta dois dias, equilibrando gente que quer coisas diferentes —
-          que é o problema de viajar em grupo. O roteiro completo, com o grupo inteiro, é grátis
-          também; só precisa de conta para salvar.
+          {ehExemplo
+            ? "Este roteiro abaixo é real, com horário e custo estimado de cada parada. Troque pelo seu destino e a IA monta o seu em cerca de um minuto — sem conta, sem cartão."
+            : "Diga o destino e a IA monta dois dias, equilibrando gente que quer coisas diferentes — que é o problema de viajar em grupo. O roteiro completo, com o grupo inteiro, é grátis também; só precisa de conta para salvar."}
         </p>
 
         <div className="sample-form">
@@ -142,13 +175,15 @@ export function ExperimenteClient() {
         </div>
       )}
 
-      {result?.itinerary && (
+      {mostrando?.itinerary && (
         <>
-          {result.itinerary.rationale && (
+          {mostrando.itinerary.rationale && (
             <div className="card">
-              <span className="badge b-ok">por que ficou assim</span>
+              <span className="badge b-ok">
+                {ehExemplo ? `exemplo real · ${mostrando.destination}` : "por que ficou assim"}
+              </span>
               <p className="sub" style={{ marginTop: 8 }}>
-                {result.itinerary.rationale}
+                {mostrando.itinerary.rationale}
               </p>
             </div>
           )}
@@ -194,7 +229,9 @@ export function ExperimenteClient() {
           </div>
 
           <div className="card cta-box">
-            <h2 style={{ margin: "0 0 6px" }}>Isso foi só a amostra</h2>
+            <h2 style={{ margin: "0 0 6px" }}>
+              {ehExemplo ? "Agora faça com o seu destino" : "Isso foi só a amostra"}
+            </h2>
             <p className="sub">
               Com uma conta grátis você gera a viagem inteira, convida o grupo para dizer o que
               cada um quer, e a IA remonta o roteiro equilibrando todo mundo. Convidado nunca paga

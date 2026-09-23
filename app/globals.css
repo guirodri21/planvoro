@@ -6448,3 +6448,32 @@ a.tiny {
 .liberar-head h2 {
   margin: 0;
 }
+
+/*
+ * O botao principal da home, no celular.
+ *
+ * Medido em 16/09/2026 carregando a home num iframe de 390x844: o
+ * "Ver um roteiro agora" ficava a 645px do topo. Cabe num iPhone Pro e
+ * nao cabe num SE — e o PostHog mostrava 32 visitantes reais, quase
+ * todos de celular vindos do link da bio, com zero cliques nele.
+ *
+ * Encolhe so o topo do hero, so em tela estreita. O desktop nao muda.
+ */
+@media (max-width: 560px) {
+  .hero .h1 {
+    font-size: clamp(36px, 11.5vw, 52px);
+  }
+
+  .hero .pill {
+    margin-bottom: 14px;
+  }
+
+  .hero .lead {
+    margin-top: 16px;
+    font-size: 16.5px;
+  }
+
+  .hero .hero-cta {
+    margin-top: 20px;
+  }
+}

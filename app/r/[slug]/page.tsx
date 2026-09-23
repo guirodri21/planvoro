@@ -21,6 +21,7 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params;
   const data = await getPublicTrip(slug);
+  // O "— Planvoro" vem do template do layout; escrever aqui duplicava.
   if (!data) return { title: "Roteiro não encontrado", robots: { index: false } };
 
   const { trip } = data;
@@ -31,7 +32,6 @@ export async function generateMetadata(
     : `Roteiro de grupo em ${trip.destination} para ${trip.party_size} pessoas, equilibrando as preferências de todo mundo. Monte o seu de graça.`;
 
   return {
-    // O template do layout ja acrescenta " — Planvoro".
     title,
     description,
     alternates: { canonical: `/r/${slug}` },

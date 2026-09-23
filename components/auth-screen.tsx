@@ -576,7 +576,7 @@ export function AuthScreen({
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Guilherme"
+              placeholder="Ana"
             />
           </>
         )}
