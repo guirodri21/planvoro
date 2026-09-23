@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { displayNameFromUser, getUserFromRequest } from "@/lib/auth";
 import { checkTripCreation } from "@/lib/ai-limits";
+import { emailPrimeiraViagem } from "@/lib/lifecycle-email";
 import { slugify } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -87,6 +88,21 @@ export async function POST(req: Request) {
       .select("id")
       .single();
     if (memberError) throw memberError;
+
+    // Boas-vindas so na primeira viagem que a pessoa organiza. Da segunda
+    // em diante ela ja sabe o caminho, e e-mail repetido vira ruido.
+    const { count: organizadas } = await db
+      .from("members")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("is_organizer", true);
+    if (organizadas === 1 && user.email) {
+      await emailPrimeiraViagem(user.email, {
+        destination: trip.destination,
+        slug: trip.slug,
+        is_solo: trip.is_solo,
+      });
+    }
 
     return NextResponse.json({ slug: trip.slug, member_id: member.id, is_solo: trip.is_solo });
   } catch (e) {

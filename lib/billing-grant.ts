@@ -1,5 +1,6 @@
 import { tripAccessExpiresAt } from "@/lib/billing";
 import { logError, logInfo, logWarn } from "@/lib/logger";
+import { emailDoUsuario, emailRecibo } from "@/lib/lifecycle-email";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -145,6 +146,40 @@ export async function liberarAcesso(
   if (erroPedido) {
     logError({ event: "abacate_pedido_nao_gravado", route: `billing/${origem}`, error: erroPedido });
     throw erroPedido;
+  }
+
+  // Recibo so na primeira vez que o pedido vira pago: webhook e
+  // reconciliacao podem chegar os dois, e ninguem quer dois recibos.
+  if (pedido.status !== "paid") {
+    await enviarRecibo(db, pedido, valor);
+  }
+}
+
+async function enviarRecibo(db: ReturnType<typeof supabaseAdmin>, pedido: Pedido, valor: number | null) {
+  try {
+    const para = await emailDoUsuario(db, pedido.user_id);
+    if (!para) return;
+    let destino: string | null = null;
+    let slug: string | null = null;
+    if (pedido.trip_id) {
+      const { data } = await db
+        .from("trips")
+        .select("destination, slug")
+        .eq("id", pedido.trip_id)
+        .maybeSingle();
+      destino = (data?.destination as string | undefined) ?? null;
+      slug = (data?.slug as string | undefined) ?? null;
+    }
+    await emailRecibo(para, {
+      plano: pedido.plan === "pro_annual" ? "pro_annual" : "trip_pass",
+      valorCentavos: valor,
+      destino,
+      slug,
+    });
+  } catch (e) {
+    // Recibo e cortesia: o acesso ja foi liberado e nao pode voltar atras
+    // por causa de e-mail.
+    logError({ event: "recibo_falhou", route: "billing-grant", error: e });
   }
 }
 
