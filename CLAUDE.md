@@ -110,6 +110,6 @@ build:
 - viagem com mais de 7 dias gerando o roteiro inteiro, em lotes;
 - aba do workspace no hash da URL (`#cofre`), recarregar e voltar.
 
-Depois, o que bloqueia o lancamento esta na secao 13 de
-`PLANVORO-PROXIMOS-PASSOS.md`: SMTP do Resend no Supabase e a chave da
-AbacatePay (dois produtos sem ciclo e webhook validado ponta a ponta).
+Os bloqueios de lancamento (SMTP do Resend, AbacatePay em producao) ja
+foram resolvidos em 23/09/2026; o estado atual esta na secao 13 de
+`PLANVORO-PROXIMOS-PASSOS.md`.
