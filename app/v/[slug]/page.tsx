@@ -10,6 +10,7 @@ import {
 } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { Icon, type IconName } from "@/components/icons";
+import { WorkspaceSkeleton } from "@/components/skeleton";
 import { DuplicateTrip } from "@/components/duplicate-trip";
 import { useAuth } from "@/components/auth-provider";
 import {
@@ -243,7 +244,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     );
   }
   if (!data) {
-    return <div className="card muted">{authLoading ? "Carregando sua conta..." : "Carregando..."}</div>;
+    return <WorkspaceSkeleton label={authLoading ? "Carregando sua conta..." : "Carregando a viagem..."} />;
   }
 
   const {

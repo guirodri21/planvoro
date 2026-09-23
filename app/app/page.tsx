@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { Icon } from "@/components/icons";
+import { DashboardSkeleton } from "@/components/skeleton";
 import { useAuth } from "@/components/auth-provider";
 import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
 import { Confirmar } from "@/components/confirmar";
@@ -273,8 +274,8 @@ export default function AppPage() {
   }
 
 
-  if (authLoading) {
-    return <div className="card muted">Carregando sua conta...</div>;
+  if (authLoading || (session?.access_token && !data && !error)) {
+    return <DashboardSkeleton label="Carregando suas viagens..." />;
   }
 
   if (!user || !session?.access_token) {
