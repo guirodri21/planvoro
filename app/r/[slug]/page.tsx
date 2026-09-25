@@ -83,6 +83,16 @@ export default async function RoteiroPublico({
 
         <RoteiroShare summary={summary} url={shareUrl} />
 
+        {/* Quem abre um roteiro compartilhado no WhatsApp quase sempre esta
+            pensando na propria viagem. A chamada do fim da pagina so era
+            vista por quem rolava tudo; esta fica no topo, ja com o destino. */}
+        <a
+          className="roteiro-cta-topo no-print"
+          href={`/nova?destino=${encodeURIComponent(trip.destination)}`}
+        >
+          <span>Feito no Planvoro.</span> Monte o seu roteiro para {trip.destination} em 1 minuto →
+        </a>
+
         <p className="tiny print-only">
           Roteiro gerado por IA no Planvoro. Confira preços, horários e regras oficiais na fonte
           antes de reservar. {shareUrl}
@@ -147,7 +157,7 @@ export default async function RoteiroPublico({
         {itinerary && <DuplicateTrip slug={slug} />}
 
         <p className="tiny" style={{ marginTop: 14 }}>
-          Ou <a href="/nova">comece uma viagem do zero</a>.
+          Ou <a href={`/nova?destino=${encodeURIComponent(trip.destination)}`}>comece a sua viagem para {trip.destination} do zero</a>.
         </p>
       </div>
     </>

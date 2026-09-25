@@ -229,3 +229,68 @@ export function emailFimDaBeta(para: string, dados: { nome: string; destino: str
     "fim_da_beta"
   );
 }
+
+/**
+ * Boas-vindas para quem criou conta e nao montou viagem. Sao so dois, no
+ * dia seguinte e tres dias depois; depois disso, silencio. Quem ja criou
+ * (ou entrou numa) viagem nao recebe.
+ */
+export function emailBoasVindas(para: string, dados: { nome: string; etapa: 1 | 2 }) {
+  if (dados.etapa === 1) {
+    return enviar(
+      para,
+      "Seu primeiro roteiro fica pronto em 1 minuto",
+      {
+        etiqueta: "Bem-vindo ao Planvoro",
+        titulo: `${dados.nome}, sua primeira viagem está a um minuto`,
+        paragrafos: [
+          "Você criou sua conta, mas ainda não montou nenhuma viagem.",
+          "É só dizer o destino, as datas e o que você gosta. A IA devolve o roteiro dia a dia, com horários e custo estimado — e dá para ajustar tudo depois.",
+          "Viajando em grupo? Mande o link para a turma: cada pessoa marca o que quer e o roteiro equilibra todo mundo.",
+        ],
+        botao: { texto: "Montar meu roteiro", url: absoluteUrl("/nova") },
+        porque:
+          "Você recebeu este e-mail porque criou uma conta no Planvoro. É o primeiro de dois; não quer receber o outro? Responda “parar”.",
+      },
+      "boas_vindas_1"
+    );
+  }
+  return enviar(
+    para,
+    "Roteiros prontos para você se inspirar",
+    {
+      etiqueta: "Ideias de viagem",
+      titulo: "Ainda escolhendo o destino?",
+      paragrafos: [
+        "Separamos roteiros prontos, dia a dia, com horário e custo estimado de cada parada — de cidades brasileiras a destinos fora do país.",
+        "Achou um que combina? Monte o seu a partir dele: você ajusta os dias, convida o grupo e guarda reservas e gastos no mesmo lugar.",
+      ],
+      botao: { texto: "Ver roteiros prontos", url: absoluteUrl("/roteiro") },
+      porque: "Você recebeu este e-mail porque criou uma conta no Planvoro. Este é o último desta série.",
+    },
+    "boas_vindas_2"
+  );
+}
+
+/**
+ * Dia seguinte ao fim da viagem, para quem foi convidado. Todo convidado
+ * ja conhece o produto por dentro; e o melhor candidato a organizar a
+ * proxima.
+ */
+export function emailPosViagemConvidado(para: string, dados: { nome: string; destino: string }) {
+  return enviar(
+    para,
+    `Como foi ${dados.destino}?`,
+    {
+      etiqueta: "Depois da viagem",
+      titulo: `Esperamos que ${dados.destino} tenha sido incrível, ${dados.nome}`,
+      paragrafos: [
+        "O roteiro, as reservas e os gastos da viagem continuam salvos no Planvoro, para quando você quiser rever.",
+        "Planejando a próxima? Agora pode ser a sua vez de organizar: crie a viagem, mande o link para o grupo e cada pessoa marca o que quer. Organizar é grátis — e convidado nunca paga.",
+      ],
+      botao: { texto: "Planejar minha próxima viagem", url: absoluteUrl("/nova") },
+      porque: `Você recebeu este e-mail porque participou da viagem ${dados.destino} no Planvoro.`,
+    },
+    "pos_viagem_convidado"
+  );
+}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { reportarErroNavegador } from "@/components/erros-navegador";
 
 /**
  * Tela de erro inesperado.
@@ -20,6 +21,9 @@ export default function ErrorPage({
     // Vai para o console do navegador e para os logs da Vercel. Nunca
     // aparece na tela: mensagem interna nao ajuda quem esta usando.
     console.error(error);
+    // E entra no alerta por e-mail: tela quebrada no celular de alguem
+    // era justamente o erro que ninguem ficava sabendo.
+    reportarErroNavegador(error);
   }, [error]);
 
   return (

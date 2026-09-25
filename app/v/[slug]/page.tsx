@@ -64,6 +64,7 @@ import { ExpensesView } from "./_components/expenses";
 import { TravelAgentView } from "./_components/agent";
 import { TripChecklistView } from "./_components/checklist";
 import { IdeasView } from "./_components/ideas";
+import { AgendaDoCelular } from "./_components/agenda-ics";
 import { TravelModeView, TripAgendaView, TripMapView } from "./_components/travel-mode";
 
 
@@ -619,6 +620,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
               </div>
             ))}
 
+          {tab === "agenda" && <AgendaDoCelular trip={trip} itinerary={itinerary} />}
           {tab === "agenda" && (
             <TripAgendaView
               trip={trip}
