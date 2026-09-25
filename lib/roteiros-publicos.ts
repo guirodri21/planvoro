@@ -84,7 +84,7 @@ function montar(linha: LinhaAmostra): RoteiroPublico | null {
  * tambem servem de cache da amostra: apagar uma faria o proximo pedido
  * de Roma gastar uma geracao a toa.
  */
-function mesmaCidade(destino: string) {
+export function mesmaCidade(destino: string) {
   return destino
     .split(",")[0]
     .normalize("NFD")
