@@ -154,4 +154,8 @@ export type Evento =
   | "planos_abertos"
   | "teste_gratis_iniciado"
   | "checkout_iniciado"
-  | "checkout_voltou";
+  | "checkout_voltou"
+  // suporte
+  | "ajuda_aberta"
+  | "ajuda_enviada"
+  | "whatsapp_suporte_clicado";
