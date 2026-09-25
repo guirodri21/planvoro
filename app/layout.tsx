@@ -10,6 +10,7 @@ import { AuthNav } from "@/components/auth-nav";
 import { NavLinks } from "@/components/nav-links";
 import { AuthProvider } from "@/components/auth-provider";
 import { AjudaFlutuante } from "@/components/ajuda";
+import { ErrosNavegador } from "@/components/erros-navegador";
 import { OfflineBanner } from "@/components/offline-banner";
 import { ServiceWorkerRegistrar } from "@/components/service-worker";
 import "leaflet/dist/leaflet.css";
@@ -129,6 +130,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="wrap main">{children}</main>
 
           <AjudaFlutuante />
+          <ErrosNavegador />
 
           <ServiceWorkerRegistrar />
 
