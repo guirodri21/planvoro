@@ -8657,3 +8657,224 @@ button.wizard-step.atual {
     white-space: nowrap;
   }
 }
+
+/* ============================================================ AJUDA
+   Botao flutuante para quem esta logado e o formulario que ele abre
+   (components/ajuda.tsx). O mesmo formulario aparece em /contato. */
+
+.ajuda-fab {
+  position: fixed;
+  right: 18px;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 150;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px 10px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-strong);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  box-shadow: 0 16px 36px -18px rgba(16, 24, 22, 0.45);
+  cursor: pointer;
+  transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.ajuda-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 40px -18px rgba(16, 24, 22, 0.5);
+}
+
+.ajuda-fab span {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* No celular vira so o circulo: o rotulo cobriria conteudo da tela. */
+@media (max-width: 640px) {
+  .ajuda-fab {
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 8px;
+  }
+
+  .ajuda-fab b {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .ajuda-fab span {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media print {
+  .ajuda-fab {
+    display: none;
+  }
+}
+
+.ajuda-modal {
+  position: relative;
+  width: min(480px, 100%);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+}
+
+.ajuda-fechar {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sand);
+  color: var(--text-soft);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ajuda-form {
+  display: grid;
+}
+
+.ajuda-form textarea,
+.ajuda-form input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  background: #fff;
+  font: inherit;
+  font-size: 15px;
+}
+
+.ajuda-form textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.ajuda-form textarea:focus,
+.ajuda-form input:focus,
+.modal .ajuda-form input:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.ajuda-form .btn {
+  margin-top: 16px;
+}
+
+.ajuda-form .tiny {
+  margin: 10px 0 0;
+  color: var(--text-faint);
+}
+
+.ajuda-tipos {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.ajuda-tipo {
+  flex: 1 1 auto;
+  padding: 9px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--text-soft);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ajuda-tipo.on {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-weight: 600;
+}
+
+.ajuda-ok {
+  margin-top: 18px;
+  padding: 16px 18px;
+  border-radius: var(--radius-sm);
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+}
+
+.ajuda-ok .sub {
+  margin: 6px 0 0;
+  color: var(--text-soft);
+}
+
+.ajuda-ou {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 18px 0 12px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.ajuda-ou::before,
+.ajuda-ou::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.contato-canais {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin: 8px 0 24px;
+}
+
+.contato-lado {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper-strong);
+}
+
+.contato-lado p {
+  margin: 0 0 12px;
+}
+
+.contato-lado .tiny {
+  margin: 12px 0 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 760px) {
+  .contato-canais {
+    grid-template-columns: 1fr;
+  }
+}
+
+.legal-body a.btn {
+  text-decoration: none;
+}
+
+/* Espaco no fim da pagina para o botao "Ajuda" nao cobrir o ultimo item. */
+body:has(.ajuda-fab) .site-footer {
+  padding-bottom: 72px;
+}

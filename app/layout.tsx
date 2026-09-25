@@ -9,6 +9,7 @@ import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import { AuthNav } from "@/components/auth-nav";
 import { NavLinks } from "@/components/nav-links";
 import { AuthProvider } from "@/components/auth-provider";
+import { AjudaFlutuante } from "@/components/ajuda";
 import { OfflineBanner } from "@/components/offline-banner";
 import { ServiceWorkerRegistrar } from "@/components/service-worker";
 import "leaflet/dist/leaflet.css";
@@ -126,6 +127,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <OfflineBanner />
 
           <main className="wrap main">{children}</main>
+
+          <AjudaFlutuante />
 
           <ServiceWorkerRegistrar />
 

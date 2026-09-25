@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
+import { abrirAjuda } from "./ajuda";
 import { ApagarConta } from "./apagar-conta";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 import { userDisplayName } from "@/lib/user-name";
@@ -164,6 +165,9 @@ export function ContaMenu({
         onClick={() => setAberto((valor) => !valor)}
         aria-expanded={aberto}
         aria-haspopup="menu"
+        // No celular o nome some e sobra so a inicial, escondida do leitor
+        // de tela: sem o rotulo, o botao ficava sem nome nenhum.
+        aria-label={`Conta de ${primeiroNome}`}
       >
         <span className="conta-inicial" aria-hidden="true">
           {inicial}
@@ -197,6 +201,16 @@ export function ContaMenu({
             </a>
             <button type="button" role="menuitem" onClick={trocarSenha} disabled={enviandoSenha}>
               {enviandoSenha ? "Enviando..." : "Trocar senha"}
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setAberto(false);
+                abrirAjuda("ajuda");
+              }}
+            >
+              Ajuda e sugestões
             </button>
           </div>
 
