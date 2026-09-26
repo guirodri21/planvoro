@@ -188,6 +188,9 @@ export type Evento =
   | "sugestao_clicada"
   | "botao_montar_clicado"
   | "exemplo_rolado_50"
+  | "exemplo_visto"
+  | "exemplo_dia2_aberto"
+  | "exemplo_cta_clicado"
   // suporte
   | "ajuda_aberta"
   | "ajuda_enviada"

@@ -1,3 +1,4 @@
+import type { Locator } from "@playwright/test";
 import { expect, json, semRolagemLateral, test } from "./fixtures";
 
 /** /experimente: amostra sem conta, a pagina para onde o anuncio aponta. */
@@ -71,20 +72,61 @@ test.describe("variação do anúncio", () => {
   });
 });
 
-test("celular 390x844: campo e botão visíveis sem rolar, nas duas versões", async ({ browser }) => {
+test.describe("exemplo pronto de Salvador (variação do anúncio)", () => {
+  test("aparece antes do formulário, com preço de cada parada e total do dia", async ({ page }) => {
+    await page.goto("/experimente?utm_source=meta-teste");
+    const exemplo = page.getByRole("region", { name: "Exemplo de roteiro pronto" });
+    await expect(exemplo.getByText("Assim fica o seu roteiro — com o preço de cada parada.")).toBeVisible();
+    await expect(exemplo.getByText(/Dia 1 · /)).toBeVisible();
+    await expect(exemplo.locator(".item")).toHaveCount(4);
+    await expect(exemplo.getByText("~R$ 30,00")).toBeVisible();
+    await expect(exemplo.getByText("total ~R$ 240,00")).toBeVisible();
+    await expect(exemplo.getByText(/Dia 2 · /)).toHaveCount(0);
+
+    await exemplo.getByRole("button", { name: /ver dia 2/ }).click();
+    await expect(exemplo.getByText(/Dia 2 · /)).toBeVisible();
+    await expect(exemplo.getByText("grátis").first()).toBeVisible();
+  });
+
+  test("o botão leva ao campo de destino, já com o cursor nele", async ({ page }) => {
+    await page.goto("/experimente?utm_source=meta-teste");
+    await page.getByRole("button", { name: "Montar o meu destino →" }).click();
+    await expect(page.getByRole("textbox", { name: "Destino" })).toBeFocused();
+    await expect(page.getByRole("textbox", { name: "Destino" })).toBeInViewport();
+  });
+
+  test("sem utm_source a página não mostra o exemplo", async ({ page }) => {
+    await page.goto("/experimente");
+    await expect(page.getByText("Assim fica o seu roteiro — com o preço de cada parada.")).toBeHidden();
+    await expect(page.getByRole("button", { name: "Montar o meu destino →" })).toBeHidden();
+  });
+});
+
+test("celular 390x844: o que precisa aparecer sem rolar, nas duas versões", async ({ browser }) => {
   const contexto = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
   const page = await contexto.newPage();
-  for (const url of ["/experimente?utm_source=meta&utm_campaign=dor", "/experimente"]) {
-    await page.goto(url);
-    const botao = page.getByRole("button", { name: "Montar meu roteiro grátis" });
-    await expect(botao).toBeVisible();
-    const caixa = await botao.boundingBox();
+  const dobra = 844;
+  const acimaDaDobra = async (url: string, alvo: Locator) => {
+    await expect(alvo).toBeVisible();
+    const caixa = await alvo.boundingBox();
     expect(caixa, url).not.toBeNull();
-    expect(caixa!.y + caixa!.height, `${url}: botão abaixo da dobra`).toBeLessThanOrEqual(844);
-    const campo = await page.getByRole("textbox", { name: "Destino" }).boundingBox();
-    expect(campo!.x + campo!.width, `${url}: campo cortado na direita`).toBeLessThanOrEqual(390);
-    await semRolagemLateral(page);
-  }
+    expect(caixa!.y + caixa!.height, `${url}: abaixo da dobra`).toBeLessThanOrEqual(dobra);
+  };
+
+  // Anuncio: o exemplo pronto e o botao dele vem antes do formulario.
+  const anuncio = "/experimente?utm_source=meta-teste";
+  await page.goto(anuncio);
+  await acimaDaDobra(anuncio, page.getByRole("region", { name: "Exemplo de roteiro pronto" }).locator(".day").first());
+  await acimaDaDobra(anuncio, page.getByRole("button", { name: "Montar o meu destino →" }));
+  await semRolagemLateral(page);
+
+  // Sem UTM: igual a antes, campo e botao do formulario na primeira tela.
+  const padrao = "/experimente";
+  await page.goto(padrao);
+  await acimaDaDobra(padrao, page.getByRole("button", { name: "Montar meu roteiro grátis" }));
+  const campo = await page.getByRole("textbox", { name: "Destino" }).boundingBox();
+  expect(campo!.x + campo!.width, `${padrao}: campo cortado na direita`).toBeLessThanOrEqual(390);
+  await semRolagemLateral(page);
 
   // Com roteiro na tela (mesmo layout do exemplo de Buenos Aires): o
   // total do dia em moeda local e em real nao quebra linha e ja alargou a

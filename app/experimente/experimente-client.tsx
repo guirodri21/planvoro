@@ -6,6 +6,7 @@ import { googleAdsAmostraEntregue } from "@/lib/google-ads";
 import { metaTrack } from "@/lib/meta-pixel";
 import { tiktokAmostraEntregue } from "@/lib/tiktok-pixel";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
+import { EXEMPLO_SALVADOR, type DiaExemplo } from "@/lib/exemplo-salvador";
 
 type SampleItem = {
   start_time: string;
@@ -64,6 +65,41 @@ function canalDe(utmSource: string | null) {
 
 type Variante = "dor" | "padrao";
 
+type EventoDaPagina =
+  | "campo_destino_focado"
+  | "destino_digitado"
+  | "sugestao_clicada"
+  | "botao_montar_clicado"
+  | "exemplo_rolado_50"
+  | "experimente_visto"
+  | "exemplo_visto"
+  | "exemplo_dia2_aberto"
+  | "exemplo_cta_clicado";
+
+/** Um dia do exemplo fixo, no mesmo visual dos dias da amostra. */
+function DiaDoExemplo({ numero, dia }: { numero: number; dia: DiaExemplo }) {
+  const total = formatDayTotal(dia.paradas.map((p) => ({ cost_estimate: p.custo })));
+  return (
+    <div className="day">
+      <div className="day-h">
+        <b>
+          Dia {numero} · {dia.titulo}
+        </b>
+        <span className="muted">total {total}</span>
+      </div>
+      {dia.paradas.map((parada) => (
+        <div className="item" key={parada.hora}>
+          <div className="time">{parada.hora}</div>
+          <div className="item-b">
+            <div className="item-t">{parada.titulo}</div>
+          </div>
+          <div className="cost">{formatItemCost(parada.custo, null, null)}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function formatMoney(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
@@ -103,10 +139,13 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
   const origem = useRef<Origem>({ utm_source: null, utm_campaign: null, canal: null, variante: "padrao" });
   const jaMarcou = useRef(new Set<string>());
   const meioDoExemplo = useRef<HTMLDivElement | null>(null);
+  const exemploPronto = useRef<HTMLDivElement | null>(null);
+  const campo = useRef<HTMLInputElement | null>(null);
+  const [dia2Aberto, setDia2Aberto] = useState(false);
 
   /** Evento desta pagina, com a origem. `umaVez` evita repetir por visita. */
   function marcar(
-    evento: "campo_destino_focado" | "destino_digitado" | "sugestao_clicada" | "botao_montar_clicado" | "exemplo_rolado_50" | "experimente_visto",
+    evento: EventoDaPagina,
     props: Record<string, unknown> = {},
     umaVez = false
   ) {
@@ -146,6 +185,38 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
     return () => observador.disconnect();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exemplo]);
+
+  /**
+   * "Viu o exemplo pronto" (variacao dor): o cartao de Salvador entrou na
+   * tela. Na versao padrao ele fica com display:none e nunca intercepta,
+   * entao o evento so existe para quem veio do anuncio.
+   */
+  useEffect(() => {
+    const alvo = exemploPronto.current;
+    if (!alvo || typeof IntersectionObserver === "undefined") return;
+    const observador = new IntersectionObserver((entradas) => {
+      if (entradas.some((e) => e.isIntersecting)) {
+        marcar("exemplo_visto", { destino_exemplo: "salvador" }, true);
+        observador.disconnect();
+      }
+    });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Do exemplo para o campo. O foco vem antes da rolagem e dentro do
+   * proprio toque: o Safari do iPhone so abre o teclado quando o foco
+   * acontece no gesto do usuario, nao depois de uma animacao.
+   */
+  function irParaOCampo() {
+    marcar("exemplo_cta_clicado");
+    const alvo = campo.current;
+    if (!alvo) return;
+    alvo.focus({ preventScroll: true });
+    alvo.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   /**
    * O que a pessoa ve antes de digitar qualquer coisa.
@@ -212,6 +283,38 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
             cada parada, em 1 minuto.
           </h1>
           <p className="sub">Sem conta, sem cartão.</p>
+
+          {/*
+            Exemplo pronto antes do formulario. 43 pessoas vieram do
+            anuncio, 1 tocou no campo: quem chega do Reels nao sabe ainda o
+            que vai receber. Salvador fixo no codigo (lib/exemplo-salvador.ts),
+            sem fetch nem IA, para aparecer ja na primeira pintura.
+          */}
+          <div className="exp-exemplo" role="region" aria-label="Exemplo de roteiro pronto">
+            <p className="exp-exemplo-intro">Assim fica o seu roteiro — com o preço de cada parada.</p>
+            <div className="card sample-dias exp-exemplo-card" ref={exemploPronto}>
+              <span className="badge b-ok">exemplo · {EXEMPLO_SALVADOR.destino}, 2 dias</span>
+              <DiaDoExemplo numero={1} dia={EXEMPLO_SALVADOR.dias[0]} />
+              {dia2Aberto ? (
+                <DiaDoExemplo numero={2} dia={EXEMPLO_SALVADOR.dias[1]} />
+              ) : (
+                <button
+                  type="button"
+                  className="exp-ver-dia2"
+                  aria-expanded={false}
+                  onClick={() => {
+                    setDia2Aberto(true);
+                    marcar("exemplo_dia2_aberto", {}, true);
+                  }}
+                >
+                  ver dia 2 ▾
+                </button>
+              )}
+            </div>
+            <button type="button" className="btn lg full" onClick={irParaOCampo}>
+              Montar o meu destino →
+            </button>
+          </div>
         </div>
 
         {/* Texto de antes, para quem chega sem UTM. */}
@@ -231,6 +334,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
 
         <div className="sample-form">
           <input
+            ref={campo}
             value={destination}
             onChange={(event) => {
               setDestination(event.target.value);
