@@ -8,10 +8,13 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { identificar } from "@/lib/analytics";
+import { identificar, registrarContaCriada } from "@/lib/analytics";
 import { supabaseBrowser } from "@/lib/supabase-browser";
 
 const SESSION_REFRESH_MARGIN_MS = 5 * 60 * 1000;
+
+/** Conta criada ha menos que isto conta como cadastro novo (ex.: volta do Google). */
+const CONTA_NOVA_MS = 15 * 60 * 1000;
 
 type AuthContextValue = {
   session: Session | null;
@@ -87,6 +90,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
        */
       if (nextSession?.user) {
         identificar(nextSession.user.id, { email: nextSession.user.email });
+
+        // Conta recem-criada (Google, ou e-mail confirmado na hora): o
+        // cadastro por e-mail ja registra no formulario; este caminho cobre
+        // quem volta do Google ja logado. registrarContaCriada nao repete.
+        const criadaHa = Date.now() - new Date(nextSession.user.created_at).getTime();
+        if (criadaHa >= 0 && criadaHa < CONTA_NOVA_MS) {
+          registrarContaCriada(nextSession.user.id, {
+            provedor: String(nextSession.user.app_metadata?.provider ?? "email"),
+            confirmou_na_hora: true,
+          });
+        }
       }
     });
 

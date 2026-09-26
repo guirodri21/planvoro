@@ -99,6 +99,27 @@ export function track(evento: Evento, props?: Props) {
   posthog.capture(evento, props);
 }
 
+/**
+ * `conta_criada`, uma vez por conta (neste navegador).
+ *
+ * O evento so existia no cadastro por e-mail. Quem entra pelo Google
+ * volta do redirecionamento ja logado, sem passar por aquele codigo —
+ * 2 das 5 contas ate 26/09 vieram assim e nunca contaram no funil. Agora
+ * o AuthProvider tambem chama isto quando ve uma conta criada ha poucos
+ * minutos, e a marca no localStorage impede contar duas vezes a mesma.
+ */
+export function registrarContaCriada(userId: string, props?: Props) {
+  if (!KEY || typeof window === "undefined") return;
+  const chave = `pv_conta_criada:${userId}`;
+  try {
+    if (window.localStorage.getItem(chave)) return;
+    window.localStorage.setItem(chave, "1");
+  } catch {
+    // Sem localStorage (aba anonima restrita): conta mesmo assim.
+  }
+  posthog.capture("conta_criada", props);
+}
+
 export function pageview(rota: string) {
   if (!KEY || typeof window === "undefined") return;
   posthog.capture("$pageview", { $current_url: window.location.href, rota });
