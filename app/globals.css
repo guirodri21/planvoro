@@ -8921,3 +8921,34 @@ body:has(.ajuda-fab) .site-footer {
     align-items: stretch;
   }
 }
+
+/* Endereco para encaminhar reservas ao Cofre. */
+.cofre-email {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cofre-email .tiny {
+  margin: 4px 0 10px;
+}
+
+.cofre-email-endereco {
+  display: inline-block;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-xs);
+  background: var(--sand);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+@media (max-width: 640px) {
+  .cofre-email {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

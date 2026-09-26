@@ -39,6 +39,8 @@ export type Payload = {
   idea_votes: IdeaVote[];
   viewer_member_id: string | null;
   trip_access: { unlocked: boolean; reason: "beta" | "trip_pass" | "pro" | "locked" };
+  /** Endereco para encaminhar reservas ao Cofre. So para quem participa, e so se configurado. */
+  cofre_email?: string | null;
 };
 
 export type WorkspaceTab =

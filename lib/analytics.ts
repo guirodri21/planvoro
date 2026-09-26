@@ -158,4 +158,5 @@ export type Evento =
   // suporte
   | "ajuda_aberta"
   | "ajuda_enviada"
-  | "whatsapp_suporte_clicado";
+  | "whatsapp_suporte_clicado"
+  | "cofre_email_copiado";
