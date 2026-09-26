@@ -623,6 +623,30 @@ ligada em producao e a beta acabou.
 4. Aviso de fim da beta enviado em 23/09 para o unico organizador com
    viagem da beta (marcado em `app_metadata.aviso_beta_enviado`).
 
+### Configuracao pendente (depende do dono, em painel de terceiro)
+
+1. **Encaminhar e-mail para o Cofre** (codigo no ar desde 26/09, PR #20;
+   fica invisivel ate configurar):
+   - Resend > Domains: adicionar o dominio `cofre.planvoro.com.br` com
+     recebimento (Receiving) ligado. O Resend mostra um registro MX.
+   - Registro.br (o DNS do planvoro.com.br esta la, nao na Vercel): criar
+     esse MX no subdominio `cofre`. Nao mexe no e-mail do dominio principal.
+   - Resend > Webhooks: endpoint `https://planvoro.com.br/api/cofre/email`,
+     evento `email.received`. Copiar o signing secret (`whsec_...`).
+   - Vercel > Environment Variables (Production): `RESEND_WEBHOOK_SECRET`
+     = o signing secret; `COFRE_EMAIL_DOMAIN` = `cofre.planvoro.com.br`.
+     `COFRE_EMAIL_SECRET` ja foi criada. Redeploy depois.
+2. **Backup do banco** (`.github/workflows/backup.yml`, toda segunda 07:00
+   UTC): no GitHub, Settings > Secrets and variables > Actions, criar
+   `SUPABASE_DB_URL` (Supabase > Connect > Session pooler, com a senha do
+   banco) e `BACKUP_PASSPHRASE` (senha longa, guardada fora do GitHub).
+   O repositorio e publico: o backup sai criptografado por isso.
+3. **Funil no PostHog** (Product analytics > New insight > Funnels), com
+   janela de 14 dias, nesta ordem: `conta_criada` > `viagem_criada` >
+   `roteiro_gerado` > `convite_copiado` > `paywall_visto` >
+   `checkout_iniciado`. Um segundo funil do suporte: `ajuda_aberta` >
+   `ajuda_enviada`.
+
 ### O que protege a producao agora
 
 - CI em todo PR: tipagem, acentos, build e testes de ponta a ponta
@@ -630,7 +654,11 @@ ligada em producao e a beta acabou.
 - Alerta de erro por e-mail (`lib/alertas.ts`): primeira falha de cada
   tipo por hora manda e-mail na hora; resumo diario no cron das 12h (UTC).
   Destino: `ALERTA_EMAIL` ou o e-mail de suporte de `lib/legal.ts`.
-  Nao cobre erro que acontece so no navegador.
+  Erros do navegador entram tambem, via `/api/erros-cliente`.
+- Crons (vercel.json, UTC): vitrine de roteiros 06:00 (ate 4 destinos
+  novos por dia de `lib/vitrine.ts`), keepalive 09:00, lembretes 12:00
+  (teste acabando, chamar grupo, boas-vindas D+1/D+3, pos-viagem,
+  resumo de erros).
 
 ### Nao testado por uma pessoa
 

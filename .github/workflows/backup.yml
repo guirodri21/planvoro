@@ -1,0 +1,77 @@
+# Backup semanal do banco (Supabase).
+#
+# O plano gratuito do Supabase nao guarda backup que de para baixar: se o
+# banco se perder, os dados se perdem. Toda segunda-feira este job faz um
+# pg_dump, CRIPTOGRAFA com uma senha (o repositorio e publico, e artifact
+# de repositorio publico pode ser baixado por qualquer pessoa logada) e
+# guarda por 30 dias como artifact "backup-banco".
+#
+# Precisa de dois secrets no GitHub (Settings > Secrets and variables >
+# Actions). Sem eles o job so avisa e termina, sem falhar:
+#   SUPABASE_DB_URL     string de conexao do Postgres (Supabase > Connect >
+#                       "Session pooler"), com a senha do banco.
+#   BACKUP_PASSPHRASE   senha longa para criptografar. Guarde fora daqui:
+#                       sem ela o backup nao abre.
+#
+# Restaurar:
+#   gpg -d backup.sql.gz.gpg | gunzip | psql "<url do banco novo>"
+#
+# Nao inclui os arquivos anexados no Cofre (Storage), so o banco.
+name: Backup do banco
+
+on:
+  schedule:
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Conferir configuracao
+        id: config
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          SENHA: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DB" ] || [ -z "$SENHA" ]; then
+            echo "::warning::Backup desligado: faltam os secrets SUPABASE_DB_URL e/ou BACKUP_PASSPHRASE."
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Cliente do Postgres 17
+        if: steps.config.outputs.ok == 'true'
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump criptografado
+        if: steps.config.outputs.ok == 'true'
+        env:
+          DB: ${{ secrets.SUPABASE_DB_URL }}
+          SENHA: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -o pipefail
+          /usr/lib/postgresql/17/bin/pg_dump "$DB" \
+            --no-owner --no-privileges \
+            --schema=public --schema=auth --schema=storage \
+            | gzip -9 \
+            | gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase-fd 3 -o backup.sql.gz.gpg 3<<<"$SENHA"
+          ls -lh backup.sql.gz.gpg
+
+      - name: Guardar
+        if: steps.config.outputs.ok == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-banco
+          path: backup.sql.gz.gpg
+          retention-days: 30
