@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
+import { enderecoDoCofre } from "@/lib/cofre-email";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 import { resolveTripAccess } from "@/lib/trip-access";
@@ -158,6 +159,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
       checklist_items: checklistItems.data ?? [],
       idea_votes: ideaVotes,
       viewer_member_id: viewerMember.data?.id ?? null,
+      cofre_email: viewerMember.data ? enderecoDoCofre(trip.slug) : null,
       trip_access: await resolveTripAccess(db, trip.id),
     });
   } catch (e) {

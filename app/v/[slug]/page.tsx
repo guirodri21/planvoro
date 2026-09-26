@@ -65,6 +65,7 @@ import { TravelAgentView } from "./_components/agent";
 import { TripChecklistView } from "./_components/checklist";
 import { IdeasView } from "./_components/ideas";
 import { AgendaDoCelular } from "./_components/agenda-ics";
+import { CofreEmail } from "./_components/cofre-email";
 import { TravelModeView, TripAgendaView, TripMapView } from "./_components/travel-mode";
 
 
@@ -264,6 +265,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
     idea_votes,
     viewer_member_id,
     trip_access,
+    cofre_email,
   } =
     data;
   const locked = !trip_access?.unlocked;
@@ -651,6 +653,7 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
 
           {tab === "mapa" && <TripMapView itinerary={itinerary} />}
 
+          {tab === "cofre" && !locked && cofre_email && <CofreEmail endereco={cofre_email} />}
           {tab === "cofre" &&
             comPaywall(
               "cofre",
