@@ -38,7 +38,8 @@ const SUGESTOES = ["Salvador", "Rio de Janeiro", "Gramado", "Porto de Galinhas",
  * Variacao do texto de cima.
  *
  * O anuncio fala da dor do grupo ("ninguem monta o roteiro", "14 abas
- * abertas"); quem vem dele (utm_campaign=dor ou utm_source=meta) ve o
+ * abertas"); quem vem dele (utm_campaign=dor ou utm_source comecando
+ * com "meta") ve o
  * titulo que continua a mesma conversa. Sem UTM, fica o texto de antes —
  * as duas versoes convivem para comparar no PostHog (propriedade
  * `variante` em todo evento desta pagina).
@@ -48,7 +49,18 @@ const SUGESTOES = ["Salvador", "Rio de Janeiro", "Gramado", "Porto de Galinhas",
  * primeira pintura e marca <html data-exp="dor">; o CSS mostra so o
  * titulo certo. O React so le a marca depois.
  */
-const SCRIPT_VARIANTE = `(function(){try{var q=new URLSearchParams(location.search);if(q.get("utm_campaign")==="dor"||q.get("utm_source")==="meta"){document.documentElement.setAttribute("data-exp","dor")}}catch(e){}})();`;
+const SCRIPT_VARIANTE = `(function(){try{var q=new URLSearchParams(location.search);if(q.get("utm_campaign")==="dor"||(q.get("utm_source")||"").toLowerCase().indexOf("meta")===0){document.documentElement.setAttribute("data-exp","dor")}}catch(e){}})();`;
+
+/**
+ * O link do anuncio chega como utm_source="metautm_medium=paid" (falta um
+ * "&" no link da Meta). Tudo que comeca com "meta" e o anuncio da Meta;
+ * `canal` guarda o valor normalizado para filtrar no PostHog sem depender
+ * de o link estar certo.
+ */
+function canalDe(utmSource: string | null) {
+  if (!utmSource) return null;
+  return utmSource.toLowerCase().startsWith("meta") ? "meta" : utmSource.toLowerCase();
+}
 
 type Variante = "dor" | "padrao";
 
@@ -64,12 +76,13 @@ function formatMoney(value: number) {
  * de cadastro só aparece depois que ela já tem algo na tela.
  */
 /** De onde a pessoa veio. Vai junto em todo evento desta pagina. */
-type Origem = { utm_source: string | null; utm_campaign: string | null; variante: Variante };
+type Origem = { utm_source: string | null; utm_campaign: string | null; canal: string | null; variante: Variante };
 
 function lerOrigem(params: URLSearchParams): Origem {
   const limpo = (valor: string | null) => (valor ? valor.trim().slice(0, 60) || null : null);
   const variante: Variante = document.documentElement.getAttribute("data-exp") === "dor" ? "dor" : "padrao";
-  return { utm_source: limpo(params.get("utm_source")), utm_campaign: limpo(params.get("utm_campaign")), variante };
+  const utmSource = limpo(params.get("utm_source"));
+  return { utm_source: utmSource, utm_campaign: limpo(params.get("utm_campaign")), canal: canalDe(utmSource), variante };
 }
 
 export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse | null }) {
@@ -87,7 +100,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
    * o campo mas nao gera sozinho: geracao automatica faria o rastreador do
    * Google e cada link compartilhado gastarem uma chamada da IA.
    */
-  const origem = useRef<Origem>({ utm_source: null, utm_campaign: null, variante: "padrao" });
+  const origem = useRef<Origem>({ utm_source: null, utm_campaign: null, canal: null, variante: "padrao" });
   const jaMarcou = useRef(new Set<string>());
   const meioDoExemplo = useRef<HTMLDivElement | null>(null);
 

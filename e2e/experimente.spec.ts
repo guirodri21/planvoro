@@ -49,6 +49,16 @@ test.describe("variação do anúncio", () => {
     await expect(page.getByRole("heading", { level: 1, name: /Veja um roteiro antes/ })).toBeHidden();
   });
 
+  test("link quebrado da Meta (utm_source=metautm_medium=paid) também conta", async ({ page }) => {
+    await page.goto("/experimente?utm_source=metautm_medium=paid");
+    await expect(page.getByRole("heading", { level: 1, name: /Chega de 14 abas/ })).toBeVisible();
+  });
+
+  test("utm_source que só contém meta no meio não conta", async ({ page }) => {
+    await page.goto("/experimente?utm_source=newsletter-meta");
+    await expect(page.getByRole("heading", { level: 1, name: /Veja um roteiro antes/ })).toBeVisible();
+  });
+
   test("utm_campaign=dor também", async ({ page }) => {
     await page.goto("/experimente?utm_source=google&utm_campaign=dor");
     await expect(page.getByRole("heading", { level: 1, name: /Chega de 14 abas/ })).toBeVisible();
