@@ -171,7 +171,9 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
     // Limpar aqui punia quem tentava um segundo destino: se o pedido
     // falhasse, a pessoa perdia tambem o roteiro que ja tinha conseguido,
     // e ficava com a tela vazia depois de esperar.
-    track("amostra_pedida", { destino: alvo.toLowerCase() });
+    // Mesma origem dos outros eventos da pagina (canal, variante, UTMs):
+    // sem ela, o funil filtrado por canal = meta perdia as duas ultimas etapas.
+    track("amostra_pedida", { ...origem.current, destino: alvo.toLowerCase() });
 
     try {
       const res = await fetch("/api/sample", {
@@ -183,7 +185,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
       if (!res.ok) throw new Error(json.error ?? "Não consegui montar a amostra agora.");
 
       setResult(json);
-      track("amostra_entregue", { destino: alvo.toLowerCase() });
+      track("amostra_entregue", { ...origem.current, destino: alvo.toLowerCase() });
       // Para a Meta, este e o evento que vale: clique que virou roteiro.
       metaTrack("Lead", { content_name: alvo.toLowerCase() });
       // Mesma acao, o outro leilao. Os dois medem a mesma coisa — amostra
