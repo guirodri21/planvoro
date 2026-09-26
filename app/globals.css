@@ -8952,3 +8952,18 @@ body:has(.ajuda-fab) .site-footer {
     align-items: stretch;
   }
 }
+
+/* Marcador invisivel no meio do exemplo do /experimente (evento
+   exemplo_rolado_50). */
+.sample-dias {
+  position: relative;
+}
+
+.sample-meio {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}

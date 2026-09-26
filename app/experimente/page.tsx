@@ -51,23 +51,16 @@ async function carregarExemplo(): Promise<SampleResponse | null> {
   }
 }
 
-export default async function ExperimentePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ d?: string }>;
-}) {
-  const [exemplo, { d }] = await Promise.all([carregarExemplo(), searchParams]);
-
-  /**
-   * As paginas de destino mandam gente para ca com ?d=Foz do Iguacu.
-   * Quem chegou lendo um roteiro de Foz ja disse qual e o destino dele;
-   * obrigar a digitar de novo e perder a pessoa no ultimo passo.
-   *
-   * Preenche o campo mas nao gera sozinho: geracao automatica faria o
-   * rastreador do Google e cada link compartilhado consumirem uma chamada
-   * da IA sem ninguem estar olhando.
-   */
-  const destinoInicial = typeof d === "string" ? d.slice(0, 60) : "";
-
-  return <ExperimenteClient exemplo={exemplo} destinoInicial={destinoInicial} />;
+/**
+ * Pagina estatica, regenerada a cada hora (revalidate acima).
+ *
+ * Antes lia `?d=` aqui no servidor, e ler searchParams deixa a pagina
+ * dinamica: cada visita renderizava de novo e ia ao banco buscar o mesmo
+ * exemplo de Buenos Aires. TTFB medido de ~1,9 s, quase todo de quem vem
+ * do anuncio, no celular. Agora o `?d=` e as UTMs sao lidos no navegador
+ * (experimente-client.tsx) e o HTML sai pronto do cache.
+ */
+export default async function ExperimentePage() {
+  const exemplo = await carregarExemplo();
+  return <ExperimenteClient exemplo={exemplo} />;
 }
