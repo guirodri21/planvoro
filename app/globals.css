@@ -8967,3 +8967,98 @@ body:has(.ajuda-fab) .site-footer {
   height: 1px;
   pointer-events: none;
 }
+
+/* ============================================================ /experimente
+   Variacao "dor" (anuncio) x texto padrao. O script da pagina marca
+   <html data-exp="dor"> antes da primeira pintura; aqui so escolhe qual
+   bloco aparece, sem piscar. */
+.exp-dor {
+  display: none;
+}
+
+html[data-exp="dor"] .exp-dor {
+  display: grid;
+  gap: 8px;
+}
+
+html[data-exp="dor"] .exp-padrao {
+  display: none;
+}
+
+.exp-padrao {
+  display: grid;
+  gap: 12px;
+}
+
+.exp-titulo-dor {
+  max-width: 24ch;
+  font-size: clamp(25px, 6.6vw, 40px);
+  line-height: 1.12;
+}
+
+.exp-titulo-dor span {
+  display: block;
+  color: var(--brand-strong);
+}
+
+.exp-dor .sub {
+  margin: 0;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+
+/* O campo tem largura minima propria; somada ao botao, empurrava o
+   cabecalho para 404px numa tela de 390px, e o navegador cortava a
+   sobra: texto, campo e botao sumiam na borda direita do celular. */
+.sample-shell > *,
+.sample-head,
+.sample-form,
+.sample-form input {
+  min-width: 0;
+}
+
+.sample-dias-topo {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.sample-porque {
+  margin: 0;
+  font-size: 14px;
+}
+
+.sample-porque.curto {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .sample-head {
+    gap: 10px;
+    padding-top: 0;
+  }
+
+  .sample-form .btn {
+    width: 100%;
+  }
+}
+
+/* No celular, o preco em moeda local + real ("ARS 20.000,00 (~R$ 50,00)")
+   ocupava metade da linha: o nome da parada ficava com uma palavra por
+   linha e passava por baixo do preco. Aqui o preco desce para baixo do
+   nome, alinhado com ele. */
+@media (max-width: 640px) {
+  .sample-dias .item {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .sample-dias .item .cost {
+    flex-basis: 100%;
+    padding-left: 62px;
+    white-space: normal;
+  }
+}
