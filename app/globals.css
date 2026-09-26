@@ -9062,3 +9062,88 @@ html[data-exp="dor"] .exp-padrao {
     white-space: normal;
   }
 }
+
+/* Exemplo pronto de Salvador, antes do formulario (so na variacao dor).
+   Compacto de proposito: titulo, dia 1 e o botao cabem na primeira tela
+   de um celular de 390x844. */
+.exp-exemplo {
+  display: grid;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.exp-exemplo-intro {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.exp-exemplo-card {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 0;
+  padding: 12px 12px 4px;
+}
+
+.exp-exemplo-card .badge {
+  justify-self: start;
+}
+
+.exp-exemplo-card .day {
+  margin-bottom: 4px;
+}
+
+.exp-exemplo-card .day-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 2px 4px 6px;
+}
+
+.exp-exemplo-card .item {
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 4px;
+}
+
+.exp-exemplo-card .item-t {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.exp-exemplo-card .cost {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.exp-ver-dia2 {
+  justify-self: stretch;
+  padding: 10px 4px;
+  border: 0;
+  border-top: 1px solid rgba(19, 37, 64, 0.08);
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* No celular o preco das paradas cabe na mesma linha (valores em real,
+   curtos); a regra geral que desce o preco e para ARS e afins. */
+@media (max-width: 640px) {
+  .exp-exemplo-card .item {
+    flex-wrap: nowrap;
+  }
+
+  .exp-exemplo-card .item .cost {
+    flex-basis: auto;
+    padding-left: 0;
+    white-space: nowrap;
+  }
+}
