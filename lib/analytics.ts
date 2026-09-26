@@ -24,6 +24,11 @@ export function initAnalytics() {
     // capturamos pageview na mao, porque o App Router nao dispara
     // navegacao completa entre rotas
     capture_pageview: false,
+    // Tempo na pagina e scroll maximo ($prev_pageview_duration e
+    // $prev_pageview_max_scroll_percentage no $pageleave). Mede so quanto
+    // tempo e quanto rolou — nao grava tela nem cliques, entao a decisao
+    // de LGPD abaixo continua valendo.
+    capture_pageleave: true,
     // LGPD: nada de gravacao de tela nem coleta automatica de cliques
     autocapture: false,
     disable_session_recording: true,
@@ -155,6 +160,13 @@ export type Evento =
   | "teste_gratis_iniciado"
   | "checkout_iniciado"
   | "checkout_voltou"
+  // /experimente: onde quem chega do anuncio para antes de pedir roteiro
+  | "experimente_visto"
+  | "campo_destino_focado"
+  | "destino_digitado"
+  | "sugestao_clicada"
+  | "botao_montar_clicado"
+  | "exemplo_rolado_50"
   // suporte
   | "ajuda_aberta"
   | "ajuda_enviada"

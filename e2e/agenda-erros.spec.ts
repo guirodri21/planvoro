@@ -28,12 +28,25 @@ test("erro no navegador é reportado uma vez", async ({ page }) => {
     await json(r, { ok: true });
   });
   await page.goto("/");
-  await page.evaluate(() => {
-    const erro = new Error("quebrou no teste");
-    for (let i = 0; i < 3; i += 1) {
-      window.dispatchEvent(new ErrorEvent("error", { error: erro, message: erro.message, filename: location.origin + "/x.js" }));
-    }
-  });
-  await expect.poll(() => pedidos.length).toBe(1);
+
+  // O ouvinte de erro liga depois da hidratacao; em maquina lenta (CI)
+  // o primeiro disparo pode chegar antes dele. Repete ate o primeiro
+  // relatorio sair — e a deduplicacao e que tem de segurar o resto.
+  const disparar = () =>
+    page.evaluate(() => {
+      const erro = new Error("quebrou no teste");
+      for (let i = 0; i < 3; i += 1) {
+        window.dispatchEvent(new ErrorEvent("error", { error: erro, message: erro.message, filename: location.origin + "/x.js" }));
+      }
+    });
+  await expect
+    .poll(async () => {
+      await disparar();
+      return pedidos.length;
+    })
+    .toBeGreaterThan(0);
+  await disparar();
+  await page.waitForTimeout(500);
+  expect(pedidos).toHaveLength(1);
   expect(pedidos[0]).toMatchObject({ mensagem: "Error: quebrou no teste", pagina: "/" });
 });

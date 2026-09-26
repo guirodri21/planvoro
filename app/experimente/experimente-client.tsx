@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
 import { googleAdsAmostraEntregue } from "@/lib/google-ads";
 import { metaTrack } from "@/lib/meta-pixel";
@@ -44,17 +44,75 @@ function formatMoney(value: number) {
  * cria conta. Quem chega aqui ainda não confia no produto, então o pedido
  * de cadastro só aparece depois que ela já tem algo na tela.
  */
-export default function ExperimenteClient({
-  exemplo,
-  destinoInicial = "",
-}: {
-  exemplo: SampleResponse | null;
-  destinoInicial?: string;
-}) {
-  const [destination, setDestination] = useState(destinoInicial);
+/** De onde a pessoa veio. Vai junto em todo evento desta pagina. */
+type Origem = { utm_source: string | null; utm_campaign: string | null };
+
+function lerOrigem(params: URLSearchParams): Origem {
+  const limpo = (valor: string | null) => (valor ? valor.trim().slice(0, 60) || null : null);
+  return { utm_source: limpo(params.get("utm_source")), utm_campaign: limpo(params.get("utm_campaign")) };
+}
+
+export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse | null }) {
+  const [destination, setDestination] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<SampleResponse | null>(null);
+
+  /**
+   * Origem e ?d= sao lidos aqui, e nao no servidor: ler a URL no servidor
+   * deixava a pagina dinamica (ver page.tsx).
+   *
+   * As paginas de destino mandam gente para ca com ?d=Foz do Iguacu. Quem
+   * chegou lendo um roteiro de Foz ja disse qual e o destino dele. Preenche
+   * o campo mas nao gera sozinho: geracao automatica faria o rastreador do
+   * Google e cada link compartilhado gastarem uma chamada da IA.
+   */
+  const origem = useRef<Origem>({ utm_source: null, utm_campaign: null });
+  const jaMarcou = useRef(new Set<string>());
+  const meioDoExemplo = useRef<HTMLDivElement | null>(null);
+
+  /** Evento desta pagina, com a origem. `umaVez` evita repetir por visita. */
+  function marcar(
+    evento: "campo_destino_focado" | "destino_digitado" | "sugestao_clicada" | "botao_montar_clicado" | "exemplo_rolado_50" | "experimente_visto",
+    props: Record<string, unknown> = {},
+    umaVez = false
+  ) {
+    if (umaVez) {
+      if (jaMarcou.current.has(evento)) return;
+      jaMarcou.current.add(evento);
+    }
+    track(evento, { ...origem.current, ...props });
+  }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    origem.current = lerOrigem(params);
+    const d = params.get("d");
+    if (d) setDestination(d.slice(0, 60));
+    marcar("experimente_visto", { com_exemplo: Boolean(exemplo), com_destino: Boolean(d) }, true);
+    // So na montagem: e a "visita".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * "Leu o exemplo": o meio do bloco do exemplo entrou na tela. Um
+   * marcador no meio do bloco, e nao 50% do bloco visivel, porque no
+   * celular o exemplo e mais alto que duas telas — metade dele nunca cabe
+   * visivel ao mesmo tempo, e o evento nunca dispararia.
+   */
+  useEffect(() => {
+    const alvo = meioDoExemplo.current;
+    if (!alvo || typeof IntersectionObserver === "undefined") return;
+    const observador = new IntersectionObserver((entradas) => {
+      if (entradas.some((e) => e.isIntersecting || e.boundingClientRect.top < 0)) {
+        marcar("exemplo_rolado_50", {}, true);
+        observador.disconnect();
+      }
+    });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exemplo]);
 
   /**
    * O que a pessoa ve antes de digitar qualquer coisa.
@@ -126,9 +184,17 @@ export default function ExperimenteClient({
         <div className="sample-form">
           <input
             value={destination}
-            onChange={(event) => setDestination(event.target.value)}
+            onChange={(event) => {
+              setDestination(event.target.value);
+              // So o fato de ter digitado: o texto nao vai para o analytics.
+              marcar("destino_digitado", {}, true);
+            }}
+            onFocus={() => marcar("campo_destino_focado", {}, true)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") void gerar(destination);
+              if (event.key === "Enter") {
+                marcar("botao_montar_clicado", { via: "enter", pronto: destination.trim().length >= 3 });
+                void gerar(destination);
+              }
             }}
             placeholder="Lisboa, Buenos Aires, Salvador..."
             aria-label="Destino"
@@ -137,7 +203,10 @@ export default function ExperimenteClient({
           <button
             className="btn"
             type="button"
-            onClick={() => void gerar(destination)}
+            onClick={() => {
+              marcar("botao_montar_clicado", { via: "botao", pronto: true });
+              void gerar(destination);
+            }}
             disabled={loading || destination.trim().length < 3}
           >
             {loading ? "Montando..." : "Montar roteiro"}
@@ -153,6 +222,7 @@ export default function ExperimenteClient({
                 className="btn ghost sm"
                 type="button"
                 onClick={() => {
+                  marcar("sugestao_clicada", { destino: sugestao });
                   setDestination(sugestao);
                   void gerar(sugestao);
                 }}
@@ -188,7 +258,8 @@ export default function ExperimenteClient({
             </div>
           )}
 
-          <div className="card">
+          <div className="card sample-dias">
+            {ehExemplo && <div ref={meioDoExemplo} className="sample-meio" aria-hidden="true" />}
             {dias.map((dia) => {
               const soma = formatDayTotal(dia.items);
               return (
