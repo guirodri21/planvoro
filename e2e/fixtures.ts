@@ -230,8 +230,19 @@ export const test = base.extend<{ isolar: void }>({
 
 export { expect };
 
-/** Nenhuma tela pode rolar de lado no celular. */
+/**
+ * Nenhuma tela pode ficar mais larga que a tela do celular.
+ *
+ * Comparar scrollWidth com innerWidth nao bastava: quando um elemento tem
+ * largura minima maior que a tela, o celular alarga o proprio layout
+ * (innerWidth passa de 390 para 404) e corta a sobra — o texto some na
+ * borda direita e a conta antiga dava zero. A referencia certa e a area
+ * visivel (visualViewport).
+ */
 export async function semRolagemLateral(page: Page) {
-  const sobra = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
-  expect(sobra, "a página rola de lado").toBeLessThanOrEqual(1);
+  const sobra = await page.evaluate(() => {
+    const visivel = window.visualViewport?.width ?? window.innerWidth;
+    return Math.max(document.documentElement.scrollWidth, window.innerWidth) - visivel;
+  });
+  expect(sobra, "a página é mais larga que a tela").toBeLessThanOrEqual(1);
 }
