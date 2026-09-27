@@ -4,7 +4,8 @@ import { getUserFromRequest } from "@/lib/auth";
 import { betaBlocksCheckoutFor } from "@/lib/beta";
 import { billingOrigin } from "@/lib/billing";
 import { traduzErroPagamento } from "@/lib/erros";
-import { logError } from "@/lib/logger";
+import { logError, logWarn } from "@/lib/logger";
+import { dadosDoNavegador, metaCapiLigada } from "@/lib/meta-capi";
 import { memberForUserInTrip } from "@/lib/guards";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -152,7 +153,8 @@ export async function POST(req: Request) {
       checkout = await criarCheckout({
         plan,
         externalId: pedido.id,
-        completionUrl: `${voltarPara}?billing=success`,
+        // pedido e plano voltam para o Purchase do Pixel (app/meta-pixel.tsx).
+        completionUrl: `${voltarPara}?billing=success&pedido=${pedido.id}&plano=${plan}`,
         returnUrl: `${voltarPara}?billing=cancel`,
         customerId,
       });
@@ -165,6 +167,17 @@ export async function POST(req: Request) {
       .from("billing_checkouts")
       .update({ provider_checkout_id: checkout.id, amount: checkout.amount })
       .eq("id", pedido.id);
+
+    // Navegador de quem vai pagar, para o Purchase da Meta pelo servidor
+    // (lib/billing-grant.ts). Update separado de proposito: se falhar, o
+    // pedido continua valido — medicao de anuncio nao atrapalha a compra.
+    if (metaCapiLigada()) {
+      const { error: erroMeta } = await db
+        .from("billing_checkouts")
+        .update({ meta_contexto: dadosDoNavegador(req) })
+        .eq("id", pedido.id);
+      if (erroMeta) logWarn({ event: "meta_contexto_nao_gravado", route: "billing/checkout", motivo: erroMeta.message });
+    }
 
     if (plan === "trip_pass" && tripId) {
       const { error } = await db.from("trip_entitlements").insert({

@@ -38,8 +38,22 @@ test("sugestão gera a amostra e mostra o roteiro", async ({ page }) => {
     page.waitForRequest("**/api/sample"),
     page.getByRole("button", { name: "Salvador", exact: true }).click(),
   ]);
-  expect(pedido.postDataJSON()).toEqual({ destination: "Salvador" });
+  // evento_id casa o Lead do Pixel com o da API de Conversoes; o destino
+  // vai so para a nossa rota, nunca para a Meta.
+  expect(pedido.postDataJSON()).toEqual({ destination: "Salvador", evento_id: expect.stringMatching(/^amostra-/) });
   await expect(page.getByText("Elevador Lacerda")).toBeVisible();
+});
+
+test("sem NEXT_PUBLIC_META_PIXEL_ID nada da Meta carrega", async ({ page }) => {
+  const daMeta: string[] = [];
+  page.on("request", (r) => {
+    if (/facebook\.(net|com)/.test(r.url())) daMeta.push(r.url());
+  });
+  await page.goto("/experimente?utm_source=meta-teste");
+  await page.waitForLoadState("load");
+  await page.waitForTimeout(2500);
+  expect(daMeta).toEqual([]);
+  expect(await page.evaluate(() => typeof (window as { fbq?: unknown }).fbq)).toBe("undefined");
 });
 
 test.describe("variação do anúncio", () => {

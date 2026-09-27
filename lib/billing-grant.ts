@@ -1,6 +1,7 @@
-import { tripAccessExpiresAt } from "@/lib/billing";
+import { BILLING_COPY, eventIdDaCompra, tripAccessExpiresAt } from "@/lib/billing";
 import { logError, logInfo, logWarn } from "@/lib/logger";
 import { emailDoUsuario, emailRecibo } from "@/lib/lifecycle-email";
+import { enviarEventoMeta, hashEmail, metaCapiLigada, type DadosDoNavegador } from "@/lib/meta-capi";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -152,6 +153,41 @@ export async function liberarAcesso(
   // reconciliacao podem chegar os dois, e ninguem quer dois recibos.
   if (pedido.status !== "paid") {
     await enviarRecibo(db, pedido, valor);
+    await compraNaMeta(db, pedido, valor);
+  }
+}
+
+/**
+ * Purchase da Meta pelo servidor. E o caminho que sempre chega: o do
+ * navegador depende de a pessoa voltar do checkout para o site com o
+ * Pixel liberado. Mesmo event_id dos dois lados, a Meta conta uma vez.
+ */
+async function compraNaMeta(db: ReturnType<typeof supabaseAdmin>, pedido: Pedido, valor: number | null) {
+  if (!metaCapiLigada()) return;
+  try {
+    const plano = pedido.plan === "pro_annual" ? "pro_annual" : "trip_pass";
+    const centavos = valor ?? BILLING_COPY[plano].amount;
+    const email = await emailDoUsuario(db, pedido.user_id);
+    // Gravado no checkout (app/api/billing/checkout). Erro aqui so tira a
+    // precisao do evento, nao o evento.
+    const { data: contexto } = await db
+      .from("billing_checkouts")
+      .select("meta_contexto")
+      .eq("id", pedido.id)
+      .maybeSingle<{ meta_contexto: DadosDoNavegador | null }>();
+    await enviarEventoMeta({
+      evento: "Purchase",
+      eventId: eventIdDaCompra(pedido.id),
+      navegador: contexto?.meta_contexto ?? undefined,
+      emailHash: email ? hashEmail(email) : null,
+      valor: centavos / 100,
+    });
+    // Cumpriu a funcao: IP e navegador nao ficam guardados.
+    if (contexto?.meta_contexto) {
+      await db.from("billing_checkouts").update({ meta_contexto: null }).eq("id", pedido.id);
+    }
+  } catch (e) {
+    logError({ event: "meta_compra_falhou", route: "billing-grant", error: e });
   }
 }
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { track } from "@/lib/analytics";
 import { googleAdsAmostraEntregue } from "@/lib/google-ads";
-import { metaTrack } from "@/lib/meta-pixel";
+import { metaTrack, novoEventId } from "@/lib/meta-pixel";
 import { tiktokAmostraEntregue } from "@/lib/tiktok-pixel";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
 import { EXEMPLO_SALVADOR, type DiaExemplo } from "@/lib/exemplo-salvador";
@@ -196,6 +196,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
     if (!alvo || typeof IntersectionObserver === "undefined") return;
     const observador = new IntersectionObserver((entradas) => {
       if (entradas.some((e) => e.isIntersecting)) {
+        if (!jaMarcou.current.has("exemplo_visto")) metaTrack("ViewContent");
         marcar("exemplo_visto", { destino_exemplo: "salvador" }, true);
         observador.disconnect();
       }
@@ -246,11 +247,16 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
     // sem ela, o funil filtrado por canal = meta perdia as duas ultimas etapas.
     track("amostra_pedida", { ...origem.current, destino: alvo.toLowerCase() });
 
+    // O mesmo id vai para o servidor, que manda o Lead pela API de
+    // Conversoes: quem bloqueia o Pixel ainda conta, e quem nao bloqueia
+    // nao conta duas vezes.
+    const eventoLead = novoEventId("amostra");
+
     try {
       const res = await fetch("/api/sample", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destination: alvo }),
+        body: JSON.stringify({ destination: alvo, evento_id: eventoLead }),
       });
       const json = (await res.json().catch(() => ({}))) as SampleResponse;
       if (!res.ok) throw new Error(json.error ?? "Não consegui montar a amostra agora.");
@@ -258,7 +264,8 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
       setResult(json);
       track("amostra_entregue", { ...origem.current, destino: alvo.toLowerCase() });
       // Para a Meta, este e o evento que vale: clique que virou roteiro.
-      metaTrack("Lead", { content_name: alvo.toLowerCase() });
+      // Sem o destino — a Politica de Privacidade promete isso.
+      metaTrack("Lead", {}, eventoLead);
       // Mesma acao, o outro leilao. Os dois medem a mesma coisa — amostra
       // na tela — para as campanhas serem comparaveis pelo mesmo criterio.
       googleAdsAmostraEntregue(alvo.toLowerCase());

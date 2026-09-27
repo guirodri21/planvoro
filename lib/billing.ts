@@ -19,6 +19,14 @@ export const BILLING_COPY: Record<
   },
 };
 
+/**
+ * Id do evento Purchase da Meta. O mesmo no servidor (lib/billing-grant.ts)
+ * e no navegador (app/meta-pixel.tsx), para a Meta contar a compra uma vez.
+ */
+export function eventIdDaCompra(pedidoId: string) {
+  return `compra-${pedidoId}`;
+}
+
 export function billingOrigin(req: Request) {
   return new URL(req.url).origin;
 }
