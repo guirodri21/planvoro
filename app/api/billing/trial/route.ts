@@ -1,9 +1,40 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
-import { TRIAL_DIAS, trialExpiresAt } from "@/lib/billing";
+import { PROVEDOR_TESTE_CONTA, TRIAL_DIAS, proPagoAtivo, testeDaConta, trialExpiresAt } from "@/lib/billing";
 import { memberForUserInTrip } from "@/lib/guards";
 import { logInfo, logError } from "@/lib/logger";
 import { supabaseAdmin } from "@/lib/supabase";
+
+/** Teste sem viagem: libera a conta por 7 dias. Uma vez por conta. */
+async function testeDaContaInteira(db: ReturnType<typeof supabaseAdmin>, userId: string) {
+  const { data: testeEmViagem } = await db
+    .from("trip_entitlements")
+    .select("id")
+    .eq("purchaser_user_id", userId)
+    .eq("status", "trial")
+    .limit(1)
+    .maybeSingle();
+  if (testeEmViagem) {
+    return NextResponse.json({ error: "Você já usou seu teste grátis em uma viagem." }, { status: 409 });
+  }
+
+  const expiraEm = trialExpiresAt();
+  const { error } = await db.from("user_subscriptions").upsert(
+    {
+      user_id: userId,
+      status: "trialing",
+      provider: PROVEDOR_TESTE_CONTA,
+      current_period_end: expiraEm,
+      cancel_at_period_end: false,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "user_id" }
+  );
+  if (error) throw error;
+
+  logInfo({ event: "teste_gratis_iniciado", route: "billing/trial", userId, escopo: "conta" });
+  return NextResponse.json({ expires_at: expiraEm, days: TRIAL_DIAS, escopo: "conta" });
+}
 
 /**
  * Comeca o teste gratis de 7 dias numa viagem.
@@ -14,6 +45,10 @@ import { supabaseAdmin } from "@/lib/supabase";
  *
  * So o organizador comeca, pela mesma razao do Passe: o acesso segue a
  * viagem, entao quem liga isso decide pelo grupo inteiro.
+ *
+ * Sem `trip_slug`, o teste vale para a conta (ver `testeDaConta` em
+ * lib/billing.ts): e o caminho de quem ainda nao organiza viagem. Antes,
+ * esse clique nao fazia nada.
  */
 export async function POST(req: Request) {
   try {
@@ -25,9 +60,21 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({}));
     const slug = String(body.trip_slug ?? "").trim();
-    if (!slug) {
-      return NextResponse.json({ error: "Escolha uma viagem para testar." }, { status: 400 });
+
+    const { data: assinatura } = await db
+      .from("user_subscriptions")
+      .select("status, provider, current_period_end")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (proPagoAtivo(assinatura)) {
+      return NextResponse.json({ error: "Sua conta já está no Pro: tudo já está liberado." }, { status: 400 });
     }
+    if (testeDaConta(assinatura).usado) {
+      return NextResponse.json({ error: "Você já usou seu teste grátis." }, { status: 409 });
+    }
+
+    if (!slug) return testeDaContaInteira(db, user.id);
 
     const membership = await memberForUserInTrip(db, slug, user.id);
     if (!membership) {

@@ -44,6 +44,40 @@ export function isProStatusActive(status?: string | null, currentPeriodEnd?: str
   return new Date(currentPeriodEnd).getTime() > Date.now();
 }
 
+/**
+ * Teste gratis da conta, para quem ainda nao organiza viagem nenhuma.
+ *
+ * O teste era so por viagem: quem clicava sem ter viagem propria (so
+ * convidado, ou recem-chegado) nao via nada acontecer — o botao procurava
+ * uma viagem para liberar, nao achava e parava. Agora, sem viagem, o teste
+ * vale para a conta: tudo que ela organizar nos 7 dias ja nasce liberado.
+ *
+ * Mora na mesma linha de `user_subscriptions` do Pro, com status
+ * `trialing` (que `isProStatusActive` ja trata como liberado) e este
+ * provedor marcando que e teste, nao Pro pago.
+ */
+export const PROVEDOR_TESTE_CONTA = "teste_gratis";
+
+type LinhaAssinatura = {
+  status?: string | null;
+  provider?: string | null;
+  current_period_end?: string | null;
+} | null | undefined;
+
+export function testeDaConta(assinatura: LinhaAssinatura) {
+  const usado = assinatura?.provider === PROVEDOR_TESTE_CONTA;
+  const expiraEm = usado ? assinatura?.current_period_end ?? null : null;
+  const ativo =
+    usado && assinatura?.status === "trialing" && Boolean(expiraEm) && new Date(expiraEm as string).getTime() > Date.now();
+  return { usado, ativo, expiraEm };
+}
+
+/** Pro pago de verdade. O teste da conta usa a mesma linha, mas nao e Pro. */
+export function proPagoAtivo(assinatura: LinhaAssinatura) {
+  if (testeDaConta(assinatura).usado) return false;
+  return isProStatusActive(assinatura?.status ?? null, assinatura?.current_period_end ?? null);
+}
+
 export function isTripEntitlementActive(status?: string | null, accessExpiresAt?: string | null) {
   if (status !== "paid") return false;
   if (!accessExpiresAt) return true;

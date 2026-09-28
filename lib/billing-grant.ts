@@ -227,3 +227,68 @@ async function enviarRecibo(db: ReturnType<typeof supabaseAdmin>, pedido: Pedido
  * o primeiro pagamento de verdade ser descartado em silencio. `event`
  * fica como alternativa para o dia em que eles alinharem os dois.
  */
+
+/**
+ * Passe pago antes de a viagem existir vira o Passe da viagem nova.
+ *
+ * Chamado ao criar viagem (POST /api/trips). Usa o Passe guardado mais
+ * antigo e amarra o pedido a esta viagem, para nao ser usado duas vezes.
+ * Falhar aqui nao pode impedir a viagem de nascer: fica no log, e o Passe
+ * continua guardado para a proxima tentativa.
+ */
+export async function usarPasseGuardado(
+  db: ReturnType<typeof supabaseAdmin>,
+  userId: string,
+  trip: { id: string; end_date: string | null }
+) {
+  try {
+    const { data: guardado } = await db
+      .from("billing_checkouts")
+      .select("id, provider_checkout_id, amount, paid_at")
+      .eq("user_id", userId)
+      .eq("plan", "trip_pass")
+      .eq("status", "paid")
+      .is("trip_id", null)
+      .order("paid_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (!guardado) return false;
+
+    // Primeiro reserva o pedido (so se ainda estiver livre), depois libera:
+    // duas viagens criadas ao mesmo tempo nao usam o mesmo Passe.
+    const { data: reservado } = await db
+      .from("billing_checkouts")
+      .update({ trip_id: trip.id })
+      .eq("id", guardado.id)
+      .is("trip_id", null)
+      .select("id")
+      .maybeSingle();
+    if (!reservado) return false;
+
+    const agora = new Date().toISOString();
+    const { error } = await db.from("trip_entitlements").insert({
+      trip_id: trip.id,
+      purchaser_user_id: userId,
+      plan: "trip_pass",
+      status: "paid",
+      provider: "abacatepay",
+      provider_checkout_id: guardado.provider_checkout_id,
+      amount_total: guardado.amount,
+      currency: "brl",
+      paid_at: guardado.paid_at ?? agora,
+      access_expires_at: tripAccessExpiresAt(trip.end_date),
+      updated_at: agora,
+    });
+    if (error) {
+      // Devolve o Passe para a fila: sem o direito gravado, ele nao foi usado.
+      await db.from("billing_checkouts").update({ trip_id: null }).eq("id", guardado.id);
+      throw error;
+    }
+
+    logInfo({ event: "passe_guardado_usado", route: "trips", tripId: trip.id });
+    return true;
+  } catch (e) {
+    logError({ event: "passe_guardado_falhou", route: "trips", error: e });
+    return false;
+  }
+}

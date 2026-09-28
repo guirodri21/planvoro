@@ -59,3 +59,63 @@ test("planos: erro do checkout aparece para a pessoa", async ({ page }) => {
   await page.getByRole("button", { name: "Assinar por R$ 79/ano" }).click();
   await expect(page.getByText("Pagamento indisponível.")).toBeVisible();
 });
+
+/**
+ * Conta que nao organiza viagem nenhuma (so participa a convite, ou ainda
+ * nao criou). Era o caso do dono em 28/09: "Testar 7 dias grátis" nao
+ * chamava o servidor e o aviso de erro caia fora da tela do celular.
+ */
+function soConvidado() {
+  const dados = painel();
+  return {
+    ...dados,
+    trips: dados.trips.map((trip) => ({ ...trip, viewer_member: { ...trip.viewer_member, is_organizer: false } })),
+  };
+}
+
+test("teste grátis sem viagem própria: libera a conta, sem pedir viagem", async ({ page }) => {
+  await page.route("**/api/me/dashboard", (r) => json(r, soConvidado()));
+  await page.route("**/api/billing/trial", (r) => json(r, { expires_at: "2026-12-01T00:00:00Z", days: 7, escopo: "conta" }));
+  await page.goto("/app");
+
+  const [pedido] = await Promise.all([
+    page.waitForRequest("**/api/billing/trial"),
+    page.getByRole("button", { name: "Testar 7 dias grátis" }).first().click(),
+  ]);
+  expect(pedido.postDataJSON()).toEqual({});
+});
+
+test("erro do teste grátis aparece junto do botão", async ({ page }) => {
+  await page.route("**/api/me/dashboard", (r) => json(r, soConvidado()));
+  await page.route("**/api/billing/trial", (r) => json(r, { error: "Você já usou seu teste grátis." }, 409));
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Testar 7 dias grátis" }).first().click();
+  const aviso = page.locator(".billing-panel").getByRole("alert");
+  await expect(aviso).toHaveText("Você já usou seu teste grátis.");
+  await expect(aviso).toBeVisible();
+  await expect(aviso).toBeInViewport();
+});
+
+test("planos sem viagem própria: compra o Passe e testa grátis sem preencher viagem", async ({ page, context }) => {
+  await page.route("**/api/me/dashboard", (r) => json(r, soConvidado()));
+  await context.route("https://pagamento.exemplo/**", (r) =>
+    r.fulfill({ status: 200, contentType: "text/html", body: "<p>checkout</p>" })
+  );
+  await page.route("**/api/billing/checkout", (r) => json(r, { url: "https://pagamento.exemplo/abc" }));
+  await page.route("**/api/billing/trial", (r) => json(r, { expires_at: "2026-12-01T00:00:00Z", days: 7 }));
+  await page.goto("/planos");
+
+  const [compra] = await Promise.all([
+    page.waitForRequest("**/api/billing/checkout"),
+    page.getByRole("button", { name: "Comprar o Passe por R$ 29" }).click(),
+  ]);
+  expect(compra.postDataJSON()).toEqual({ plan: "trip_pass" });
+  await expect(page.getByText(/O pagamento abriu em outra aba/)).toBeVisible();
+
+  const [teste] = await Promise.all([
+    page.waitForRequest("**/api/billing/trial"),
+    page.getByRole("button", { name: "Testar 7 dias grátis" }).click(),
+  ]);
+  expect(teste.postDataJSON()).toEqual({});
+  await expect(page.getByText(/toda viagem que você criar já nasce liberada/)).toBeVisible();
+});

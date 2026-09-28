@@ -56,6 +56,10 @@ type DashboardResponse = {
     trial_used: boolean;
     trial_expires_at: string | null;
     trial_trip: string | null;
+    /** Teste da conta inteira (sem viagem), e nao de uma viagem. */
+    trial_conta?: boolean;
+    /** Passes pagos antes de existir viagem, esperando a proxima. */
+    passes_guardados?: number;
     subscription: {
       status: string;
       provider: string | null;
@@ -192,6 +196,17 @@ function tripPlanLabel(
     };
   }
   if (accountBilling?.is_pro_active && trip.viewer_member?.is_organizer) return { label: "Pro", liberada: true };
+  if (
+    accountBilling?.trial_conta &&
+    trip.viewer_member?.is_organizer &&
+    accountBilling.trial_expires_at &&
+    new Date(accountBilling.trial_expires_at).getTime() > Date.now()
+  ) {
+    return {
+      label: `teste até ${new Date(accountBilling.trial_expires_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`,
+      liberada: true,
+    };
+  }
   return { label: "plano grátis", liberada: false };
 }
 
@@ -373,14 +388,14 @@ export default function AppPage() {
     // viagem", e aquela; senao, a primeira que ela organiza — pedir para
     // escolher agora seria uma pergunta a mais no caminho de quem so quer
     // experimentar.
+    //
+    // Sem viagem propria, o teste vale para a conta. Antes este clique
+    // parava num "crie uma viagem primeiro" que, no celular, aparecia
+    // fora da tela: para quem clicou, o botao simplesmente nao fazia nada.
     const alvo =
       (slugEscolhido &&
         trips.find((trip) => trip.slug === slugEscolhido && trip.viewer_member?.is_organizer)?.slug) ||
       trips.find((trip) => trip.viewer_member?.is_organizer)?.slug;
-    if (!alvo) {
-      setBillingError("Crie uma viagem primeiro para usar o teste grátis.");
-      return;
-    }
 
     setBillingAction("trial");
     setBillingError("");
@@ -389,7 +404,7 @@ export default function AppPage() {
       const res = await fetch("/api/billing/trial", {
         method: "POST",
         headers: authJsonHeaders(session.access_token),
-        body: JSON.stringify({ trip_slug: alvo }),
+        body: JSON.stringify(alvo ? { trip_slug: alvo } : {}),
       });
       const json = await lerJson(res);
       if (!res.ok) throw new Error(json.error ?? "Não foi possível começar o teste.");
@@ -484,7 +499,10 @@ export default function AppPage() {
           temTeste={Boolean(accountBilling?.trial_used)}
           testeExpiraEm={accountBilling?.trial_expires_at ?? null}
           testeViagem={accountBilling?.trial_trip ?? null}
+          testeConta={Boolean(accountBilling?.trial_conta)}
+          passesGuardados={accountBilling?.passes_guardados ?? 0}
           acao={billingAction}
+          erro={liberarTrip ? "" : billingError}
           onPro={() => startCheckout("pro_annual")}
           onTeste={() => comecarTeste(liberarSlug ?? undefined)}
         />
@@ -496,7 +514,7 @@ export default function AppPage() {
 
       <div className="dash-main">
       {error && <div className="err">{error}</div>}
-      {billingError && <div className="err">{billingError}</div>}
+      {billingError && liberarTrip && <div className="err">{billingError}</div>}
 
       {liberarTrip && (
         <LiberarViagem

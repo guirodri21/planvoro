@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { checkTripCreation } from "@/lib/ai-limits";
 import { getUserFromRequest } from "@/lib/auth";
 import { betaAccessEnabled } from "@/lib/beta";
-import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
+import { isTripEntitlementActive, proPagoAtivo, testeDaConta } from "@/lib/billing";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     const [assinatura, direitos, impedimento] = await Promise.all([
       db
         .from("user_subscriptions")
-        .select("status, current_period_end")
+        .select("status, provider, current_period_end")
         .eq("user_id", user.id)
         .maybeSingle(),
       db
@@ -50,6 +50,7 @@ export async function GET(req: Request) {
     ]);
 
     const linhas = direitos.data ?? [];
+    const testeConta = testeDaConta(assinatura.data);
 
     const passes = linhas.filter(
       (linha) =>
@@ -66,13 +67,13 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       beta: betaAccessEnabled,
-      is_pro_active: isProStatusActive(
-        assinatura.data?.status ?? null,
-        assinatura.data?.current_period_end ?? null
-      ),
+      is_pro_active: proPagoAtivo(assinatura.data),
       expires_at: assinatura.data?.current_period_end ?? null,
       passes_ativos: passes.length,
-      teste_expira_em: (teste?.access_expires_at as string | null) ?? null,
+      teste_expira_em:
+        (teste?.access_expires_at as string | null) ??
+        (testeConta.ativo ? testeConta.expiraEm : null),
+      teste_conta: testeConta.ativo,
       pode_criar_viagem: !impedimento,
       motivo_bloqueio: impedimento,
     });

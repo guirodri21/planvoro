@@ -176,6 +176,17 @@ export async function checkTripCreation(
 
   if (unpaidActive < FREE_ACTIVE_TRIPS) return null;
 
+  // Quem ja pagou um Passe antes de ter viagem cria a proxima sem limite:
+  // ela nasce liberada por esse Passe (usarPasseGuardado).
+  const { count: guardados } = await db
+    .from("billing_checkouts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("plan", "trip_pass")
+    .eq("status", "paid")
+    .is("trip_id", null);
+  if (guardados) return null;
+
   // "a viagem atual" no singular soa errado para quem tem quatro abertas,
   // e sugere que existe uma so para liberar.
   return `O plano grátis cobre ${FREE_ACTIVE_TRIPS} viagens ativas ao mesmo tempo. Libere uma delas com o Passe, assine o Pro para ter ilimitadas, ou espere alguma terminar.`;
