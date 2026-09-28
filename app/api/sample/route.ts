@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { logError, logInfo, logWarn, startTimer } from "@/lib/logger";
+import { dadosDoNavegador, enviarEventoMeta, eventIdValido } from "@/lib/meta-capi";
 import {
   SAMPLE_DAYS,
   checkSampleAllowance,
@@ -19,6 +20,17 @@ export const maxDuration = 45;
 const MAX_DESTINATION = 60;
 
 /**
+ * Lead da Meta pelo servidor, com o mesmo event_id que o Pixel mandou do
+ * navegador (a Meta conta um so). Roda depois da resposta: a pessoa nao
+ * espera a Meta para ver o roteiro.
+ */
+function leadNaMeta(req: Request, eventId: string | null) {
+  if (!eventId) return;
+  const navegador = dadosDoNavegador(req);
+  after(() => enviarEventoMeta({ evento: "Lead", eventId, navegador }));
+}
+
+/**
  * Amostra de roteiro sem conta.
  *
  * A unica rota do produto que chama modelo sem saber quem esta pedindo.
@@ -34,6 +46,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => ({}));
     const destination = String(body.destination ?? "").trim().slice(0, MAX_DESTINATION);
+    const eventoMeta = eventIdValido(body.evento_id);
 
     if (destination.length < 3) {
       return NextResponse.json({ error: "Diga para onde você quer ir." }, { status: 400 });
@@ -64,6 +77,7 @@ export async function POST(req: Request) {
         durationMs: elapsed(),
       });
 
+      leadNaMeta(req, eventoMeta);
       return NextResponse.json({
         destination: cached.destination,
         itinerary: cached.payload,
@@ -105,6 +119,7 @@ export async function POST(req: Request) {
       durationMs: elapsed(),
     });
 
+    leadNaMeta(req, eventoMeta);
     return NextResponse.json({ destination, itinerary: generated, days: SAMPLE_DAYS });
   } catch (e) {
     logError({ event: "sample_failed", route: "sample", durationMs: elapsed(), error: e });

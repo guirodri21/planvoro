@@ -54,7 +54,7 @@ export const LEGAL = {
   privacyEmail: "paixaodevtech@gmail.com",
 
   /** Ultima revisao dos documentos, em ISO. */
-  updatedAt: "2026-09-05",
+  updatedAt: "2026-09-27",
 } as const;
 
 export const LEGAL_PENDING = !LEGAL.controllerName || !LEGAL.supportEmail;

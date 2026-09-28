@@ -11,6 +11,7 @@
 "use client";
 
 import posthog from "posthog-js";
+import { META_PIXEL_ID, metaTrack } from "@/lib/meta-pixel";
 
 const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 const HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
@@ -109,7 +110,7 @@ export function track(evento: Evento, props?: Props) {
  * minutos, e a marca no localStorage impede contar duas vezes a mesma.
  */
 export function registrarContaCriada(userId: string, props?: Props) {
-  if (!KEY || typeof window === "undefined") return;
+  if ((!KEY && !META_PIXEL_ID) || typeof window === "undefined") return;
   const chave = `pv_conta_criada:${userId}`;
   try {
     if (window.localStorage.getItem(chave)) return;
@@ -117,7 +118,9 @@ export function registrarContaCriada(userId: string, props?: Props) {
   } catch {
     // Sem localStorage (aba anonima restrita): conta mesmo assim.
   }
-  posthog.capture("conta_criada", props);
+  if (KEY) posthog.capture("conta_criada", props);
+  // Para a Meta, so o fato: nem provedor, nem e-mail.
+  metaTrack("CompleteRegistration");
 }
 
 export function pageview(rota: string) {
