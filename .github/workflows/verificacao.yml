@@ -49,6 +49,10 @@ jobs:
           NEXT_TELEMETRY_DISABLED: "1"
           NEXT_PUBLIC_SUPABASE_URL: http://sb.local
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: fake
+          # Igual a producao: beta desligada, cobranca ligada. Com a beta
+          # ligada (o padrao do codigo), o teste gratis e o pagamento nunca
+          # eram exercitados como o cliente os ve.
+          NEXT_PUBLIC_PLANVORO_BETA_ACCESS: "false"
 
       # Testes de ponta a ponta: abrem as telas num Chromium de verdade,
       # no computador e no celular, com as APIs simuladas (e2e/).

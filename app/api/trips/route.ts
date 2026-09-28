@@ -5,6 +5,7 @@ import { emailPrimeiraViagem } from "@/lib/lifecycle-email";
 import { slugify } from "@/lib/slug";
 import { supabaseAdmin } from "@/lib/supabase";
 import { logError } from "@/lib/logger";
+import { usarPasseGuardado } from "@/lib/billing-grant";
 
 /** Teto por pessoa. Valor invalido vira nulo, nao zero: um orcamento de
  *  R$ 0 dispararia alerta de estouro no primeiro cafe. */
@@ -89,6 +90,9 @@ export async function POST(req: Request) {
       .select("id")
       .single();
     if (memberError) throw memberError;
+
+    // Passe pago antes de ter viagem: esta ja nasce liberada.
+    await usarPasseGuardado(db, user.id, { id: trip.id, end_date: trip.end_date });
 
     // Boas-vindas so na primeira viagem que a pessoa organiza. Da segunda
     // em diante ela ja sabe o caminho, e e-mail repetido vira ruido.

@@ -56,14 +56,15 @@ export async function abrirCheckout({
   }
 }
 
-export async function comecarTesteGratis(accessToken: string, tripSlug: string) {
+/** Sem `tripSlug`, o teste vale para a conta (quem ainda nao tem viagem). */
+export async function comecarTesteGratis(accessToken: string, tripSlug?: string) {
   const res = await fetch("/api/billing/trial", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ trip_slug: tripSlug }),
+    body: JSON.stringify(tripSlug ? { trip_slug: tripSlug } : {}),
   });
   const json = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new Error(json.error ?? "Não foi possível começar o teste.");

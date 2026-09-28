@@ -57,7 +57,7 @@ no computador e no celular, com as APIs simuladas — sem banco e sem chaves.
 Mexeu em tela, rode antes; mudou texto ou fluxo de proposito, ajuste o teste:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=http://sb.local NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=fake npm run build
+NEXT_PUBLIC_SUPABASE_URL=http://sb.local NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=fake NEXT_PUBLIC_PLANVORO_BETA_ACCESS=false npm run build
 npm run e2e   # no container da Claude: PW_CHROMIUM_PATH=/opt/pw-browsers/chromium-1194/chrome-linux/chrome
 ```
 

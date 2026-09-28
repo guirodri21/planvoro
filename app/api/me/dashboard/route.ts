@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getUserFromRequest } from "@/lib/auth";
 import { betaBlocksCheckoutFor } from "@/lib/beta";
-import { isProStatusActive, isTripEntitlementActive } from "@/lib/billing";
+import { isTripEntitlementActive, proPagoAtivo, testeDaConta } from "@/lib/billing";
 import { supabaseAdmin } from "@/lib/supabase";
 import { logError } from "@/lib/logger";
 
@@ -105,21 +105,33 @@ export async function GET(req: Request) {
       .eq("status", "trial")
       .maybeSingle();
 
+    // Passe pago antes de existir viagem: espera a proxima que a pessoa
+    // criar (ver usarPasseGuardado em lib/billing-grant.ts).
+    const { count: passesGuardados } = await db
+      .from("billing_checkouts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("plan", "trip_pass")
+      .eq("status", "paid")
+      .is("trip_id", null);
+
+    const testeConta = testeDaConta(subscription);
+
     const accountBilling = {
       subscription: (subscription ?? null) as SubscriptionRow | null,
-      is_pro_active: isProStatusActive(
-        subscription?.status ?? null,
-        subscription?.current_period_end ?? null
-      ),
+      is_pro_active: proPagoAtivo(subscription),
       // Sem renovacao automatica, a data de fim e a informacao que a
       // pessoa precisa ver — nao ha assinatura para gerenciar.
       pro_expires_at: subscription?.current_period_end ?? null,
       // O teste gratis e uma vez por conta, e a vitrine precisa saber se
       // ainda ha um para oferecer ou se ja foi usado.
-      trial_used: Boolean(trial),
-      trial_expires_at: trial?.access_expires_at ?? null,
+      trial_used: Boolean(trial) || testeConta.usado,
+      trial_expires_at: trial?.access_expires_at ?? testeConta.expiraEm,
       trial_trip:
         (trial?.trips as { destination?: string } | null)?.destination ?? null,
+      /** O teste vale para a conta toda, e nao para uma viagem. */
+      trial_conta: testeConta.usado,
+      passes_guardados: passesGuardados ?? 0,
       // A lista de testadores so existe no servidor, entao o painel nao tem
       // como decidir sozinho se mostra o botao de pagar.
       can_checkout: !betaBlocksCheckoutFor(user.email),

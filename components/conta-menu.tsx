@@ -25,6 +25,8 @@ type Plano = {
   expires_at: string | null;
   passes_ativos: number;
   teste_expira_em: string | null;
+  /** Teste da conta inteira (sem viagem), e nao de uma viagem. */
+  teste_conta?: boolean;
 };
 
 export function ContaMenu({
@@ -154,7 +156,7 @@ export function ContaMenu({
         : plano.passes_ativos > 0
           ? "Passe pago, por viagem"
           : plano.teste_expira_em
-            ? `Uma viagem, até ${data(plano.teste_expira_em)}`
+            ? `${plano.teste_conta ? "Suas viagens" : "Uma viagem"}, até ${data(plano.teste_expira_em)}`
             : "Até 2 viagens ativas";
 
   return (

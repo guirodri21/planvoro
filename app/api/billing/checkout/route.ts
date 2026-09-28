@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { buscarCheckout, criarCheckout, criarCliente, type BillingPlan } from "@/lib/abacatepay";
 import { getUserFromRequest } from "@/lib/auth";
 import { betaBlocksCheckoutFor } from "@/lib/beta";
-import { billingOrigin } from "@/lib/billing";
+import { billingOrigin, proPagoAtivo } from "@/lib/billing";
 import { traduzErroPagamento } from "@/lib/erros";
 import { logError, logWarn } from "@/lib/logger";
 import { dadosDoNavegador, metaCapiLigada } from "@/lib/meta-capi";
@@ -38,20 +38,29 @@ export async function POST(req: Request) {
 
     const { data: subscription } = await db
       .from("user_subscriptions")
-      .select("status, provider_customer_id")
+      .select("status, provider, current_period_end, provider_customer_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
+    const slug = String(body.trip_slug ?? "").trim();
+
     if (plan === "pro_annual") {
-      if (["active", "trialing"].includes(subscription?.status ?? "")) {
+      // O teste gratis da conta mora na mesma linha, com status
+      // "trialing": quem esta no teste pode assinar quando quiser.
+      if (proPagoAtivo(subscription)) {
         return NextResponse.json({ error: "Sua conta já está no Pro." }, { status: 400 });
       }
+    } else if (!slug) {
+      /**
+       * Passe sem viagem.
+       *
+       * Exigir a viagem antes obrigava a preencher destino, datas e grupo
+       * so para poder pagar. Agora o Passe e comprado na hora e fica
+       * guardado: a proxima viagem que a pessoa criar ja nasce liberada
+       * (usarPasseGuardado, em lib/billing-grant.ts).
+       */
+      tripId = null;
     } else {
-      const slug = String(body.trip_slug ?? "").trim();
-      if (!slug) {
-        return NextResponse.json({ error: "Escolha uma viagem para liberar." }, { status: 400 });
-      }
-
       const membership = await memberForUserInTrip(db, slug, user.id);
       if (!membership) {
         return NextResponse.json({ error: "Você não participa desta viagem." }, { status: 403 });

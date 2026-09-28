@@ -139,22 +139,34 @@ export function emailRecibo(
       ? (compra.valorCentavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
       : null;
   const passe = compra.plano === "trip_pass";
+  // Passe comprado antes de existir viagem: fica guardado para a proxima.
+  const guardado = passe && !compra.slug;
   return enviar(
     para,
-    passe ? `Pagamento confirmado: ${compra.destino ?? "sua viagem"} está liberada` : "Pagamento confirmado: seu Pro está ativo",
+    guardado
+      ? "Pagamento confirmado: seu Passe está guardado"
+      : passe
+        ? `Pagamento confirmado: ${compra.destino ?? "sua viagem"} está liberada`
+        : "Pagamento confirmado: seu Pro está ativo",
     {
       etiqueta: "Recibo",
-      titulo: passe ? `${compra.destino ?? "Sua viagem"} está liberada` : "Seu Planvoro Pro está ativo",
+      titulo: guardado
+        ? "Seu Passe está guardado"
+        : passe
+          ? `${compra.destino ?? "Sua viagem"} está liberada`
+          : "Seu Planvoro Pro está ativo",
       paragrafos: [
-        passe
-          ? "Cofre, gastos, checklist, modo viagem e agente estão liberados para todo o grupo desta viagem, até 90 dias depois da volta."
-          : "Todas as viagens que você organizar ficam liberadas por um ano, sem renovação automática.",
+        guardado
+          ? "A próxima viagem que você criar já nasce liberada: Cofre, gastos, checklist, modo viagem e agente para todo o grupo, até 90 dias depois da volta."
+          : passe
+            ? "Cofre, gastos, checklist, modo viagem e agente estão liberados para todo o grupo desta viagem, até 90 dias depois da volta."
+            : "Todas as viagens que você organizar ficam liberadas por um ano, sem renovação automática.",
         valor ? `Valor pago: ${valor}. Pagamento processado pela AbacatePay.` : "Pagamento processado pela AbacatePay.",
         "Guarde este e-mail como comprovante. Qualquer problema, é só responder.",
       ],
       botao: {
-        texto: passe ? "Abrir a viagem" : "Ver minhas viagens",
-        url: absoluteUrl(passe && compra.slug ? `/v/${compra.slug}` : "/app"),
+        texto: guardado ? "Criar minha viagem" : passe ? "Abrir a viagem" : "Ver minhas viagens",
+        url: absoluteUrl(guardado ? "/nova" : passe && compra.slug ? `/v/${compra.slug}` : "/app"),
       },
       porque: "Você recebeu este e-mail porque fez uma compra no Planvoro.",
     },

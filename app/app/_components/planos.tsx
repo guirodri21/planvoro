@@ -24,7 +24,10 @@ export function Planos({
   temTeste,
   testeExpiraEm,
   testeViagem,
+  testeConta = false,
+  passesGuardados = 0,
   acao,
+  erro = "",
   onPro,
   onTeste,
 }: {
@@ -37,7 +40,17 @@ export function Planos({
   testeExpiraEm: string | null;
   /** Destino da viagem que esta no teste. O teste vale para uma so. */
   testeViagem: string | null;
+  /** O teste vale para a conta toda (comecou sem viagem propria). */
+  testeConta?: boolean;
+  /** Passes pagos antes de existir viagem, esperando a proxima. */
+  passesGuardados?: number;
   acao: string;
+  /**
+   * Erro do teste ou do pagamento, dentro do cartao, colado no botao. Fora
+   * dele, no celular, o aviso ia parar em outra ponta da pagina e quem
+   * clicava achava que o botao nao fazia nada.
+   */
+  erro?: string;
   onPro: () => void;
   onTeste: () => void;
 }) {
@@ -49,7 +62,9 @@ export function Planos({
     : proAtivo
       ? "Planvoro Pro ativo"
       : testeAtivo
-        ? "Teste grátis em uma viagem"
+        ? testeConta
+          ? "Teste grátis ativo"
+          : "Teste grátis em uma viagem"
         : "Cresça quando precisar";
 
   const descricao = betaAccessEnabled
@@ -58,6 +73,10 @@ export function Planos({
       ? proExpiraEm
         ? `Vale até ${data(proExpiraEm)}. Não renova sozinho.`
         : "Viagens ilimitadas, sem mensalidade."
+      : testeAtivo && testeExpiraEm && testeConta
+        ? `Cofre, gastos e checklist liberados em todas as viagens que você organizar até ${data(
+            testeExpiraEm
+          )}. Pode assinar quando quiser, sem esperar o teste acabar.`
       : testeAtivo && testeExpiraEm
         ? /*
              Nomeia a viagem, porque o teste vale para uma so.
@@ -81,6 +100,12 @@ export function Planos({
         <p className="eyebrow">{betaAccessEnabled ? "Beta grátis" : "Seu plano"}</p>
         <h2>{titulo}</h2>
         <p className="sub">{descricao}</p>
+        {passesGuardados > 0 && (
+          <p className="note">
+            {passesGuardados === 1 ? "Você tem 1 Passe pago guardado" : `Você tem ${passesGuardados} Passes pagos guardados`}
+            : a próxima viagem que você criar já nasce liberada. <a href="/nova">Criar viagem</a>
+          </p>
+        )}
       </div>
 
       <div className="billing-actions">
@@ -105,6 +130,12 @@ export function Planos({
           >
             {acao === "pro_annual" ? "Abrindo checkout..." : "Pegar o Pro"}
           </button>
+        )}
+
+        {erro && (
+          <div className="err" role="alert">
+            {erro}
+          </div>
         )}
 
         {/* A tabela completa mora na home. Levar para la custa um clique e

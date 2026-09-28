@@ -27,6 +27,8 @@ type Painel = {
     trial_used: boolean;
     trial_expires_at: string | null;
     trial_trip: string | null;
+    trial_conta?: boolean;
+    passes_guardados?: number;
   };
 };
 
@@ -116,12 +118,13 @@ function Planos() {
     conta?.trial_expires_at && new Date(conta.trial_expires_at).getTime() > Date.now()
   );
 
-  async function comprar(plan: PlanoPago) {
+  /**
+   * Compra na hora. Sem viagem escolhida, o Passe fica guardado e libera a
+   * proxima viagem criada — antes, era preciso preencher a viagem inteira
+   * so para conseguir pagar.
+   */
+  async function comprar(plan: PlanoPago, tripSlug?: string) {
     if (!token || acao) return;
-    if (plan === "trip_pass" && !viagemEscolhida) {
-      setErro("Escolha a viagem que o Passe vai liberar.");
-      return;
-    }
     setErro("");
     setAcao(plan);
     track("checkout_iniciado", { plano: plan, origem: "planos" });
@@ -129,7 +132,7 @@ function Planos() {
       await abrirCheckout({
         accessToken: token,
         plan,
-        tripSlug: plan === "trip_pass" ? viagemEscolhida : undefined,
+        tripSlug: plan === "trip_pass" ? tripSlug : undefined,
       });
       setAviso(
         "O pagamento abriu em outra aba. Assim que ele for confirmado, o acesso libera sozinho — pode levar alguns segundos no Pix."
@@ -141,14 +144,19 @@ function Planos() {
     }
   }
 
-  async function testar() {
-    if (!token || acao || !viagemEscolhida) return;
+  /** Com viagem, o teste libera ela; sem viagem, libera a conta. */
+  async function testar(tripSlug?: string) {
+    if (!token || acao) return;
     setErro("");
     setAcao("trial");
     try {
-      await comecarTesteGratis(token, viagemEscolhida);
-      track("teste_gratis_iniciado");
-      setAviso(`Pronto: essa viagem está liberada por ${TRIAL_DIAS} dias, sem cartão.`);
+      await comecarTesteGratis(token, tripSlug);
+      track("teste_gratis_iniciado", { escopo: tripSlug ? "viagem" : "conta" });
+      setAviso(
+        tripSlug
+          ? `Pronto: essa viagem está liberada por ${TRIAL_DIAS} dias, sem cartão.`
+          : `Pronto: por ${TRIAL_DIAS} dias, toda viagem que você criar já nasce liberada. Sem cartão.`
+      );
       await carregar();
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não foi possível começar o teste.");
@@ -177,7 +185,7 @@ function Planos() {
             {proAtivo
               ? `Você está no Pro${conta.pro_expires_at ? ` até ${dataCurta(conta.pro_expires_at)}` : ""}.`
               : testeAtivo
-                ? `Teste grátis ativo${conta.trial_trip ? ` em "${conta.trial_trip}"` : ""} até ${dataCurta(conta.trial_expires_at as string)}.`
+                ? `Teste grátis ativo${conta.trial_trip ? ` em "${conta.trial_trip}"` : conta.trial_conta ? " em todas as suas viagens" : ""} até ${dataCurta(conta.trial_expires_at as string)}.`
                 : betaAccessEnabled
                   ? "Beta grátis: tudo liberado por enquanto."
                   : "Você está no plano grátis."}
@@ -187,6 +195,12 @@ function Planos() {
 
       {erro && <div className="err">{erro}</div>}
       {aviso && <div className="note">{aviso}</div>}
+      {logado && (conta?.passes_guardados ?? 0) > 0 && (
+        <div className="note">
+          Você tem um Passe pago guardado: a próxima viagem que você criar já nasce liberada.{" "}
+          <a href="/nova">Criar viagem</a>
+        </div>
+      )}
 
       {logado && conta && !podePagar && (
         <div className="note">
@@ -241,12 +255,27 @@ function Planos() {
             <>
               <p className="tiny">
                 {organizadas.length
-                  ? "Todas as viagens que você organiza já estão liberadas."
-                  : "O Passe é por viagem. Crie a sua e libere em seguida — leva um minuto."}
+                  ? "Todas as viagens que você organiza já estão liberadas. Um Passe novo fica guardado para a próxima."
+                  : "Pague agora, sem preencher nada: o Passe fica guardado e a primeira viagem que você criar já nasce liberada."}
               </p>
-              <a className="btn" href="/nova">
-                Criar viagem
-              </a>
+              <button
+                className="btn"
+                type="button"
+                onClick={() => comprar("trip_pass")}
+                disabled={!podePagar || Boolean(acao)}
+              >
+                {acao === "trip_pass" ? "Abrindo pagamento..." : `Comprar o Passe por R$ ${PASSE}`}
+              </button>
+              {!conta?.trial_used && !testeAtivo && (
+                <button
+                  className="btn ghost"
+                  type="button"
+                  onClick={() => testar()}
+                  disabled={Boolean(acao) || betaAccessEnabled}
+                >
+                  {acao === "trial" ? "Liberando..." : `Testar ${TRIAL_DIAS} dias grátis`}
+                </button>
+              )}
             </>
           ) : (
             <>
@@ -265,7 +294,7 @@ function Planos() {
               <button
                 className="btn"
                 type="button"
-                onClick={() => comprar("trip_pass")}
+                onClick={() => comprar("trip_pass", viagemEscolhida)}
                 disabled={!podePagar || Boolean(acao)}
               >
                 {acao === "trip_pass" ? "Abrindo pagamento..." : `Liberar por R$ ${PASSE}`}
@@ -274,7 +303,7 @@ function Planos() {
                 <button
                   className="btn ghost"
                   type="button"
-                  onClick={testar}
+                  onClick={() => testar(viagemEscolhida)}
                   disabled={Boolean(acao) || betaAccessEnabled}
                 >
                   {acao === "trial" ? "Liberando..." : `Testar ${TRIAL_DIAS} dias grátis`}
