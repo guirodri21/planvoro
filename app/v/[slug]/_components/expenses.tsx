@@ -429,7 +429,6 @@ export function ExpensesView({
     <>
       <div className="expense-command">
         <div className="expense-command-main">
-          <span className="badge b-ok">financeiro do grupo</span>
           <h2>Gastos e acertos</h2>
           <p className="sub">
             Registre pagamentos compartilhados e o Planvoro mostra quem pagou demais, quem ficou
@@ -627,7 +626,6 @@ export function ExpensesView({
         <div className="card">
           <div className="expense-panel-head">
             <div>
-              <span className="badge b-ok">balanco</span>
               <h2>Saldo por pessoa</h2>
             </div>
             <span className="tiny">Positivo recebe · negativo paga</span>
@@ -677,11 +675,12 @@ export function ExpensesView({
         </div>
       </div>
 
-      <div className="grid2 expense-settlement-grid">
+      {/* O "Radar financeiro" repetia em outra forma os numeros do saldo
+          por pessoa; saiu. */}
+      <div className="expense-settlement-grid">
         <div className="card expense-settlement-card">
           <div className="expense-panel-head">
             <div>
-              <span className="badge b-warn">acerto sugerido</span>
               <h2>Quem paga quem</h2>
             </div>
             <span className="tiny">Baseado nos saldos atuais</span>
@@ -725,28 +724,6 @@ export function ExpensesView({
           )}
         </div>
 
-        <div className="card expense-insights-card">
-          <span className="badge b-ok">leitura rápida</span>
-          <h2>Radar financeiro</h2>
-          <div className="expense-insight-list">
-            <div>
-              <strong>{creditors.length || "Ninguém"}</strong>
-              <span>com saldo a receber</span>
-            </div>
-            <div>
-              <strong>{debtors.length || "Ninguém"}</strong>
-              <span>com saldo a pagar</span>
-            </div>
-            <div>
-              <strong>{expenses.length ? formatMoney(totalSpent / Math.max(1, members.length)) : formatMoney(0)}</strong>
-              <span>média registrada por pessoa no grupo</span>
-            </div>
-          </div>
-          <p className="sub small" style={{ marginTop: 14, marginBottom: 0 }}>
-            Dica: registre pagamentos reais aqui e use o Cofre para reservas/documentos. Quando a
-            reserva for paga pelo grupo, lance também em Gastos para entrar no acerto.
-          </p>
-        </div>
       </div>
 
       <div className="card">

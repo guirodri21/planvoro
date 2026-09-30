@@ -123,7 +123,6 @@ export function TravelModeView({
           <span className="travel-dot d3" />
         </div>
         <div className="travel-mode-copy">
-          <span className="badge b-ok">modo viagem</span>
           <h2>{heroTitle}</h2>
           <p>{heroSubtitle}</p>
           <div className="travel-mode-actions">
@@ -285,7 +284,6 @@ export function TripAgendaView({
   const undatedVault = activeVaultItems.filter((item) => !item.starts_at && !item.ends_at);
   const outsideTripDates = activeVaultItems.filter((item) => isOutsideTripDates(item, trip)).length;
   const attentionVault = activeVaultItems.filter((item) => item.status === "attention").length;
-  const routeDays = itinerary?.itinerary_days.length ?? 0;
 
   const radar = [
     !itinerary && "Roteiro ainda não foi gerado.",
@@ -303,7 +301,6 @@ export function TripAgendaView({
     <div className="agenda-shell">
       <div className="card agenda-hero">
         <div>
-          <span className="badge b-ok">linha do tempo</span>
           <h2>Agenda da viagem</h2>
           <p className="sub">
             Roteiro, voos, hospedagens, reservas e documentos datados no mesmo lugar. O objetivo é
@@ -322,25 +319,6 @@ export function TripAgendaView({
           <button className="btn ghost" type="button" onClick={onGoToVault}>
             Abrir Cofre
           </button>
-        </div>
-
-        <div className="agenda-stats">
-          <div>
-            <span className="stat-label">Dias roteirizados</span>
-            <strong>{routeDays || "a gerar"}</strong>
-          </div>
-          <div>
-            <span className="stat-label">Marcos na agenda</span>
-            <strong>{entries.length}</strong>
-          </div>
-          <div>
-            <span className="stat-label">Cofre sem horário</span>
-            <strong>{undatedVault.length}</strong>
-          </div>
-          <div>
-            <span className="stat-label">Alertas</span>
-            <strong>{radar.length}</strong>
-          </div>
         </div>
       </div>
 
@@ -420,40 +398,39 @@ export function TripAgendaView({
           )}
         </div>
 
-        <aside className="agenda-side">
-          <div className="card agenda-radar">
-            <span className="badge b-warn">radar</span>
-            <h3>O que observar</h3>
-            {radar.length ? (
-              <div className="agenda-radar-list">
-                {radar.map((item) => (
-                  <span key={item}>{item}</span>
-                ))}
+        {/* A lateral so aparece com algo a dizer. Os quatro numeros do topo
+            (dias, marcos, cofre sem horario, alertas) sairam: a propria
+            agenda abaixo ja mostra cada um. */}
+        {(radar.length > 0 || undatedVault.length > 0) && (
+          <aside className="agenda-side">
+            {radar.length > 0 && (
+              <div className="card agenda-radar">
+                <h3>O que observar</h3>
+                <div className="agenda-radar-list">
+                  {radar.map((item) => (
+                    <span key={item}>{item}</span>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <p className="sub">Agenda sem alertas obvios agora. Bom sinal, capitão.</p>
             )}
-          </div>
 
-          <div className="card agenda-radar">
-            <span className="badge b-ok">sem data</span>
-            <h3>Cofre ainda solto</h3>
-            {undatedVault.length ? (
-              <div className="agenda-loose-list">
-                {undatedVault.slice(0, 6).map((item) => (
-                  <button type="button" key={item.id} onClick={onGoToVault}>
-                    <strong>{item.title}</strong>
-                    <span>
-                      {vaultKindLabel(item.kind)} · {vaultStatusLabel(item.status)}
-                    </span>
-                  </button>
-                ))}
+            {undatedVault.length > 0 && (
+              <div className="card agenda-radar">
+                <h3>No Cofre, sem data</h3>
+                <div className="agenda-loose-list">
+                  {undatedVault.slice(0, 6).map((item) => (
+                    <button type="button" key={item.id} onClick={onGoToVault}>
+                      <strong>{item.title}</strong>
+                      <span>
+                        {vaultKindLabel(item.kind)} · {vaultStatusLabel(item.status)}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <p className="sub">Tudo que está ativo no Cofre já tem data ou horário.</p>
             )}
-          </div>
-        </aside>
+          </aside>
+        )}
       </div>
     </div>
   );
