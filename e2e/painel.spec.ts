@@ -119,3 +119,27 @@ test("planos sem viagem própria: compra o Passe e testa grátis sem preencher v
   expect(teste.postDataJSON()).toEqual({});
   await expect(page.getByText(/toda viagem que você criar já nasce liberada/)).toBeVisible();
 });
+
+test("menu ⋯ da viagem: liberar abre o checkout e apagar pede confirmação", async ({ page, context }) => {
+  await page.route("**/api/me/dashboard", (r) => json(r, painel()));
+  await context.route("https://pagamento.exemplo/**", (r) =>
+    r.fulfill({ status: 200, contentType: "text/html", body: "<p>checkout</p>" })
+  );
+  await page.route("**/api/billing/checkout", (r) => json(r, { url: "https://pagamento.exemplo/abc" }));
+  await page.goto("/app");
+
+  // A proxima viagem fica no destaque; a lista mostra as seguintes.
+  await expect(page.getByRole("region", { name: "Depois dessa" })).toContainText("Lisboa");
+
+  await page.getByLabel("Mais opções de Lisboa").click();
+  const [pedido] = await Promise.all([
+    page.waitForRequest("**/api/billing/checkout"),
+    page.getByRole("button", { name: /Liberar esta viagem/ }).click(),
+  ]);
+  expect(pedido.postDataJSON()).toEqual({ plan: "trip_pass", trip_slug: "lis" });
+
+  await page.getByLabel("Mais opções de Lisboa").click();
+  await page.getByRole("button", { name: "Apagar viagem" }).click();
+  await expect(page.getByText('Apagar "Lisboa"?')).toBeVisible();
+  await semRolagemLateral(page);
+});

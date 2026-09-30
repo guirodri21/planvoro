@@ -2,25 +2,21 @@
 
 import { track } from "@/lib/analytics";
 import { betaAccessEnabled } from "@/lib/beta";
-import { BILLING_COPY, TRIAL_DIAS } from "@/lib/billing";
+import { TRIAL_DIAS } from "@/lib/billing";
 
 /**
- * Faixa de plano na area do usuario.
+ * O plano da conta, numa linha.
  *
- * O painel dizia so "Tudo liberado para testar" e oferecia um botao de
- * assinar. Quem nunca leu a home nao tinha como saber que existe um Passe
- * por viagem nem o que ele libera — e nao havia caminho nenhum para
- * descobrir sem sair da area logada.
- *
- * Aqui fica o essencial: o que a pessoa tem hoje, o teste gratis se ela
- * ainda nao usou, e um caminho para a tabela de precos. A tabela em si
- * vive na home e continua sendo um lugar so — duplicar os tres planos
- * aqui dentro criaria duas listas de preco para manter em sincronia.
+ * Era um cartao com titulo, paragrafo e tres botoes empilhados ("Testar",
+ * "Pegar o Pro", "Ver planos") — um dos blocos mais chamativos do painel,
+ * disputando atencao com as viagens. Quem so quer abrir a viagem nao
+ * precisa de uma vitrine a cada visita. Aqui fica o que a pessoa tem hoje,
+ * o teste gratis se ainda existir, e o caminho para /planos, onde mora a
+ * tabela de precos (um lugar so, para nao manter duas listas de preco).
  */
 export function Planos({
   proAtivo,
   proExpiraEm,
-  podeComprar,
   temTeste,
   testeExpiraEm,
   testeViagem,
@@ -28,13 +24,10 @@ export function Planos({
   passesGuardados = 0,
   acao,
   erro = "",
-  onPro,
   onTeste,
 }: {
   proAtivo: boolean;
   proExpiraEm: string | null;
-  /** Falso durante a beta, quando ninguem consegue pagar. */
-  podeComprar: boolean;
   /** Ja usou o teste gratis alguma vez. */
   temTeste: boolean;
   testeExpiraEm: string | null;
@@ -46,104 +39,65 @@ export function Planos({
   passesGuardados?: number;
   acao: string;
   /**
-   * Erro do teste ou do pagamento, dentro do cartao, colado no botao. Fora
-   * dele, no celular, o aviso ia parar em outra ponta da pagina e quem
+   * Erro do teste ou do pagamento, dentro da faixa, colado no botao. Fora
+   * dela, no celular, o aviso ia parar em outra ponta da pagina e quem
    * clicava achava que o botao nao fazia nada.
    */
   erro?: string;
-  onPro: () => void;
   onTeste: () => void;
 }) {
-  const data = (iso: string) => new Date(iso).toLocaleDateString("pt-BR");
+  const data = (iso: string) => new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   const testeAtivo = Boolean(testeExpiraEm && new Date(testeExpiraEm).getTime() > Date.now());
 
-  const titulo = betaAccessEnabled
-    ? "Tudo liberado para testar"
+  const [titulo, detalhe] = betaAccessEnabled
+    ? ["Beta grátis", "tudo liberado, sem cobrança"]
     : proAtivo
-      ? "Planvoro Pro ativo"
-      : testeAtivo
-        ? testeConta
-          ? "Teste grátis ativo"
-          : "Teste grátis em uma viagem"
-        : "Cresça quando precisar";
-
-  const descricao = betaAccessEnabled
-    ? "Durante a beta ninguém paga nada. A cobrança já está pronta para quando a gente ligar."
-    : proAtivo
-      ? proExpiraEm
-        ? `Vale até ${data(proExpiraEm)}. Não renova sozinho.`
-        : "Viagens ilimitadas, sem mensalidade."
-      : testeAtivo && testeExpiraEm && testeConta
-        ? `Cofre, gastos e checklist liberados em todas as viagens que você organizar até ${data(
-            testeExpiraEm
-          )}. Pode assinar quando quiser, sem esperar o teste acabar.`
+      ? ["Planvoro Pro", proExpiraEm ? `até ${data(proExpiraEm)}` : "viagens ilimitadas"]
       : testeAtivo && testeExpiraEm
-        ? /*
-             Nomeia a viagem, porque o teste vale para uma so.
-             Sem o nome, esta linha anunciava "Cofre, gastos e checklist
-             liberados" como se valesse para a conta inteira — e quem
-             abria as outras viagens as encontrava trancadas, depois de
-             ler no painel que tinha acesso.
-          */
-          `${
-            testeViagem ? `"${testeViagem}"` : "Uma viagem"
-          } está com Cofre, gastos e checklist liberados até ${data(
-            testeExpiraEm
-          )}. As outras seguem no plano grátis.`
-        : `Roteiro e grupo são grátis para sempre. Libere uma viagem por R$ ${
-            BILLING_COPY.trip_pass.amount / 100
-          } ou pegue o Pro por R$ ${BILLING_COPY.pro_annual.amount / 100} ao ano.`;
+        ? [
+            "Teste grátis",
+            /*
+              Nomeia a viagem quando o teste e de uma so: sem o nome, a
+              linha soava como acesso da conta inteira, e quem abria as
+              outras viagens as encontrava trancadas.
+            */
+            testeConta
+              ? `todas as suas viagens até ${data(testeExpiraEm)}`
+              : `${testeViagem ? `"${testeViagem}"` : "uma viagem"} até ${data(testeExpiraEm)}`,
+          ]
+        : ["Plano grátis", "roteiro e grupo grátis para sempre"];
+
+  const podeTestar = !betaAccessEnabled && !proAtivo && !temTeste && !testeAtivo;
 
   return (
-    <div className="billing-panel">
-      <div>
-        <p className="eyebrow">{betaAccessEnabled ? "Beta grátis" : "Seu plano"}</p>
-        <h2>{titulo}</h2>
-        <p className="sub">{descricao}</p>
-        {passesGuardados > 0 && (
-          <p className="note">
-            {passesGuardados === 1 ? "Você tem 1 Passe pago guardado" : `Você tem ${passesGuardados} Passes pagos guardados`}
-            : a próxima viagem que você criar já nasce liberada. <a href="/nova">Criar viagem</a>
-          </p>
-        )}
-      </div>
+    <div className="billing-panel painel-plano">
+      <p className="painel-plano-texto">
+        <strong>{titulo}</strong> <span>· {detalhe}</span>
+      </p>
 
-      <div className="billing-actions">
-        {/* O teste vem antes de qualquer botao de pagar: e o unico que nao
-            custa nada para quem clica, e o que faz a pessoa entender o que
-            esta comprando depois. */}
-        {!proAtivo && !temTeste && !testeAtivo && (
-          <button className="btn" type="button" onClick={onTeste} disabled={acao === "trial"}>
+      <div className="painel-plano-acoes">
+        {podeTestar && (
+          <button className="btn ghost sm" type="button" onClick={onTeste} disabled={acao === "trial"}>
             {acao === "trial" ? "Liberando..." : `Testar ${TRIAL_DIAS} dias grátis`}
           </button>
         )}
-
-        {proAtivo && <span className="badge b-ok">Pro ativo</span>}
-        {testeAtivo && <span className="badge b-ok">Teste ativo</span>}
-
-        {!proAtivo && podeComprar && (
-          <button
-            className="btn ghost"
-            type="button"
-            onClick={onPro}
-            disabled={acao === "pro_annual"}
-          >
-            {acao === "pro_annual" ? "Abrindo checkout..." : "Pegar o Pro"}
-          </button>
-        )}
-
-        {erro && (
-          <div className="err" role="alert">
-            {erro}
-          </div>
-        )}
-
-        {/* A tabela completa mora na home. Levar para la custa um clique e
-            evita manter dois lugares dizendo quanto custa cada plano. */}
-        <a className="btn ghost" href="/planos" onClick={() => track("planos_abertos")}>
-          Ver planos
+        <a className="painel-plano-link" href="/planos" onClick={() => track("planos_abertos")}>
+          {proAtivo ? "Ver plano" : "Ver planos"}
         </a>
       </div>
+
+      {passesGuardados > 0 && (
+        <p className="painel-plano-nota">
+          {passesGuardados === 1 ? "Você tem 1 Passe pago guardado" : `Você tem ${passesGuardados} Passes pagos guardados`}
+          : a próxima viagem que você criar já nasce liberada. <a href="/nova">Criar viagem</a>
+        </p>
+      )}
+
+      {erro && (
+        <div className="err" role="alert">
+          {erro}
+        </div>
+      )}
     </div>
   );
 }
