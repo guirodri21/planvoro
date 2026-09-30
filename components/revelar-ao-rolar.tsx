@@ -49,8 +49,30 @@ export function RevelarAoRolar() {
     );
     alvos.filter((alvo) => !alvo.classList.contains("visivel")).forEach((alvo) => observador.observe(alvo));
 
+    // Blocos que entram depois (resultado gerado na hora, por exemplo)
+    // tambem precisam ser observados — senao ficariam escondidos para sempre.
+    const vigia = new MutationObserver((mudancas) => {
+      for (const mudanca of mudancas) {
+        mudanca.addedNodes.forEach((no) => {
+          if (!(no instanceof HTMLElement)) return;
+          const novos = [
+            ...(no.matches("[data-revelar]") ? [no] : []),
+            ...Array.from(no.querySelectorAll<HTMLElement>("[data-revelar]")),
+          ];
+          for (const novo of novos) {
+            if (novo.classList.contains("visivel")) continue;
+            const atraso = Number(novo.dataset.revelarAtraso ?? 0);
+            if (atraso) novo.style.setProperty("--revelar-atraso", `${atraso * 80}ms`);
+            observador.observe(novo);
+          }
+        });
+      }
+    });
+    vigia.observe(document.body, { childList: true, subtree: true });
+
     return () => {
       observador.disconnect();
+      vigia.disconnect();
       document.documentElement.classList.remove("revelar-pronto");
     };
   }, []);

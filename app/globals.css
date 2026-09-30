@@ -10366,3 +10366,67 @@ body:has(.historico-shell) .site-footer .fbot {
     font-size: 16px;
   }
 }
+
+/* ================================================ EXPERIMENTE LEVE (30/09/2026) */
+
+/* O roteiro que a pessoa acabou de pedir entra dia a dia. */
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sample-dias.surgir {
+  animation: surgir 0.55s var(--ease) both;
+}
+
+.sample-dias.surgir .day {
+  animation: surgir 0.6s var(--ease) both;
+  animation-delay: calc(var(--surgir-atraso, 0ms) + 120ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sample-dias.surgir,
+  .sample-dias.surgir .day {
+    animation: none;
+  }
+}
+
+/* "Sem conta, sem cartao" como selo, sem CAIXA ALTA espacada. */
+.exp-selo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  margin: 0;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+/* Horario discreto; o preco continua em destaque (e o argumento da
+   pagina). */
+.sample-shell .time {
+  color: var(--text-soft);
+}
+
+.sample-shell .cost {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.sample-shell .day {
+  box-shadow: none;
+}
+
+.sample-shell .day-h {
+  background: var(--sand);
+}

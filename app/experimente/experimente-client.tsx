@@ -7,6 +7,7 @@ import { metaTrack, novoEventId } from "@/lib/meta-pixel";
 import { tiktokAmostraEntregue } from "@/lib/tiktok-pixel";
 import { formatDayTotal, formatItemCost } from "@/lib/cost";
 import { EXEMPLO_SALVADOR, type DiaExemplo } from "@/lib/exemplo-salvador";
+import { RevelarAoRolar } from "@/components/revelar-ao-rolar";
 
 type SampleItem = {
   start_time: string;
@@ -282,6 +283,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
   return (
     <div className="sample-shell">
       <script dangerouslySetInnerHTML={{ __html: SCRIPT_VARIANTE }} />
+      <RevelarAoRolar />
       <header className="sample-head">
         {/* Variacao "dor": quem veio do anuncio. */}
         <div className="exp-dor">
@@ -326,7 +328,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
 
         {/* Texto de antes, para quem chega sem UTM. */}
         <div className="exp-padrao">
-          <p className="eyebrow">Sem conta, sem cartão</p>
+          <p className="exp-selo">Sem conta, sem cartão</p>
           <h1>
             {ehExemplo
               ? `Dois dias em ${exemplo?.destination ?? "Buenos Aires"}, como o Planvoro monta`
@@ -407,7 +409,13 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
       {mostrando?.itinerary && (
         <>
           {/* Um cartao so, com o dia 1 logo no topo: e o que responde "isso serve para mim?". O "por que ficou assim" do exemplo passa de quatro linhas para no maximo duas. */}
-          <div className="card sample-dias">
+          {/* O exemplo guardado surge ao rolar; o roteiro que a pessoa acabou
+              de pedir entra dia a dia (classe "surgir", ver o CSS). */}
+          <div
+            className={`card sample-dias ${ehExemplo ? "" : "surgir"}`}
+            key={ehExemplo ? "exemplo" : `resultado-${mostrando.destination ?? ""}`}
+            {...(ehExemplo ? { "data-revelar": "" } : {})}
+          >
             {ehExemplo && <div ref={meioDoExemplo} className="sample-meio" aria-hidden="true" />}
             <div className="sample-dias-topo">
               <span className="badge b-ok">
@@ -417,10 +425,14 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
                 <p className={`sub sample-porque ${ehExemplo ? "curto" : ""}`}>{mostrando.itinerary.rationale}</p>
               )}
             </div>
-            {dias.map((dia) => {
+            {dias.map((dia, indice) => {
               const soma = formatDayTotal(dia.items);
               return (
-                <div className="day" key={dia.day_date}>
+                <div
+                  className="day"
+                  key={dia.day_date}
+                  style={ehExemplo ? undefined : ({ "--surgir-atraso": `${indice * 140}ms` } as React.CSSProperties)}
+                >
                   <div className="day-h">
                     <b>{dia.title || dia.day_date}</b>
                     <span className="muted">{soma}</span>
@@ -456,7 +468,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
             })}
           </div>
 
-          <div className="card cta-box">
+          <div className="card cta-box" data-revelar data-revelar-atraso="1">
             <h2 style={{ margin: "0 0 6px" }}>
               {ehExemplo ? "Agora faça com o seu destino" : "Isso foi só a amostra"}
             </h2>
