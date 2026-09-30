@@ -9789,3 +9789,90 @@ body:has(.ws-shell) .site-footer .fpanel {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ================================================ ABAS DA VIAGEM (30/09/2026)
+   Uma linguagem so em todas as abas: cartao branco liso (sem degrade nem
+   sombra dentro de sombra), texto sem CAIXA ALTA espacada, e resumos em
+   linha no lugar de caixinhas de numero. */
+
+.ws-shell .ws-content .card {
+  border: 1px solid var(--line);
+  background: var(--paper-strong);
+  box-shadow: none;
+}
+
+.ws-shell .ws-content :is(span, small, em, label) {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Agenda: sem lateral, a linha do tempo usa a largura toda. */
+.agenda-layout:not(:has(> .agenda-side)) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ideas-resumo,
+.agent-contexto {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ideas-resumo b {
+  color: var(--text);
+}
+
+.agent-contexto {
+  margin: 14px 0 16px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--sand);
+  font-size: 13.5px;
+}
+
+/* Degrades que sobraram nas abas: fundo liso. Onde a cor tem sentido
+   (reserva a conferir, saldo positivo/negativo) fica um tom chapado e
+   claro; onde era so decoracao, branco. */
+.ws-shell .ws-content :is(.expense-command-main, .expense-command-side, .agenda-hero, .agent-answer-card) {
+  background: var(--paper-strong);
+  box-shadow: none;
+}
+
+.ws-shell .ws-content .agent-hero-card::after {
+  display: none;
+}
+
+.ws-shell .ws-content :is(.vault-import-box, .checklist-meter) {
+  background: var(--sand);
+  box-shadow: none;
+}
+
+.ws-shell .ws-content .agenda-entry-body {
+  background: var(--paper-strong);
+  box-shadow: none;
+}
+
+.ws-shell .ws-content .agenda-entry.cofre .agenda-entry-body {
+  border-left: 3px solid var(--accent);
+}
+
+.ws-shell .ws-content .agenda-entry.roteiro .agenda-entry-body {
+  border-left: 3px solid var(--brand);
+}
+
+.ws-shell .ws-content .agenda-entry.attention .agenda-entry-body {
+  border-left: 3px solid var(--warning);
+}
+
+.ws-shell .ws-content .balance-person.positive,
+.ws-shell .ws-content .vault-card.reserved,
+.ws-shell .ws-content .idea-card.planned,
+.ws-shell .ws-content .checklist-item.done {
+  background: #f3fbf7;
+}
+
+.ws-shell .ws-content .balance-person.negative,
+.ws-shell .ws-content .vault-card.attention {
+  background: #fdf6f2;
+}

@@ -172,41 +172,20 @@ export function TravelAgentView({
   return (
     <div className="agent-layout">
       <div className="card agent-hero-card">
-        <span className="badge b-ok">agente ativo</span>
         <h2>Seu agente de viagem dentro do Planvoro</h2>
         <p className="sub">
           Pergunte sobre roteiro, orçamento, reservas, decisões do grupo ou próximos passos. Ele
           responde usando o que já existe nesta viagem, sem fingir disponibilidade em tempo real.
         </p>
 
-        <div className="agent-stats">
-          <div>
-            <span className="stat-label">Viagem</span>
-            <strong>{trip.destination}</strong>
-          </div>
-          <div>
-            <span className="stat-label">Roteiro</span>
-            <strong>{routeDays ? `${routeDays} dia${routeDays === 1 ? "" : "s"}` : "a gerar"}</strong>
-          </div>
-          <div>
-            <span className="stat-label">Preferencias</span>
-            <strong>
-              {donePreferences}/{members.length}
-            </strong>
-          </div>
-          <div>
-            <span className="stat-label">Cofre</span>
-            <strong>{vaultItems.length ? `${vaultItems.length} ${pluralItens(vaultItems.length)}` : "vazio"}</strong>
-          </div>
-          <div>
-            <span className="stat-label">Checklist</span>
-            <strong>{checklistOpen ? `${checklistOpen} pendente${checklistOpen === 1 ? "" : "s"}` : "em dia"}</strong>
-          </div>
-          <div>
-            <span className="stat-label">Gastos</span>
-            <strong>{formatMoney(totalExpenses)}</strong>
-          </div>
-        </div>
+        {/* O que o agente ja sabe, numa linha — eram seis caixinhas. */}
+        <p className="agent-contexto">
+          Ele já conhece: {routeDays ? `${routeDays} dia${routeDays === 1 ? "" : "s"} de roteiro` : "roteiro a gerar"} ·{" "}
+          {donePreferences}/{members.length} preferências · Cofre{" "}
+          {vaultItems.length ? `com ${vaultItems.length} ${pluralItens(vaultItems.length)}` : "vazio"} · checklist{" "}
+          {checklistOpen ? `com ${checklistOpen} pendente${checklistOpen === 1 ? "" : "s"}` : "em dia"} ·{" "}
+          {formatMoney(totalExpenses)} em gastos
+        </p>
 
         <label>Pergunte para o agente</label>
         <textarea
@@ -265,12 +244,15 @@ export function TravelAgentView({
         )}
       </div>
 
+      {/* Sem resposta ainda, nao ha cartao: o texto "Como eu atuo aqui" so
+          ocupava espaco. A regra de confirmar preco e horario na fonte vai
+          dentro de cada resposta. */}
+      {reply && (
       <div className="card agent-answer-card">
         {reply ? (
           <>
             <div className="agent-answer-head">
               <div>
-                <span className="badge b-ok">resposta acionável</span>
                 <h3>Resposta do agente</h3>
               </div>
               <div className="agent-answer-actions">
@@ -308,17 +290,9 @@ export function TravelAgentView({
               />
             </div>
           </>
-        ) : (
-          <>
-            <h3>Como eu atuo aqui</h3>
-            <p className="sub">
-              Penso como um agente de viagem: organizo prioridades, aponto riscos, sugiro decisões
-              e transformo o roteiro em plano executável. Para preços, horários e disponibilidade,
-              eu sempre vou te lembrar de confirmar no canal oficial antes de fechar.
-            </p>
-          </>
-        )}
+        ) : null}
       </div>
+      )}
     </div>
   );
 }

@@ -93,30 +93,25 @@ export function IdeasView({
 
   return (
     <>
-      <div className="grid3">
-        <div className="card stat-card">
-          <span className="stat-label">Ideias abertas</span>
-          <strong className="stat-value">{openCount}</strong>
-          <span className="tiny">Sugestões para o grupo lapidar</span>
-        </div>
-        <div className="card stat-card">
-          <span className="stat-label">Separadas</span>
-          <strong className="stat-value">{plannedCount}</strong>
-          <span className="tiny">Prontas para virar plano</span>
-        </div>
-        <div className="card stat-card">
-          <span className="stat-label">Mais quente</span>
-          <strong className="stat-value">{topIdea ? formatScore(scoreFor(topIdea.id)) : "0"}</strong>
-          <span className="tiny">{topIdea ? topIdea.title : "Nenhuma votação ainda"}</span>
-        </div>
-      </div>
+      {/* Tres cartoes de numero (quase sempre zerados no comeco) viraram
+          uma linha, e so aparecem quando ja existe alguma ideia. */}
+      {orderedIdeas.length > 0 && (
+        <p className="ideas-resumo">
+          <b>{openCount}</b> em aberto · <b>{plannedCount}</b> separada{plannedCount === 1 ? "" : "s"}
+          {topIdea && (
+            <>
+              {" "}· mais votada: <b>{topIdea.title}</b>
+            </>
+          )}
+        </p>
+      )}
 
-      <div className="grid2 idea-grid">
+      <div className="idea-grid">
         <div className="card">
           <h2>Nova ideia</h2>
           <p className="sub">
-            Jogue aqui restaurantes, passeios, bairros e planos soltos antes de travar o
-            roteiro.
+            Restaurantes, passeios e planos soltos. Todo mundo sugere, o grupo vota, e as
+            melhores entram na próxima versão do roteiro.
           </p>
 
           <label>Título</label>
@@ -169,18 +164,6 @@ export function IdeasView({
           </button>
         </div>
 
-        <div className="card">
-          <h2>Como decidir</h2>
-          <p className="sub">
-            Votos deixam o grupo comparar desejo, dúvida e veto antes de mexer no roteiro final.
-          </p>
-          <div className="note">
-            <b>Fluxo recomendado</b>
-            <br />
-            1. Todo mundo sugere sem editar o roteiro. 2. O grupo vota. 3. As melhores ideias sao
-            separadas para entrar na próxima versão.
-          </div>
-        </div>
       </div>
 
       <div className="card">

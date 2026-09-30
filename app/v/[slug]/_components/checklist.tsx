@@ -209,7 +209,6 @@ export function TripChecklistView({
         </div>
       ) : (
       <div className="card checklist-control">
-        <span className="badge b-ok">planejamento vivo</span>
         <h2>Checklist da viagem</h2>
         <p className="sub">
           Aqui ficam as pendências reais antes de viajar. O Planvoro cruza roteiro, Cofre e grupo

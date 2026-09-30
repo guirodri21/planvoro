@@ -674,7 +674,7 @@ export function TravelVaultView({
       ) : (
       <div className="card vault-form-card">
         <div className="vault-form-head">
-          <span className="badge b-ok">{editingId ? "editando item" : "central da viagem"}</span>
+          {editingId && <span className="badge b-ok">editando item</span>}
           {editingId && (
             <button className="btn ghost sm" type="button" onClick={resetForm} disabled={saving}>
               Cancelar edição
@@ -710,7 +710,6 @@ export function TravelVaultView({
           <div className="vault-import-box">
             <div className="vault-import-head">
               <div>
-                <span className="badge b-warn">importação inteligente</span>
                 <h3>Colar confirmação</h3>
               </div>
               <span className="tiny">Nada é salvo automaticamente.</span>
@@ -974,7 +973,6 @@ export function TravelVaultView({
       <div className="vault-list">
         <div className="vault-smart-grid">
           <div className="card vault-timeline-card">
-            <span className="badge b-ok">próximos</span>
             <h3>Agenda do Cofre</h3>
             {upcomingItems.length === 0 ? (
               <p className="sub">Adicione datas em voos, hospedagens e reservas para montar a linha do tempo.</p>
@@ -998,7 +996,6 @@ export function TravelVaultView({
           </div>
 
           <div className="card vault-insights-card">
-            <span className="badge b-warn">radar</span>
             <h3>Alertas inteligentes</h3>
             {vaultInsights.length === 0 ? (
               <p className="sub">O Cofre está redondo: itens essenciais cadastrados e nada marcado para conferir.</p>
