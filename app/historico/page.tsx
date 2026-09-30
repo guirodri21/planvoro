@@ -99,10 +99,9 @@ export default function HistoricoPage() {
   const destinations = new Set(finished.map((trip) => trip.destination.trim().toLowerCase())).size;
 
   return (
-    <div className="dashboard-shell">
+    <div className="dashboard-shell historico-shell">
       <div className="dashboard-head">
         <div>
-          <p className="eyebrow">Histórico</p>
           <h1>Onde você já esteve</h1>
           <p className="sub">
             As viagens que já terminaram, com o que foi gasto e o roteiro que vocês seguiram.

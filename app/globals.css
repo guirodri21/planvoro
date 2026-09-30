@@ -9876,3 +9876,110 @@ body:has(.ws-shell) .site-footer .fpanel {
 .ws-shell .ws-content .vault-card.attention {
   background: #fdf6f2;
 }
+
+/* ================================================ CRIAR VIAGEM (30/09/2026)
+   Previa como cartao da viagem, com a capa colorida do painel. */
+.wizard-aside {
+  padding: 0;
+  border: 1px solid var(--line);
+  background: var(--paper-strong);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.wizard-aside::after {
+  display: none;
+}
+
+.plan-preview-capa {
+  display: grid;
+  gap: 4px;
+  padding: 26px 24px 22px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    linear-gradient(150deg, var(--capa-a), var(--capa-b));
+  color: var(--capa-tinta);
+}
+
+.plan-preview-capa span {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.plan-preview .plan-preview-capa h2 {
+  margin: 0;
+  font-size: clamp(28px, 3.4vw, 38px);
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+}
+
+.plan-preview-capa p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.85;
+}
+
+.plan-preview-lista {
+  display: grid;
+  margin: 0;
+  padding: 6px 24px;
+}
+
+.plan-preview-lista > div {
+  display: grid;
+  gap: 2px;
+  padding: 12px 0;
+}
+
+.plan-preview-lista > div + div {
+  border-top: 1px solid var(--line);
+}
+
+.plan-preview-lista dt {
+  color: var(--text-faint);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.plan-preview-lista dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.plan-preview .plan-signal-cloud,
+.plan-preview .creation-roadmap {
+  margin: 0;
+  padding: 4px 24px 22px;
+}
+
+/* Etapa e rotulos sem CAIXA ALTA espacada. */
+.wizard-count {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Rodape de site fora do lugar em telas do app. */
+body:has(.wizard-aside) .site-footer .fgrid,
+body:has(.historico-shell) .site-footer .fgrid {
+  display: none;
+}
+
+body:has(.wizard-aside) .site-footer :is(.fpanel),
+body:has(.historico-shell) .site-footer :is(.fpanel) {
+  padding: 18px 22px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+body:has(.wizard-aside) .site-footer .fbot,
+body:has(.historico-shell) .site-footer .fbot {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
