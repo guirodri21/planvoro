@@ -298,6 +298,15 @@ export function TravelVaultView({
     ...emptyForm,
   });
   const [editingId, setEditingId] = useState("");
+  /**
+   * Formulario manual recolhido.
+   *
+   * Eram treze campos sempre abertos embaixo da importacao — a tela do
+   * Cofre parecia um cadastro, e o caminho mais rapido (colar a
+   * confirmacao) ficava perdido no meio. Abre sozinho quando a importacao
+   * preenche um rascunho ou quando a pessoa edita um item.
+   */
+  const [manualAberto, setManualAberto] = useState(false);
   const [saving, setSaving] = useState(false);
   const [workingId, setWorkingId] = useState("");
   const [error, setError] = useState("");
@@ -370,6 +379,7 @@ export function TravelVaultView({
   function resetForm() {
     setForm({ ...emptyForm });
     setEditingId("");
+    setManualAberto(false);
     setImportError("");
     setImportResult(null);
     setPendingFiles([]);
@@ -771,185 +781,193 @@ export function TravelVaultView({
           </div>
         )}
 
-        <div className="grid2 tight">
-          <div>
-            <label>Tipo</label>
-            <select
-              value={form.kind}
-              onChange={(event) => updateForm({ kind: event.target.value as TripVaultKind })}
-            >
-              {TRIP_VAULT_KINDS.map((kind) => (
-                <option key={kind.value} value={kind.value}>
-                  {kind.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label>Status</label>
-            <select
-              value={form.status}
-              onChange={(event) => updateForm({ status: event.target.value as TripVaultStatus })}
-            >
-              {TRIP_VAULT_STATUSES.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <label>Nome do item</label>
-        <input
-          value={form.title}
-          onChange={(event) => updateForm({ title: event.target.value })}
-          placeholder="Voo LATAM SP para Lisboa, Hotel, Seguro viagem..."
-        />
-
-        <div className="grid2 tight">
-          <div>
-            <label>Fornecedor</label>
-            <input
-              value={form.provider}
-              onChange={(event) => updateForm({ provider: event.target.value })}
-              placeholder="LATAM, Booking, Airbnb, Civitatis..."
-            />
-          </div>
-          <div>
-            <label>Código / localizador</label>
-            <input
-              value={form.confirmation_code}
-              onChange={(event) => updateForm({ confirmation_code: event.target.value })}
-              placeholder="ABC123"
-            />
-          </div>
-        </div>
-
-        <div className="grid2 tight">
-          <div>
-            <label>Começa em</label>
-            <input
-              type="datetime-local"
-              value={form.starts_at}
-              onChange={(event) => updateForm({ starts_at: event.target.value })}
-            />
-          </div>
-          <div>
-            <label>Termina em</label>
-            <input
-              type="datetime-local"
-              value={form.ends_at}
-              onChange={(event) => updateForm({ ends_at: event.target.value })}
-            />
-          </div>
-        </div>
-
-        <label>Local</label>
-        <input
-          value={form.location}
-          onChange={(event) => updateForm({ location: event.target.value })}
-          placeholder="Aeroporto, endereço do hotel, ponto de encontro..."
-        />
-
-        <div className="grid2 tight">
-          <div>
-            <label>Valor</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.amount}
-              onChange={(event) => updateForm({ amount: event.target.value })}
-              placeholder="0.00"
-            />
-          </div>
-          <div>
-            <label>Moeda</label>
-            <input
-              value={form.currency}
-              onChange={(event) => updateForm({ currency: event.target.value.toUpperCase() })}
-              placeholder="BRL"
-            />
-          </div>
-        </div>
-
-        <label>Link</label>
-        <input
-          value={form.url}
-          onChange={(event) => updateForm({ url: event.target.value })}
-          placeholder="https://..."
-        />
-
-        <label>Notas</label>
-        <textarea
-          rows={4}
-          value={form.notes}
-          onChange={(event) => updateForm({ notes: event.target.value })}
-          placeholder="Check-in, franquia de bagagem, regras de cancelamento, documentos..."
-        />
-
-        {!editingId && (
-          <div className="vault-pending-box">
-            <div className="vault-attachments-head">
-              <div>
-                <label>Anexos</label>
-                <span className="tiny">PDF, print ou comprovante. Sobem junto ao guardar.</span>
-              </div>
-              <input
-                ref={newItemFileRef}
-                className="hidden-file"
-                type="file"
-                multiple
-                accept={VAULT_ATTACHMENT_MIME_TYPES.join(",")}
-                onChange={(event) => addPendingFiles(Array.from(event.target.files ?? []))}
-              />
-              <button
-                className="btn ghost sm"
-                type="button"
-                onClick={() => newItemFileRef.current?.click()}
-                disabled={saving || pendingFiles.length >= MAX_PENDING_ATTACHMENTS}
+        {manualAberto || editingId || importResult || form.title ? (
+          <>
+          <div className="grid2 tight">
+            <div>
+              <label>Tipo</label>
+              <select
+                value={form.kind}
+                onChange={(event) => updateForm({ kind: event.target.value as TripVaultKind })}
               >
-                Escolher arquivos
-              </button>
-            </div>
-
-            {pendingFiles.length > 0 && (
-              <ul className="vault-attachment-list">
-                {pendingFiles.map((file, index) => (
-                  <li key={`${file.name}-${index}`}>
-                    <div>
-                      <strong>{file.name}</strong>
-                      <small>{formatFileSize(file.size)}</small>
-                    </div>
-                    <div>
-                      <button
-                        className="btn ghost sm"
-                        type="button"
-                        onClick={() => removePendingFile(index)}
-                        disabled={saving}
-                      >
-                        Tirar
-                      </button>
-                    </div>
-                  </li>
+                {TRIP_VAULT_KINDS.map((kind) => (
+                  <option key={kind.value} value={kind.value}>
+                    {kind.label}
+                  </option>
                 ))}
-              </ul>
-            )}
+              </select>
+            </div>
+            <div>
+              <label>Status</label>
+              <select
+                value={form.status}
+                onChange={(event) => updateForm({ status: event.target.value as TripVaultStatus })}
+              >
+                {TRIP_VAULT_STATUSES.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
+  
+          <label>Nome do item</label>
+          <input
+            value={form.title}
+            onChange={(event) => updateForm({ title: event.target.value })}
+            placeholder="Voo LATAM SP para Lisboa, Hotel, Seguro viagem..."
+          />
+  
+          <div className="grid2 tight">
+            <div>
+              <label>Fornecedor</label>
+              <input
+                value={form.provider}
+                onChange={(event) => updateForm({ provider: event.target.value })}
+                placeholder="LATAM, Booking, Airbnb, Civitatis..."
+              />
+            </div>
+            <div>
+              <label>Código / localizador</label>
+              <input
+                value={form.confirmation_code}
+                onChange={(event) => updateForm({ confirmation_code: event.target.value })}
+                placeholder="ABC123"
+              />
+            </div>
+          </div>
+  
+          <div className="grid2 tight">
+            <div>
+              <label>Começa em</label>
+              <input
+                type="datetime-local"
+                value={form.starts_at}
+                onChange={(event) => updateForm({ starts_at: event.target.value })}
+              />
+            </div>
+            <div>
+              <label>Termina em</label>
+              <input
+                type="datetime-local"
+                value={form.ends_at}
+                onChange={(event) => updateForm({ ends_at: event.target.value })}
+              />
+            </div>
+          </div>
+  
+          <label>Local</label>
+          <input
+            value={form.location}
+            onChange={(event) => updateForm({ location: event.target.value })}
+            placeholder="Aeroporto, endereço do hotel, ponto de encontro..."
+          />
+  
+          <div className="grid2 tight">
+            <div>
+              <label>Valor</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.amount}
+                onChange={(event) => updateForm({ amount: event.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div>
+              <label>Moeda</label>
+              <input
+                value={form.currency}
+                onChange={(event) => updateForm({ currency: event.target.value.toUpperCase() })}
+                placeholder="BRL"
+              />
+            </div>
+          </div>
+  
+          <label>Link</label>
+          <input
+            value={form.url}
+            onChange={(event) => updateForm({ url: event.target.value })}
+            placeholder="https://..."
+          />
+  
+          <label>Notas</label>
+          <textarea
+            rows={4}
+            value={form.notes}
+            onChange={(event) => updateForm({ notes: event.target.value })}
+            placeholder="Check-in, franquia de bagagem, regras de cancelamento, documentos..."
+          />
+  
+          {!editingId && (
+            <div className="vault-pending-box">
+              <div className="vault-attachments-head">
+                <div>
+                  <label>Anexos</label>
+                  <span className="tiny">PDF, print ou comprovante. Sobem junto ao guardar.</span>
+                </div>
+                <input
+                  ref={newItemFileRef}
+                  className="hidden-file"
+                  type="file"
+                  multiple
+                  accept={VAULT_ATTACHMENT_MIME_TYPES.join(",")}
+                  onChange={(event) => addPendingFiles(Array.from(event.target.files ?? []))}
+                />
+                <button
+                  className="btn ghost sm"
+                  type="button"
+                  onClick={() => newItemFileRef.current?.click()}
+                  disabled={saving || pendingFiles.length >= MAX_PENDING_ATTACHMENTS}
+                >
+                  Escolher arquivos
+                </button>
+              </div>
+  
+              {pendingFiles.length > 0 && (
+                <ul className="vault-attachment-list">
+                  {pendingFiles.map((file, index) => (
+                    <li key={`${file.name}-${index}`}>
+                      <div>
+                        <strong>{file.name}</strong>
+                        <small>{formatFileSize(file.size)}</small>
+                      </div>
+                      <div>
+                        <button
+                          className="btn ghost sm"
+                          type="button"
+                          onClick={() => removePendingFile(index)}
+                          disabled={saving}
+                        >
+                          Tirar
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+  
+          {error && <div className="err">{error}</div>}
+  
+          <button className="btn full" onClick={saveItem} disabled={saving || !form.title.trim() || !accessToken}>
+            {uploadingPending
+              ? "Enviando anexos..."
+              : saving
+                ? "Salvando..."
+                : editingId
+                  ? "Salvar alterações"
+                  : "Guardar no Cofre"}
+          </button>
+          </>
+        ) : (
+          <button className="btn ghost full vault-manual" type="button" onClick={() => setManualAberto(true)}>
+            + Adicionar manualmente
+          </button>
         )}
-
-        {error && <div className="err">{error}</div>}
-
-        <button className="btn full" onClick={saveItem} disabled={saving || !form.title.trim() || !accessToken}>
-          {uploadingPending
-            ? "Enviando anexos..."
-            : saving
-              ? "Salvando..."
-              : editingId
-                ? "Salvar alterações"
-                : "Guardar no Cofre"}
-        </button>
       </div>
       )}
 

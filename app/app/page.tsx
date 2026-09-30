@@ -11,6 +11,7 @@ import { track } from "@/lib/analytics";
 import { BILLING_COPY, TRIAL_DIAS } from "@/lib/billing";
 import { Planos } from "./_components/planos";
 import { PrimeiroAcesso } from "./_components/primeiro-acesso";
+import { capaDoDestino, contagemDaViagem } from "@/lib/capa";
 import { userDisplayName } from "@/lib/user-name";
 
 type DashboardTrip = {
@@ -583,39 +584,6 @@ function TripSection({
   );
 }
 
-/**
- * Cor da capa, tirada do nome do destino.
- *
- * Cada viagem ganha uma identidade visual sem foto: nada de imagem de
- * terceiro para licenciar nem para pesar no 4G. O mesmo destino tem sempre
- * a mesma cor, entao a pessoa reconhece a viagem de relance.
- */
-function capaDoDestino(destino: string) {
-  let h = 0;
-  for (const letra of destino.toLowerCase()) h = (h * 31 + letra.charCodeAt(0)) % 360;
-  return {
-    "--capa-a": `hsl(${h} 70% 90%)`,
-    "--capa-b": `hsl(${(h + 45) % 360} 72% 78%)`,
-    "--capa-tinta": `hsl(${h} 50% 22%)`,
-  } as React.CSSProperties;
-}
-
-/** O numero grande da capa: dias para embarcar, dia da viagem ou fim. */
-function contagem(trip: DashboardTrip) {
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  const inicio = new Date(`${trip.start_date}T00:00:00`);
-  const fim = new Date(`${trip.end_date}T00:00:00`);
-  const faltam = Math.round((inicio.getTime() - hoje.getTime()) / DIA_MS);
-  if (faltam >= 1) return { numero: String(faltam), legenda: faltam === 1 ? "dia para embarcar" : "dias para embarcar" };
-  if (hoje.getTime() <= fim.getTime()) {
-    const dia = Math.round((hoje.getTime() - inicio.getTime()) / DIA_MS) + 1;
-    const total = Math.round((fim.getTime() - inicio.getTime()) / DIA_MS) + 1;
-    return { numero: `${dia}/${total}`, legenda: "dias de viagem" };
-  }
-  return { numero: "✓", legenda: "viagem feita" };
-}
-
 function pessoasDaViagem(trip: DashboardTrip) {
   if (trip.is_solo) return "só você";
   return `${trip.members_count} de ${trip.party_size} pessoas`;
@@ -740,7 +708,7 @@ function TripRow({
 function NextTripHero({ trip }: { trip: DashboardTrip }) {
   const timing = tripTiming(trip);
   const step = nextTripStep(trip);
-  const conta = contagem(trip);
+  const conta = contagemDaViagem(trip.start_date, trip.end_date);
   const atalhos: Array<{ tab: string; label: string; icon: "roteiro" | "cofre" | "gastos" | "grupo" | "mapa" }> = [
     { tab: "roteiro", label: "Roteiro", icon: "roteiro" },
     { tab: "mapa", label: "Mapa", icon: "mapa" },

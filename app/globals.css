@@ -9604,3 +9604,188 @@ body:has(.painel) .site-footer .fpanel {
     padding-bottom: 56px;
   }
 }
+
+/* ================================================ VIAGEM LEVE (30/09/2026)
+   Mesma linha do painel: capa com a cor do destino, menos caixa alta,
+   menos etiquetas, ferramentas de edicao so quando a pessoa chega nelas. */
+
+.ws-shell .ws-trip {
+  gap: 6px;
+}
+
+.ws-trip-capa {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 4px 0 6px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    linear-gradient(150deg, var(--capa-a), var(--capa-b));
+  color: var(--capa-tinta);
+}
+
+.ws-trip-capa strong {
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.ws-trip-capa span {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ws-trip-meta {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+
+/* Rotulos: frase curta em vez de CAIXA ALTA espacada em todo canto. */
+.ws-shell .stat-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Roteiro: dia com cabecalho claro, horario e preco sem neon. */
+.ws-shell .day {
+  box-shadow: none;
+}
+
+.ws-shell .day-h {
+  background: var(--sand);
+}
+
+.ws-shell .time {
+  color: var(--text-soft);
+}
+
+.ws-shell .cost {
+  color: var(--text-soft);
+}
+
+.item-ok {
+  display: inline-grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: 2px;
+}
+
+/* Subir, descer e editar aparecem ao passar o mouse ou focar a parada.
+   Em tela de toque (sem hover) continuam sempre visiveis. */
+@media (hover: hover) and (pointer: fine) {
+  .ws-shell .item .item-tools {
+    opacity: 0;
+    transition: opacity 0.16s var(--ease);
+  }
+
+  .ws-shell .item:hover .item-tools,
+  .ws-shell .item:focus-within .item-tools {
+    opacity: 1;
+  }
+}
+
+/* Cofre: numeros numa faixa so, em vez de quatro caixas. */
+.ws-shell .ws-content .vault-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin: 16px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.ws-shell .ws-content .vault-summary > div {
+  min-height: 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.ws-shell .ws-content .vault-summary > div + div {
+  border-left: 1px solid var(--line);
+}
+
+.ws-shell .ws-content .vault-summary strong {
+  margin-top: 2px;
+  font-size: 16px;
+}
+
+.vault-manual {
+  margin-top: 12px;
+  border-style: dashed;
+}
+
+/* Dentro da viagem, o rodape de site so pesava: fica a linha final. */
+body:has(.ws-shell) .site-footer .fgrid {
+  display: none;
+}
+
+body:has(.ws-shell) .site-footer .fbot {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+body:has(.ws-shell) .site-footer .fpanel {
+  padding: 18px 22px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+@media (max-width: 640px) {
+  .ws-shell .ws-content .vault-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ws-shell .ws-content .vault-summary > div:nth-child(3) {
+    border-left: 0;
+  }
+
+  .ws-shell .ws-content .vault-summary > div:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+}
+
+/* Rotulos dos cartoes do Cofre e do resumo ("QUANDO", "FORNECEDOR",
+   "PERIODO"): frase curta, sem caixa alta espacada. */
+.ws-shell .ws-content :is(.vault-meta-grid, .vault-timeline, .trip-meta-grid, .command-meta) :is(span, small, em) {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* No celular, os botoes do cartao da reserva ficavam empilhados em
+   largura total (cinco faixas seguidas). Lado a lado, como no computador. */
+@media (max-width: 640px) {
+  .ws-shell .ws-content :is(.vault-status-actions, .vault-card-actions, .vault-import-actions) {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .ws-shell .ws-content :is(.vault-status-actions, .vault-card-actions, .vault-import-actions) .btn {
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .ws-shell .ws-content .vault-meta-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
