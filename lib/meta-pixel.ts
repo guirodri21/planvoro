@@ -44,6 +44,9 @@ function garantirFila() {
   const fbq: any = function (...args: unknown[]) {
     fbq.callMethod ? fbq.callMethod.apply(fbq, args) : fbq.queue.push(args);
   };
+  // Igual ao snippet oficial da Meta, inclusive o `push` (o fbevents.js
+  // conta com ele).
+  fbq.push = fbq;
   fbq.queue = [];
   fbq.loaded = true;
   fbq.version = "2.0";
@@ -97,8 +100,20 @@ export function metaTrack(evento: EventoMeta, props?: Record<string, unknown>, e
   if (!META_PIXEL_ID || typeof window === "undefined") return;
   garantirFila();
   if (!window.fbq) return;
-  if (eventId) window.fbq("track", evento, props ?? {}, { eventID: eventId });
-  else window.fbq("track", evento, props);
+  /**
+   * So os argumentos que existem.
+   *
+   * A versao anterior sempre passava o terceiro argumento, e sem
+   * parametros ele ia como `undefined`: fbq("track", "PageView",
+   * undefined). O codigo oficial chama fbq("track", "PageView") — e o
+   * PageView, o ViewContent e o CompleteRegistration (os eventos sem
+   * parametro) pararam de aparecer no Gerenciador de Eventos. O Lead
+   * escapava porque sempre leva {} e o eventID.
+   */
+  const argumentos: unknown[] = ["track", evento];
+  if (props || eventId) argumentos.push(props ?? {});
+  if (eventId) argumentos.push({ eventID: eventId });
+  window.fbq(...argumentos);
 }
 
 /** Id novo para um evento que vai pelos dois caminhos (navegador e servidor). */
