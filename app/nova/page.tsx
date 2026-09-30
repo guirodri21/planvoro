@@ -7,6 +7,7 @@ import { useAuth } from "@/components/auth-provider";
 import { BUDGET_BANDS, DAILY_BUDGETS, INTERESTS, RESTRICTIONS, STYLES } from "@/lib/types";
 import { track } from "@/lib/analytics";
 import { userDisplayName } from "@/lib/user-name";
+import { capaDoDestino } from "@/lib/capa";
 
 type TripKind = "solo" | "couple" | "friends" | "family" | "work";
 type SubmitPhase = "idle" | "creating" | "preferences" | "generating" | "opening";
@@ -95,7 +96,7 @@ const TRIP_KIND_LABEL: Record<TripKind, string> = {
 const creationSteps: Array<{ phase: SubmitPhase; label: string; description: string }> = [
   {
     phase: "creating",
-    label: "Criar workspace",
+    label: "Criar a viagem",
     description: "Abrindo a viagem e vinculando você como organizador.",
   },
   {
@@ -110,7 +111,7 @@ const creationSteps: Array<{ phase: SubmitPhase; label: string; description: str
   },
   {
     phase: "opening",
-    label: "Abrir central da viagem",
+    label: "Abrir a viagem",
     description: "Levando você para o painel com Agenda, Cofre, Checklist e Gastos.",
   },
 ];
@@ -214,15 +215,6 @@ function NovaViagemForm() {
   const isSubmitting = phase !== "idle";
   const isSolo = form.trip_kind === "solo";
   const durationDays = tripDuration(form.start_date, form.end_date);
-  const essentialsDone = [
-    form.organizer_name.trim().length >= 2,
-    form.destination.trim().length >= 2,
-    Boolean(form.start_date && form.end_date && durationDays > 0),
-    Boolean(form.budget_band && form.daily_budget),
-    interests.length > 0,
-    styles.length > 0,
-  ].filter(Boolean).length;
-  const readiness = Math.round((essentialsDone / 6) * 100);
   const selectedSignals = [...interests, ...styles, ...restrictions].slice(0, 8);
 
   useEffect(() => {
@@ -820,7 +812,7 @@ function NovaViagemForm() {
             partySize={isSolo ? 1 : form.party_size}
             budget={`${form.budget_band} · ${form.daily_budget}`}
             pace={form.pace}
-            readiness={readiness}
+            visto={maxStep}
             signals={selectedSignals}
             phase={phase}
           />
@@ -839,7 +831,7 @@ function TripPlanPreview({
   partySize,
   budget,
   pace,
-  readiness,
+  visto,
   signals,
   phase,
 }: {
@@ -851,7 +843,8 @@ function TripPlanPreview({
   partySize: number;
   budget: string;
   pace: string;
-  readiness: number;
+  /** Ate que etapa a pessoa ja chegou: a previa so mostra o que foi respondido. */
+  visto: number;
   signals: string[];
   phase: SubmitPhase;
 }) {
@@ -859,45 +852,49 @@ function TripPlanPreview({
   const isCreating = phase !== "idle";
 
   return (
-    <div className="plan-preview">
-      <span className="badge b-ok">{isCreating ? "criando agora" : "preview ao vivo"}</span>
-      <h2>{destination || "Sua próxima viagem"}</h2>
-      <p className="small">
-        {durationDays
-          ? `${formatPreviewDate(startDate)} até ${formatPreviewDate(endDate)} · ${durationDays} dia${durationDays === 1 ? "" : "s"}`
-          : "Defina destino e datas para ver o plano ganhar forma."}
-      </p>
-
-      <div className="plan-readiness">
-        <div>
-          <span className="stat-label">Prontidão</span>
-          <strong>{readiness}%</strong>
-        </div>
-        <div className="progress-line">
-          <span style={{ width: `${readiness}%` }} />
-        </div>
+    /*
+      Previa em forma de cartao da viagem, com a mesma capa colorida do
+      painel. Antes mostrava "Prontidao 67%", "Grupo de amigos" e "6
+      pessoas" antes de a pessoa responder nada — valores padrao com cara
+      de resposta. Agora cada linha so aparece depois da etapa dela.
+    */
+    <div className="plan-preview" style={capaDoDestino(destination || "viagem")}>
+      <div className="plan-preview-capa">
+        <span>{isCreating ? "Criando sua viagem..." : "Sua viagem"}</span>
+        <h2>{destination || "Para onde?"}</h2>
+        <p>
+          {durationDays
+            ? `${formatPreviewDate(startDate)} até ${formatPreviewDate(endDate)} · ${durationDays} dia${durationDays === 1 ? "" : "s"}`
+            : "As datas aparecem aqui."}
+        </p>
       </div>
 
-      <div className="plan-preview-grid">
-        <div>
-          <span className="stat-label">Tipo</span>
-          <strong>{tripKind}</strong>
-        </div>
-        <div>
-          <span className="stat-label">Pessoas</span>
-          <strong>{partySize}</strong>
-        </div>
-        <div>
-          <span className="stat-label">Ritmo</span>
-          <strong>{pace}</strong>
-        </div>
-        <div>
-          <span className="stat-label">Orçamento</span>
-          <strong>{budget}</strong>
-        </div>
-      </div>
+      {(visto >= 2 || signals.length > 0) && (
+        <dl className="plan-preview-lista">
+          {visto >= 2 && (
+            <div>
+              <dt>Quem vai</dt>
+              <dd>
+                {tripKind} · {partySize} pessoa{partySize === 1 ? "" : "s"}
+              </dd>
+            </div>
+          )}
+          {visto >= 3 && (
+            <div>
+              <dt>Orçamento</dt>
+              <dd>{budget}</dd>
+            </div>
+          )}
+          {visto >= 5 && (
+            <div>
+              <dt>Ritmo</dt>
+              <dd>{pace}</dd>
+            </div>
+          )}
+        </dl>
+      )}
 
-      {signals.length > 0 && (
+      {visto >= 4 && signals.length > 0 && (
         <div className="plan-signal-cloud">
           {signals.map((signal) => (
             <span key={signal}>{signal}</span>
@@ -905,21 +902,25 @@ function TripPlanPreview({
         </div>
       )}
 
-      <div className="creation-roadmap">
-        {creationSteps.map((item, index) => {
-          const done = currentPhaseIndex > index || phase === "opening";
-          const active = currentPhaseIndex === index;
-          return (
-            <div className={`creation-step ${done ? "done" : ""} ${active ? "active" : ""}`} key={item.phase}>
-              <span>{done ? "✓" : index + 1}</span>
-              <div>
-                <strong>{item.label}</strong>
-                <p>{item.description}</p>
+      {/* O passo a passo tecnico so aparece enquanto a viagem esta sendo
+          criada — ai ele mostra o andamento de verdade. */}
+      {isCreating && (
+        <div className="creation-roadmap">
+          {creationSteps.map((item, index) => {
+            const done = currentPhaseIndex > index || phase === "opening";
+            const active = currentPhaseIndex === index;
+            return (
+              <div className={`creation-step ${done ? "done" : ""} ${active ? "active" : ""}`} key={item.phase}>
+                <span>{done ? "✓" : index + 1}</span>
+                <div>
+                  <strong>{item.label}</strong>
+                  <p>{item.description}</p>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
