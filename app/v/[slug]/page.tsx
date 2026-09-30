@@ -67,6 +67,7 @@ import { IdeasView } from "./_components/ideas";
 import { AgendaDoCelular } from "./_components/agenda-ics";
 import { CofreEmail } from "./_components/cofre-email";
 import { TravelModeView, TripAgendaView, TripMapView } from "./_components/travel-mode";
+import { capaDoDestino, contagemDaViagem } from "@/lib/capa";
 
 
 
@@ -437,22 +438,24 @@ export default function TripPage({ params }: { params: Promise<{ slug: string }>
   return (
     <div className={`app-shell ws-shell ${hasWorkspace ? "" : "ws-shell-solo"}`}>
       <aside className="ws-sidebar" aria-label="Viagem">
-        <div className="ws-trip">
+        {/* Mesma capa e contagem do painel: a viagem tem a mesma cara nos
+            dois lugares. */}
+        <div className="ws-trip" style={capaDoDestino(trip.destination)}>
           <a className="ws-back" href="/app">
             ← Minhas viagens
           </a>
+          <div className="ws-trip-capa">
+            <strong>{contagemDaViagem(trip.start_date, trip.end_date).numero}</strong>
+            <span>{contagemDaViagem(trip.start_date, trip.end_date).legenda}</span>
+          </div>
           <h1>{trip.destination}</h1>
           <p className="ws-trip-dates">
             {formatTripDate(trip.start_date)} a {formatTripDate(trip.end_date)}
           </p>
-          <div className="ws-trip-tags">
-            <span>
-              {trip.is_solo || trip.party_size === 1
-                ? "Viagem individual"
-                : `${trip.party_size} pessoas`}
-            </span>
-            <span>{trip.budget_band ?? "Orçamento livre"}</span>
-          </div>
+          <p className="ws-trip-meta">
+            {trip.is_solo || trip.party_size === 1 ? "Viagem individual" : `${trip.party_size} pessoas`} ·{" "}
+            {trip.budget_band ?? "orçamento livre"}
+          </p>
           <div className="avatars">
             {members.map((member) => (
               <div
@@ -1758,7 +1761,12 @@ function ItemRow({
         <div className="item-b">
           <div className="item-t">
             {item.title}
-            {item.verified && <span className="badge b-ok">verificado</span>}
+            {/* Um sinal discreto, e nao uma etiqueta em cada parada. */}
+            {item.verified && (
+              <span className="item-ok" title="Lugar conferido" aria-label="lugar conferido">
+                ✓
+              </span>
+            )}
             {item.needs_vote && <span className="badge b-vote">o grupo decide</span>}
           </div>
           <div className="item-d">{item.description}</div>

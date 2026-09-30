@@ -133,3 +133,12 @@ test.describe("Passe trancado", () => {
     expect(chamouAgente).toBe(false);
   });
 });
+
+test("Cofre: formulário manual recolhido até pedir", async ({ page }) => {
+  await page.route("**/api/trips/demo", (r) => json(r, viagem()));
+  await page.goto("/v/demo#cofre");
+  await expect(page.getByRole("button", { name: "Guardar no Cofre" })).toHaveCount(0);
+  await page.getByRole("button", { name: "+ Adicionar manualmente" }).click();
+  await expect(page.getByRole("button", { name: "Guardar no Cofre" })).toBeVisible();
+  await semRolagemLateral(page);
+});
