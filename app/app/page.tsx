@@ -1,17 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AuthRequiredCard } from "@/components/auth-required-card";
 import { Icon } from "@/components/icons";
 import { DashboardSkeleton } from "@/components/skeleton";
 import { useAuth } from "@/components/auth-provider";
-import { betaAccessDescription, betaAccessEnabled, betaAccessLabel } from "@/lib/beta";
+import { betaAccessEnabled } from "@/lib/beta";
 import { Confirmar } from "@/components/confirmar";
 import { track } from "@/lib/analytics";
 import { BILLING_COPY, TRIAL_DIAS } from "@/lib/billing";
 import { Planos } from "./_components/planos";
 import { PrimeiroAcesso } from "./_components/primeiro-acesso";
-import { supabaseBrowser } from "@/lib/supabase-browser";
 import { userDisplayName } from "@/lib/user-name";
 
 type DashboardTrip = {
@@ -76,11 +75,6 @@ const dateFormatter = new Intl.DateTimeFormat("pt-BR", {
   year: "numeric",
 });
 
-const moneyFormatter = new Intl.NumberFormat("pt-BR", {
-  style: "currency",
-  currency: "BRL",
-  maximumFractionDigits: 0,
-});
 
 function authHeaders(accessToken: string | null) {
   return accessToken ? { Authorization: `Bearer ${accessToken}` } : undefined;
@@ -278,13 +272,6 @@ export default function AppPage() {
   const proximaViagem = termo ? null : activeTrips[0] ?? null;
   const accountBilling = data?.account_billing ?? null;
   const liberarTrip = liberarSlug ? trips.find((trip) => trip.slug === liberarSlug) ?? null : null;
-  const stats = useMemo(() => {
-    const generatedTrips = trips.filter((trip) => trip.latest_itinerary).length;
-    const groupTrips = trips.filter((trip) => !trip.is_solo).length;
-    const totalExpenses = trips.reduce((sum, trip) => sum + trip.expenses_total, 0);
-
-    return { activeTrips: activeTrips.length, generatedTrips, groupTrips, totalExpenses };
-  }, [trips]);
 
   async function startCheckout(plan: "trip_pass" | "pro_annual", tripSlug?: string) {
     if (!session?.access_token || billingAction) return;
@@ -429,90 +416,37 @@ export default function AppPage() {
   }
 
   /**
-   * Painel em duas colunas.
+   * Painel numa coluna so.
    *
-   * Cabecalho, plano, quatro numeros e as viagens vinham empilhados no
-   * centro: a primeira viagem so aparecia depois de uma tela inteira de
-   * rolagem. Agora quem voce e, o plano e os numeros moram na lateral, e a
-   * coluna principal comeca direto pelo que a pessoa veio fazer — abrir
-   * uma viagem.
+   * A versao de duas colunas mostrava a proxima viagem duas vezes (no
+   * destaque e na lista, com o mesmo "proximo passo"), quatro numeros que
+   * nao ajudavam a decidir nada, "Criar viagem" repetido e cinco botoes
+   * verdes disputando o olho. No celular, os numeros vinham antes da
+   * propria viagem. Agora: quem voce e, o plano numa linha, a proxima
+   * viagem em destaque e o resto em lista compacta.
    */
+  const outrasAtivas = proximaViagem ? activeTrips.filter((trip) => trip.id !== proximaViagem.id) : activeTrips;
+
   return (
-    <div className="app-shell dash-shell">
-      <aside className="dash-sidebar" aria-label="Sua conta">
-        <div className="dash-hello">
-          <p className="eyebrow">Área do usuário</p>
-          <h1>Minhas viagens</h1>
-          <p className="sub">Oi, {userDisplayName(user)}.</p>
-        </div>
+    <div className="app-shell painel">
+      <header className="painel-topo">
+        <h1>Minhas viagens</h1>
+        <p className="sub">Oi, {userDisplayName(user)}.</p>
+      </header>
 
-        <a className="btn full" href="/nova">
-          <Icon name="mais" />
-          Criar viagem
-        </a>
+      <Planos
+        proAtivo={Boolean(accountBilling?.is_pro_active)}
+        proExpiraEm={accountBilling?.pro_expires_at ?? null}
+        temTeste={Boolean(accountBilling?.trial_used)}
+        testeExpiraEm={accountBilling?.trial_expires_at ?? null}
+        testeViagem={accountBilling?.trial_trip ?? null}
+        testeConta={Boolean(accountBilling?.trial_conta)}
+        passesGuardados={accountBilling?.passes_guardados ?? 0}
+        acao={billingAction}
+        erro={liberarTrip ? "" : billingError}
+        onTeste={() => comecarTeste(liberarSlug ?? undefined)}
+      />
 
-        <nav className="ws-nav dash-nav" aria-label="Seções do painel">
-          <div className="ws-nav-group">
-            <span className="ws-nav-title">Viagens</span>
-            <a className="ws-nav-item" href="#ativas">
-              <Icon name="viagem" />
-              <span>Ativas</span>
-              {activeTrips.length > 0 && <em className="tab-alerta">{activeTrips.length}</em>}
-            </a>
-            {archivedTrips.length > 0 && (
-              <a className="ws-nav-item" href="#finalizadas">
-                <Icon name="arquivo" />
-                <span>Finalizadas</span>
-                <em className="tab-alerta">{archivedTrips.length}</em>
-              </a>
-            )}
-            <a className="ws-nav-item" href="/historico">
-              <Icon name="agenda" />
-              <span>Histórico</span>
-            </a>
-          </div>
-        </nav>
-
-        <dl className="dash-stats">
-          <div>
-            <dt>Viagens ativas</dt>
-            <dd>{stats.activeTrips}</dd>
-          </div>
-          <div>
-            <dt>Em grupo</dt>
-            <dd>{stats.groupTrips}</dd>
-          </div>
-          <div>
-            <dt>Roteiros gerados</dt>
-            <dd>{stats.generatedTrips}</dd>
-          </div>
-          <div>
-            <dt>Gastos registrados</dt>
-            <dd>{moneyFormatter.format(stats.totalExpenses)}</dd>
-          </div>
-        </dl>
-
-        <Planos
-          proAtivo={Boolean(accountBilling?.is_pro_active)}
-          proExpiraEm={accountBilling?.pro_expires_at ?? null}
-          podeComprar={Boolean(accountBilling?.can_checkout)}
-          temTeste={Boolean(accountBilling?.trial_used)}
-          testeExpiraEm={accountBilling?.trial_expires_at ?? null}
-          testeViagem={accountBilling?.trial_trip ?? null}
-          testeConta={Boolean(accountBilling?.trial_conta)}
-          passesGuardados={accountBilling?.passes_guardados ?? 0}
-          acao={billingAction}
-          erro={liberarTrip ? "" : billingError}
-          onPro={() => startCheckout("pro_annual")}
-          onTeste={() => comecarTeste(liberarSlug ?? undefined)}
-        />
-
-        <button className="btn ghost sm full" type="button" onClick={loadDashboard} disabled={loading}>
-          {loading ? "Atualizando..." : "Atualizar lista"}
-        </button>
-      </aside>
-
-      <div className="dash-main">
       {error && <div className="err">{error}</div>}
       {billingError && liberarTrip && <div className="err">{billingError}</div>}
 
@@ -537,79 +471,47 @@ export default function AppPage() {
         />
       )}
 
-      {!data && loading ? (
-        <div className="card muted">Buscando suas viagens...</div>
-      ) : trips.length === 0 ? (
-        <div className="dashboard-empty">
-          <div>
-            <p className="eyebrow">Primeiro roteiro</p>
-            <h2>Crie sua primeira viagem</h2>
-            <p className="sub">
-              Comece sozinho ou em grupo. Depois que a viagem existir, ela aparece aqui com o
-              progresso do roteiro, pessoas e gastos.
-            </p>
-          </div>
-          <a className="btn lg" href="/nova">
-            Criar viagem grátis
-          </a>
-        </div>
-      ) : (
-        <div className="dashboard-stack">
-          {/*
-            A proxima viagem em destaque, no lugar do bloco "Continue
-            planejando", que repetia as mesmas viagens dos cartoes logo
-            abaixo. Aqui ha uma so: a que embarca primeiro.
-          */}
-          {proximaViagem && (
-            <NextTripHero
-              trip={proximaViagem}
-              accountBilling={accountBilling}
-            />
-          )}
+      {proximaViagem && <NextTripHero trip={proximaViagem} />}
 
-          {trips.length > 4 && (
-            <div className="dash-busca">
-              <input
-                type="search"
-                value={busca}
-                onChange={(event) => setBusca(event.target.value)}
-                placeholder="Buscar viagem pelo destino"
-                aria-label="Buscar viagem pelo destino"
-              />
-              {termo && (
-                <span className="tiny">
-                  {filtradas.length} resultado{filtradas.length === 1 ? "" : "s"}
-                </span>
-              )}
-            </div>
-          )}
-
-          <TripSection
-            id="ativas"
-            title={termo ? "Viagens encontradas" : "Viagens ativas"}
-            description="Da mais próxima para a mais distante."
-            badge={`${activeTrips.length} ativa${activeTrips.length === 1 ? "" : "s"}`}
-            trips={activeTrips}
-            accountBilling={accountBilling}
-            billingAction={billingAction}
-            startCheckout={startCheckout}
-            onApagar={setConfirmarApagar}
+      {trips.length > 4 && (
+        <div className="dash-busca">
+          <input
+            type="search"
+            value={busca}
+            onChange={(event) => setBusca(event.target.value)}
+            placeholder="Buscar viagem pelo destino"
+            aria-label="Buscar viagem pelo destino"
           />
-
-          {archivedTrips.length > 0 && (
-            <TripSection
-              id="finalizadas"
-              title="Viagens finalizadas"
-              description="Histórico para consultar roteiros, gastos e decisões depois da volta."
-              badge={`${archivedTrips.length} no histórico`}
-              trips={archivedTrips}
-              accountBilling={accountBilling}
-              billingAction={billingAction}
-              startCheckout={startCheckout}
-              onApagar={setConfirmarApagar}
-            />
+          {termo && (
+            <span className="tiny">
+              {filtradas.length} resultado{filtradas.length === 1 ? "" : "s"}
+            </span>
           )}
         </div>
+      )}
+
+      {(outrasAtivas.length > 0 || termo) && (
+        <TripSection
+          id="ativas"
+          title={termo ? "Viagens encontradas" : proximaViagem ? "Depois dessa" : "Viagens ativas"}
+          trips={outrasAtivas}
+          accountBilling={accountBilling}
+          billingAction={billingAction}
+          startCheckout={startCheckout}
+          onApagar={setConfirmarApagar}
+        />
+      )}
+
+      {archivedTrips.length > 0 && (
+        <TripSection
+          id="finalizadas"
+          title="Finalizadas"
+          trips={archivedTrips}
+          accountBilling={accountBilling}
+          billingAction={billingAction}
+          startCheckout={startCheckout}
+          onApagar={setConfirmarApagar}
+        />
       )}
 
       {/*
@@ -632,7 +534,6 @@ export default function AppPage() {
           }}
         />
       )}
-      </div>
     </div>
   );
 }
@@ -640,8 +541,6 @@ export default function AppPage() {
 function TripSection({
   id,
   title,
-  description,
-  badge,
   trips,
   accountBilling,
   billingAction,
@@ -650,8 +549,6 @@ function TripSection({
 }: {
   id?: string;
   title: string;
-  description: string;
-  badge: string;
   trips: DashboardTrip[];
   accountBilling: DashboardResponse["account_billing"] | null;
   billingAction: string;
@@ -659,26 +556,19 @@ function TripSection({
   onApagar: (trip: DashboardTrip) => void;
 }) {
   return (
-    <section className="trip-board" id={id}>
-      <div className="trip-board-head">
-        <div>
-          <h2>{title}</h2>
-          <p className="sub">{description}</p>
-        </div>
-        <span className={`badge ${trips.length ? "b-ok" : "b-warn"}`}>{trips.length ? badge : "vazio"}</span>
-      </div>
+    // div, e nao section: "section" tem borda e 82px de respiro globais,
+    // feitos para a home.
+    <div className="painel-secao" id={id} role="region" aria-label={title}>
+      <h2>
+        {title} <span>{trips.length}</span>
+      </h2>
 
       {trips.length === 0 ? (
-        <div className="mini-empty">
-          <span>Nada por aqui ainda.</span>
-          <a className="btn sm" href="/nova">
-            Criar viagem
-          </a>
-        </div>
+        <p className="sub">Nenhuma viagem por aqui.</p>
       ) : (
-        <div className="trip-list">
+        <div className="trip-rows">
           {trips.map((trip) => (
-            <TripCard
+            <TripRow
               key={trip.id}
               trip={trip}
               accountBilling={accountBilling}
@@ -689,20 +579,57 @@ function TripSection({
           ))}
         </div>
       )}
-    </section>
+    </div>
   );
 }
 
 /**
- * Cartao de viagem.
+ * Cor da capa, tirada do nome do destino.
  *
- * Antes: tres caixas de numero, uma barra de progresso sem legenda e ate
- * tres botoes que mudavam de lugar conforme a viagem — "Apagar" com o
- * mesmo peso de "Abrir". Agora a leitura segue a pergunta de quem abre o
- * painel: quando e, o que falta, e abrir. Apagar vira link discreto no
- * rodape, porque e a acao mais rara e a unica sem volta.
+ * Cada viagem ganha uma identidade visual sem foto: nada de imagem de
+ * terceiro para licenciar nem para pesar no 4G. O mesmo destino tem sempre
+ * a mesma cor, entao a pessoa reconhece a viagem de relance.
  */
-function TripCard({
+function capaDoDestino(destino: string) {
+  let h = 0;
+  for (const letra of destino.toLowerCase()) h = (h * 31 + letra.charCodeAt(0)) % 360;
+  return {
+    "--capa-a": `hsl(${h} 70% 90%)`,
+    "--capa-b": `hsl(${(h + 45) % 360} 72% 78%)`,
+    "--capa-tinta": `hsl(${h} 50% 22%)`,
+  } as React.CSSProperties;
+}
+
+/** O numero grande da capa: dias para embarcar, dia da viagem ou fim. */
+function contagem(trip: DashboardTrip) {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const inicio = new Date(`${trip.start_date}T00:00:00`);
+  const fim = new Date(`${trip.end_date}T00:00:00`);
+  const faltam = Math.round((inicio.getTime() - hoje.getTime()) / DIA_MS);
+  if (faltam >= 1) return { numero: String(faltam), legenda: faltam === 1 ? "dia para embarcar" : "dias para embarcar" };
+  if (hoje.getTime() <= fim.getTime()) {
+    const dia = Math.round((hoje.getTime() - inicio.getTime()) / DIA_MS) + 1;
+    const total = Math.round((fim.getTime() - inicio.getTime()) / DIA_MS) + 1;
+    return { numero: `${dia}/${total}`, legenda: "dias de viagem" };
+  }
+  return { numero: "✓", legenda: "viagem feita" };
+}
+
+function pessoasDaViagem(trip: DashboardTrip) {
+  if (trip.is_solo) return "só você";
+  return `${trip.members_count} de ${trip.party_size} pessoas`;
+}
+
+/**
+ * Viagem em lista.
+ *
+ * Uma linha: capa, destino, quando e o proximo passo. As acoes raras
+ * (liberar, link publico, apagar) ficam no menu "⋯" — Apagar solto no
+ * rodape de cada cartao era a acao mais rara e a unica sem volta, com o
+ * mesmo destaque das outras.
+ */
+function TripRow({
   trip,
   accountBilling,
   billingAction,
@@ -719,108 +646,101 @@ function TripCard({
   const plano = tripPlanLabel(trip, accountBilling);
   const step = nextTripStep(trip);
   const organizador = Boolean(trip.viewer_member?.is_organizer);
-  const pessoas = trip.is_solo ? 1 : Math.max(trip.members_count, trip.party_size);
-  const prefsOk = trip.preferences_count >= pessoas;
   const podeLiberar = !plano.liberada && organizador;
   const acaoPasse = `trip_pass:${trip.slug}`;
+  const temMenu = podeLiberar || trip.is_public || organizador;
+  const menu = useRef<HTMLDetailsElement | null>(null);
+
+  // O menu fecha ao tocar fora dele; "details" sozinho so fecha no proprio
+  // gatilho, e ficava aberto por cima da viagem de baixo.
+  useEffect(() => {
+    function fora(evento: MouseEvent) {
+      const aberto = menu.current;
+      if (aberto?.open && !aberto.contains(evento.target as Node)) aberto.open = false;
+    }
+    document.addEventListener("click", fora);
+    return () => document.removeEventListener("click", fora);
+  }, []);
 
   return (
-    <article className="trip-card trip-card-v2">
-      <header className="trip-card-top">
-        <div>
-          <h3>
-            <a href={`/v/${trip.slug}`}>{trip.destination}</a>
-          </h3>
-          <p className="small">
-            {formatTripDate(trip.start_date, trip.end_date)} ·{" "}
-            {trip.is_solo ? "só você" : `${trip.members_count}/${trip.party_size} pessoas`}
-          </p>
-        </div>
-        <span className={`trip-timing ${timing.tone}`}>{timing.label}</span>
-      </header>
+    <article className="trip-row" style={capaDoDestino(trip.destination)}>
+      <a className="trip-row-capa" href={`/v/${trip.slug}`} tabIndex={-1} aria-hidden="true">
+        {trip.destination.trim().charAt(0).toUpperCase()}
+      </a>
 
-      <ul className="trip-checks">
-        <li className={prefsOk ? "ok" : ""}>
-          <span aria-hidden="true">{prefsOk ? "✓" : "•"}</span>
-          Preferências {trip.preferences_count}/{pessoas}
-        </li>
-        <li className={trip.latest_itinerary ? "ok" : ""}>
-          <span aria-hidden="true">{trip.latest_itinerary ? "✓" : "•"}</span>
-          {trip.latest_itinerary ? `Roteiro v${trip.latest_itinerary.version}` : "Roteiro a gerar"}
-        </li>
-        <li className={trip.expenses_total > 0 ? "ok" : ""}>
-          <span aria-hidden="true">{trip.expenses_total > 0 ? "✓" : "•"}</span>
-          Gastos {moneyFormatter.format(trip.expenses_total)}
-        </li>
-      </ul>
-
-      {timing.tone !== "passado" && (
-        <a className="trip-next" href={`/v/${trip.slug}#${step.tab}`}>
-          <span className="stat-label">Próximo passo</span>
-          <strong>{step.title}</strong>
-          <span className="small">{step.description}</span>
-        </a>
-      )}
-
-      <div className="trip-card-actions-v2">
-        <a className="btn sm" href={`/v/${trip.slug}`}>
-          Abrir viagem
-        </a>
-        {podeLiberar &&
-          (accountBilling?.can_checkout ? (
-            <button
-              className="btn ghost sm"
-              type="button"
-              onClick={() => startCheckout("trip_pass", trip.slug)}
-              disabled={billingAction === acaoPasse}
-            >
-              {billingAction === acaoPasse
-                ? "Abrindo..."
-                : `Liberar R$ ${BILLING_COPY.trip_pass.amount / 100}`}
-            </button>
-          ) : (
-            <a className="btn ghost sm" href={`/planos?viagem=${encodeURIComponent(trip.slug)}`}>
-              Ver planos
-            </a>
-          ))}
-      </div>
-
-      <footer className="trip-card-foot">
-        <span className={`trip-plan ${plano.liberada ? "on" : ""}`}>{plano.label}</span>
-        <span className="tiny">{organizador ? "você organiza" : "você participa"}</span>
-        {trip.is_public && (
-          <a className="tiny" href={`/r/${trip.slug}`} target="_blank" rel="noreferrer">
-            Link público
+      <div className="trip-row-info">
+        <h3>
+          <a href={`/v/${trip.slug}`}>{trip.destination}</a>
+        </h3>
+        <p className="small">
+          {formatTripDate(trip.start_date, trip.end_date)} · {pessoasDaViagem(trip)}
+          {plano.liberada && <span className="trip-row-plano"> · {plano.label}</span>}
+        </p>
+        {timing.tone !== "passado" && (
+          <a className="trip-row-passo" href={`/v/${trip.slug}#${step.tab}`}>
+            {step.title} →
           </a>
         )}
-        {/* So quem organiza apaga: a acao leva junto o Cofre e os gastos de
-            todo o grupo. */}
-        {organizador && (
-          <button
-            className="trip-apagar"
-            type="button"
-            onClick={() => onApagar(trip)}
-            aria-label={`Apagar a viagem para ${trip.destination}`}
+      </div>
+
+      <span className={`trip-row-quando ${timing.tone}`}>{timing.label}</span>
+
+      {temMenu && (
+        <details className="trip-row-menu" ref={menu}>
+          <summary aria-label={`Mais opções de ${trip.destination}`}>
+            <span aria-hidden="true">⋯</span>
+          </summary>
+          {/* Escolher uma opcao fecha o menu. */}
+          <div
+            className="trip-row-menu-lista"
+            onClick={() => {
+              if (menu.current) menu.current.open = false;
+            }}
           >
-            Apagar
-          </button>
-        )}
-      </footer>
+            {podeLiberar &&
+              (accountBilling?.can_checkout ? (
+                <button
+                  type="button"
+                  onClick={() => startCheckout("trip_pass", trip.slug)}
+                  disabled={billingAction === acaoPasse}
+                >
+                  {billingAction === acaoPasse
+                    ? "Abrindo pagamento..."
+                    : `Liberar esta viagem · R$ ${BILLING_COPY.trip_pass.amount / 100}`}
+                </button>
+              ) : (
+                <a href={`/planos?viagem=${encodeURIComponent(trip.slug)}`}>Ver planos</a>
+              ))}
+            {trip.is_public && (
+              <a href={`/r/${trip.slug}`} target="_blank" rel="noreferrer">
+                Abrir link público
+              </a>
+            )}
+            {/* So quem organiza apaga: leva junto o Cofre e os gastos do grupo. */}
+            {organizador && (
+              <button type="button" className="perigo" onClick={() => onApagar(trip)}>
+                Apagar viagem
+              </button>
+            )}
+          </div>
+        </details>
+      )}
     </article>
   );
 }
 
-/** A viagem que embarca primeiro, com atalhos para as abas do dia a dia. */
-function NextTripHero({
-  trip,
-  accountBilling,
-}: {
-  trip: DashboardTrip;
-  accountBilling: DashboardResponse["account_billing"] | null;
-}) {
+/**
+ * A viagem que embarca primeiro.
+ *
+ * A contagem ("faltam 30 dias") era uma etiqueta pequena entre outras
+ * quatro; e o que faz alguem abrir o painel com vontade, entao vira o
+ * numero grande da capa. Um botao cheio so — Abrir viagem — e os atalhos
+ * para as abas do dia a dia.
+ */
+function NextTripHero({ trip }: { trip: DashboardTrip }) {
   const timing = tripTiming(trip);
   const step = nextTripStep(trip);
-  const plano = tripPlanLabel(trip, accountBilling);
+  const conta = contagem(trip);
   const atalhos: Array<{ tab: string; label: string; icon: "roteiro" | "cofre" | "gastos" | "grupo" | "mapa" }> = [
     { tab: "roteiro", label: "Roteiro", icon: "roteiro" },
     { tab: "mapa", label: "Mapa", icon: "mapa" },
@@ -830,37 +750,41 @@ function NextTripHero({
   ];
 
   return (
-    <section className="next-trip" aria-label="Próxima viagem">
-      <div className="next-trip-main">
-        <p className="eyebrow">{timing.tone === "agora" ? "Viagem em andamento" : "Próxima viagem"}</p>
+    <section className="next-trip" aria-label="Próxima viagem" style={capaDoDestino(trip.destination)}>
+      <div className="next-trip-capa">
+        <span className="next-trip-numero">{conta.numero}</span>
+        <span className="next-trip-legenda">{conta.legenda}</span>
+      </div>
+
+      <div className="next-trip-corpo">
+        <p className="next-trip-rotulo">{timing.tone === "agora" ? "Viagem em andamento" : "Próxima viagem"}</p>
         <h2>
           <a href={`/v/${trip.slug}`}>{trip.destination}</a>
         </h2>
         <p className="sub">
-          {formatTripDate(trip.start_date, trip.end_date)} ·{" "}
-          {trip.is_solo ? "só você" : `${trip.members_count} pessoa${trip.members_count === 1 ? "" : "s"}`}
+          {formatTripDate(trip.start_date, trip.end_date)} · {pessoasDaViagem(trip)}
         </p>
-        <div className="next-trip-tags">
-          <span className={`trip-timing ${timing.tone}`}>{timing.label}</span>
-          <span className={`trip-plan ${plano.liberada ? "on" : ""}`}>{plano.label}</span>
+
+        <a className="next-trip-passo" href={`/v/${trip.slug}#${step.tab}`}>
+          <span>Próximo passo</span>
+          <strong>{step.title}</strong>
+          <em>{step.description}</em>
+        </a>
+
+        <div className="next-trip-acoes">
+          <a className="btn" href={`/v/${trip.slug}`}>
+            Abrir viagem
+          </a>
+          <nav className="next-trip-links" aria-label={`Atalhos de ${trip.destination}`}>
+            {atalhos.map((atalho) => (
+              <a key={atalho.tab} href={`/v/${trip.slug}#${atalho.tab}`}>
+                <Icon name={atalho.icon} size={15} />
+                {atalho.label}
+              </a>
+            ))}
+          </nav>
         </div>
       </div>
-
-      <a className="next-trip-step" href={`/v/${trip.slug}#${step.tab}`}>
-        <span className="stat-label">Próximo passo</span>
-        <strong>{step.title}</strong>
-        <span className="small">{step.description}</span>
-        <em>Continuar →</em>
-      </a>
-
-      <nav className="next-trip-links" aria-label={`Atalhos de ${trip.destination}`}>
-        {atalhos.map((atalho) => (
-          <a key={atalho.tab} href={`/v/${trip.slug}#${atalho.tab}`}>
-            <Icon name={atalho.icon} size={16} />
-            {atalho.label}
-          </a>
-        ))}
-      </nav>
     </section>
   );
 }

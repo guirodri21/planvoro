@@ -164,8 +164,9 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
     });
   } catch (e) {
     logError({ event: "api_falhou", route: "/api/trips/[slug]", error: e });
-    const msg = e instanceof Error ? e.message : "Erro ao carregar a viagem.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // O detalhe fica no log: erro interno (banco, configuracao) nao e
+    // texto para a tela de quem so queria abrir a viagem.
+    return NextResponse.json({ error: "Não conseguimos abrir a viagem agora. Tente de novo em instantes." }, { status: 500 });
   }
 }
 
@@ -234,8 +235,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ slug: string 
     return NextResponse.json({ trip: data });
   } catch (e) {
     logError({ event: "api_falhou", route: "/api/trips/[slug]", error: e });
-    const msg = e instanceof Error ? e.message : "Erro ao atualizar a viagem.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // O detalhe fica no log: erro interno (banco, configuracao) nao e
+    // texto para a tela de quem so queria abrir a viagem.
+    return NextResponse.json({ error: "Não conseguimos salvar agora. Tente de novo em instantes." }, { status: 500 });
   }
 }
 
@@ -302,7 +304,8 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ slug: string
     return NextResponse.json({ deleted: true, anexos: attachments?.length ?? 0 });
   } catch (e) {
     logError({ event: "api_falhou", route: "/api/trips/[slug]", error: e });
-    const msg = e instanceof Error ? e.message : "Erro ao apagar a viagem.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // O detalhe fica no log: erro interno (banco, configuracao) nao e
+    // texto para a tela de quem so queria abrir a viagem.
+    return NextResponse.json({ error: "Não conseguimos apagar a viagem agora. Tente de novo em instantes." }, { status: 500 });
   }
 }

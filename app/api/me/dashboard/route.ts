@@ -220,7 +220,10 @@ export async function GET(req: Request) {
     return NextResponse.json({ trips, account_billing: accountBilling });
   } catch (e) {
     logError({ event: "api_falhou", route: "/api/me/dashboard", error: e });
-    const msg = e instanceof Error ? e.message : "Erro ao carregar suas viagens.";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    // O detalhe fica no log; na tela, uma frase que a pessoa entende.
+    return NextResponse.json(
+      { error: "Não conseguimos carregar suas viagens agora. Tente de novo em instantes." },
+      { status: 500 }
+    );
   }
 }

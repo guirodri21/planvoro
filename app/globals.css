@@ -9147,3 +9147,460 @@ html[data-exp="dor"] .exp-padrao {
     white-space: nowrap;
   }
 }
+
+/* ================================================ PAINEL LEVE (30/09/2026)
+   Uma coluna, uma acao principal por tela, capa com a cor do destino e
+   a contagem regressiva em destaque. Ver app/app/page.tsx. */
+
+.painel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 22px;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.painel-topo h1 {
+  margin: 0;
+  font-size: clamp(28px, 4vw, 38px);
+  letter-spacing: -0.03em;
+}
+
+.painel-topo .sub {
+  margin: 4px 0 0;
+}
+
+/* Plano numa linha: presente, sem virar vitrine. */
+.painel-plano {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin: 0;
+  padding: 12px 14px 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: none;
+}
+
+.painel-plano-texto {
+  margin: 0;
+  font-size: 14px;
+}
+
+.painel-plano-texto span {
+  color: var(--text-soft);
+}
+
+.painel-plano-acoes {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.painel-plano-link {
+  color: var(--brand-strong);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.painel-plano-nota {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 13.5px;
+}
+
+.painel-plano .err {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* Proxima viagem: capa colorida com o numero grande ao lado do conteudo. */
+.painel .next-trip {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: var(--shadow-lg);
+}
+
+.next-trip-capa {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 100%;
+  padding: 26px 24px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    linear-gradient(150deg, var(--capa-a), var(--capa-b));
+  color: var(--capa-tinta);
+}
+
+.next-trip-numero {
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.next-trip-legenda {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.next-trip-corpo {
+  display: grid;
+  gap: 6px;
+  padding: 26px 28px;
+}
+
+.next-trip-rotulo {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.next-trip-corpo h2 {
+  margin: 0;
+  font-size: clamp(30px, 4.4vw, 44px);
+  letter-spacing: -0.035em;
+  line-height: 1.05;
+}
+
+.next-trip-corpo h2 a {
+  color: inherit;
+}
+
+.next-trip-corpo .sub {
+  margin: 0;
+}
+
+.next-trip-passo {
+  display: grid;
+  gap: 2px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--sand);
+  color: var(--text);
+  transition: background 0.2s var(--ease);
+}
+
+.next-trip-passo:hover {
+  background: var(--brand-soft);
+}
+
+.next-trip-passo span {
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.next-trip-passo strong {
+  font-size: 15px;
+}
+
+.next-trip-passo em {
+  color: var(--text-soft);
+  font-size: 13.5px;
+  font-style: normal;
+}
+
+.next-trip-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 14px;
+}
+
+.painel .next-trip-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.painel .next-trip-links a {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text-soft);
+  font-size: 13.5px;
+}
+
+.painel .next-trip-links a:hover {
+  background: var(--sand);
+  color: var(--text);
+}
+
+/* Listas: titulo discreto e viagens em linha. */
+.painel-secao {
+  display: grid;
+  gap: 10px;
+}
+
+.painel-secao h2 {
+  margin: 8px 0 0;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.painel-secao h2 span {
+  margin-left: 4px;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.trip-rows {
+  display: grid;
+  overflow: visible;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+}
+
+.trip-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 14px 14px 16px;
+}
+
+.trip-row + .trip-row {
+  border-top: 1px solid var(--line);
+}
+
+.trip-row-capa {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: linear-gradient(150deg, var(--capa-a), var(--capa-b));
+  color: var(--capa-tinta);
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.trip-row-info {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trip-row-info h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.trip-row-info h3 a {
+  color: var(--text);
+}
+
+.trip-row-info .small {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.trip-row-plano {
+  color: var(--brand-strong);
+  font-weight: 600;
+}
+
+.trip-row-passo {
+  color: var(--brand-strong);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.trip-row-quando {
+  color: var(--text-soft);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.trip-row-quando.perto,
+.trip-row-quando.agora {
+  color: var(--brand-strong);
+}
+
+/* Menu "⋯": acoes raras, inclusive a unica sem volta. */
+/* "details" tem estilo global de pergunta frequente (borda, "+"); aqui
+   ele e so o gatilho do menu. */
+details.trip-row-menu {
+  position: relative;
+  padding: 0;
+  border: 0;
+}
+
+details.trip-row-menu summary::after {
+  content: none;
+}
+
+details.trip-row-menu summary {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: var(--text-soft);
+  font-size: 20px;
+  line-height: 1;
+  list-style: none;
+  cursor: pointer;
+}
+
+.trip-row-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+details.trip-row-menu summary:hover,
+details.trip-row-menu[open] summary {
+  background: var(--sand);
+  color: var(--text);
+}
+
+.trip-row-menu-lista {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  min-width: 230px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: var(--shadow-lg);
+}
+
+.trip-row-menu-lista a,
+.trip-row-menu-lista button {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trip-row-menu-lista a:hover,
+.trip-row-menu-lista button:hover {
+  background: var(--sand);
+}
+
+.trip-row-menu-lista .perigo {
+  color: var(--danger);
+}
+
+/* Dentro do app, o rodape de site (Como funciona, Precos...) so pesava:
+   fica a linha final. */
+body:has(.painel) .site-footer .fgrid {
+  display: none;
+}
+
+body:has(.painel) .site-footer .fbot {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+body:has(.painel) .site-footer .fpanel {
+  padding: 18px 22px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+@media (max-width: 720px) {
+  .painel {
+    gap: 16px;
+  }
+
+  .painel .next-trip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .next-trip-capa {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 18px 20px;
+  }
+
+  .next-trip-numero {
+    font-size: 44px;
+  }
+
+  .next-trip-corpo {
+    padding: 18px 20px 20px;
+  }
+
+  .next-trip-acoes .btn {
+    width: 100%;
+  }
+
+  .painel .next-trip-links {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .painel .next-trip-links a {
+    flex-direction: column;
+    gap: 4px;
+    min-height: 54px;
+    padding: 8px 2px;
+    font-size: 12px;
+    justify-content: center;
+  }
+
+  .trip-row {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    gap: 12px;
+  }
+
+  .trip-row-capa {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* A contagem desce para baixo do nome no celular. */
+  .trip-row-quando {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: -6px;
+  }
+
+  .trip-row-menu {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  /* Espaco para o botao "Ajuda" nao cobrir o fim da lista. */
+  .painel {
+    padding-bottom: 56px;
+  }
+}
