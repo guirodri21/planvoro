@@ -10041,3 +10041,328 @@ body:has(.historico-shell) .site-footer .fbot {
   min-height: 0;
   align-self: start;
 }
+
+/* ================================================ HOME LEVE (30/09/2026) */
+
+/* Aparecer ao rolar (components/revelar-ao-rolar.tsx). So esconde depois
+   que o componente marca <html class="revelar-pronto">: sem JS, e para o
+   Google, tudo fica visivel. */
+[data-revelar] {
+  transition:
+    opacity 0.7s var(--ease) var(--revelar-atraso, 0ms),
+    transform 0.7s var(--ease) var(--revelar-atraso, 0ms);
+}
+
+.revelar-pronto [data-revelar]:not(.visivel) {
+  opacity: 0;
+  transform: translateY(22px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-revelar] {
+    transition: none;
+  }
+
+  .revelar-pronto [data-revelar]:not(.visivel) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Vitrine do produto: o painel como ele e hoje. */
+.home-mock {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 26px;
+  background: var(--paper-strong);
+  box-shadow: var(--shadow-lg);
+  --capa-a: hsl(18 80% 90%);
+  --capa-b: hsl(42 85% 78%);
+  --capa-tinta: hsl(18 55% 24%);
+}
+
+.home-mock-capa {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 22px 24px;
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(255, 255, 255, 0.55), transparent 60%),
+    linear-gradient(150deg, var(--capa-a), var(--capa-b));
+  color: var(--capa-tinta);
+}
+
+.home-mock-capa strong {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.home-mock-capa span {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.home-mock-corpo {
+  display: grid;
+  gap: 4px;
+  padding: 20px 24px 22px;
+}
+
+.home-mock-rotulo {
+  margin: 0;
+  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.home-mock-corpo h3 {
+  margin: 0;
+  font-size: 34px;
+  letter-spacing: -0.035em;
+}
+
+.home-mock-corpo .small {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.home-mock-dia {
+  margin-top: 14px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.home-mock-dia-h {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--sand);
+  font-size: 13.5px;
+}
+
+.home-mock-dia-h span {
+  color: var(--text-soft);
+  font-weight: 600;
+}
+
+.home-mock-item {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 14px;
+  border-top: 1px solid var(--line);
+  font-size: 13.5px;
+}
+
+.home-mock-item span {
+  color: var(--text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-mock-item b {
+  font-weight: 600;
+}
+
+.home-mock-item em {
+  color: var(--text-soft);
+  font-style: normal;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.home-mock-grupo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  color: var(--text-soft);
+  font-size: 13.5px;
+}
+
+.home-mock-avs {
+  display: inline-flex;
+}
+
+.home-mock-avs i {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-left: -6px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  color: #0b1f17;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.home-mock-avs i:first-child {
+  margin-left: 0;
+}
+
+.home-hero .hero-trust {
+  margin-top: 34px;
+}
+
+/* Problema: conversa ao lado de tres frases. */
+.home-problema-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  gap: 48px;
+  align-items: center;
+}
+
+.home-problema .h2 {
+  margin: 0;
+}
+
+.home-dores {
+  display: grid;
+  gap: 18px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-dores li {
+  padding-left: 18px;
+  border-left: 3px solid var(--brand);
+  color: var(--text-soft);
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.home-dores b {
+  color: var(--text);
+}
+
+/* Como funciona: tres passos. */
+.home-passos ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  margin: 32px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-passos li {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 26px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--paper-strong);
+}
+
+.home-passos li > span {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-weight: 800;
+}
+
+.home-passos h3 {
+  margin: 4px 0 0;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+
+.home-passos p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Roteiro. */
+.home-regras {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-regras li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+}
+
+.home-regras li::before {
+  content: "✓";
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.home-conferido {
+  box-shadow: var(--shadow-lg);
+}
+
+.home-ok {
+  color: var(--brand-strong);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .home-problema-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+
+  /* No celular a frase vem antes da conversa. */
+  .home-problema-grid > div:last-child {
+    order: -1;
+  }
+
+  .home-passos ol {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .home-mock-capa strong {
+    font-size: 42px;
+  }
+
+  .home-mock-corpo h3 {
+    font-size: 28px;
+  }
+
+  .home-mock-item {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+    font-size: 13px;
+  }
+
+  .home-passos li {
+    padding: 20px;
+  }
+
+  .home-dores li {
+    font-size: 16px;
+  }
+}
