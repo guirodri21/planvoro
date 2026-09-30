@@ -9983,3 +9983,61 @@ body:has(.historico-shell) .site-footer .fbot {
   padding-top: 0;
   border-top: 0;
 }
+
+/* Modo viagem: o topo escuro tinha um "mapa" decorativo e uma caixa com a
+   contagem que ja esta na lateral. Vira um cartao claro, como o resto. */
+.ws-shell .ws-content .travel-mode-hero {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 0;
+  padding: 24px 26px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--paper-strong);
+  box-shadow: none;
+}
+
+.ws-shell .ws-content .travel-mode-hero::after,
+.ws-shell .ws-content :is(.travel-mode-map, .travel-mode-status-card) {
+  display: none;
+}
+
+.ws-shell .ws-content .travel-mode-copy h2 {
+  margin-top: 0;
+  color: var(--text);
+  font-size: clamp(26px, 3vw, 34px);
+  letter-spacing: -0.035em;
+}
+
+.ws-shell .ws-content .travel-mode-copy p {
+  margin-top: 6px;
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.ws-shell .ws-content .travel-mode-actions {
+  margin-top: 16px;
+}
+
+.ws-shell .ws-content .travel-mode-actions .btn {
+  border: 1px solid var(--line);
+  background: var(--paper-strong);
+  color: var(--text);
+  box-shadow: none;
+}
+
+.ws-shell .ws-content .travel-mode-actions .btn:first-child {
+  border-color: transparent;
+  background: var(--brand);
+  color: #fff;
+}
+
+/* Cartoes da grade com a propria altura, sem esticar ate o vizinho. */
+.ws-shell .ws-content .travel-mode-grid {
+  align-items: start;
+}
+
+.ws-shell .ws-content .travel-mode-grid > * {
+  height: auto;
+  min-height: 0;
+  align-self: start;
+}
