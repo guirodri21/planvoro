@@ -141,6 +141,15 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
   const jaMarcou = useRef(new Set<string>());
   const meioDoExemplo = useRef<HTMLDivElement | null>(null);
   const exemploPronto = useRef<HTMLDivElement | null>(null);
+  const cartaoExemplo = useRef<HTMLDivElement | null>(null);
+  const viewContentEnviado = useRef(false);
+
+  /** ViewContent da Meta: uma vez por visita, no primeiro exemplo visto. */
+  function viewContentUmaVez() {
+    if (viewContentEnviado.current) return;
+    viewContentEnviado.current = true;
+    metaTrack("ViewContent");
+  }
   const campo = useRef<HTMLInputElement | null>(null);
   const [dia2Aberto, setDia2Aberto] = useState(false);
 
@@ -188,6 +197,25 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
   }, [exemplo]);
 
   /**
+   * ViewContent tambem na versao sem UTM: ali nao ha o cartao de Salvador,
+   * e o evento nunca saia. O exemplo guardado (Buenos Aires) conta como
+   * "viu um roteiro de exemplo".
+   */
+  useEffect(() => {
+    const alvo = cartaoExemplo.current;
+    if (!alvo || typeof IntersectionObserver === "undefined") return;
+    const observador = new IntersectionObserver((entradas) => {
+      if (entradas.some((e) => e.isIntersecting)) {
+        viewContentUmaVez();
+        observador.disconnect();
+      }
+    });
+    observador.observe(alvo);
+    return () => observador.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exemplo]);
+
+  /**
    * "Viu o exemplo pronto" (variacao dor): o cartao de Salvador entrou na
    * tela. Na versao padrao ele fica com display:none e nunca intercepta,
    * entao o evento so existe para quem veio do anuncio.
@@ -197,7 +225,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
     if (!alvo || typeof IntersectionObserver === "undefined") return;
     const observador = new IntersectionObserver((entradas) => {
       if (entradas.some((e) => e.isIntersecting)) {
-        if (!jaMarcou.current.has("exemplo_visto")) metaTrack("ViewContent");
+        viewContentUmaVez();
         marcar("exemplo_visto", { destino_exemplo: "salvador" }, true);
         observador.disconnect();
       }
@@ -414,6 +442,7 @@ export default function ExperimenteClient({ exemplo }: { exemplo: SampleResponse
           <div
             className={`card sample-dias ${ehExemplo ? "" : "surgir"}`}
             key={ehExemplo ? "exemplo" : `resultado-${mostrando.destination ?? ""}`}
+            ref={ehExemplo ? cartaoExemplo : undefined}
             {...(ehExemplo ? { "data-revelar": "" } : {})}
           >
             {ehExemplo && <div ref={meioDoExemplo} className="sample-meio" aria-hidden="true" />}
